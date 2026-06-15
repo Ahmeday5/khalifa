@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://khalifa.runasp.net/api/',
+  apiUrl: 'https://khalifatheone.runasp.net/api/',
   appName: 'خليفة برو',
   appVersion: '2.0.0',
   tokenKey: 'khalifa_access_token',
