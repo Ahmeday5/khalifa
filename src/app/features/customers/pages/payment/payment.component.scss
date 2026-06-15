@@ -1,0 +1,16 @@
+.pay-info {
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.pay-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 11px;
+  border-bottom: 1px solid var(--brd);
+  &:last-child { border-bottom: none; }
+}

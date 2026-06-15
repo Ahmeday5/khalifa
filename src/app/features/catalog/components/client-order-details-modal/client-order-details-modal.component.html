@@ -1,0 +1,157 @@
+<app-modal
+  [open]="!!order()"
+  [title]="'تفاصيل الطلبية #' + (order()?.id || '')"
+  size="lg"
+  [showHeader]="true"
+  [showClose]="true"
+  (closed)="close()"
+>
+  <!-- Status Badge -->
+  <div class="modal-status-badge">
+    <span [class]="'badge ' + getStatusBadgeClass(order()?.status || '')">
+      {{ getStatusLabel(order()?.status || '') }}
+    </span>
+  </div>
+
+  <!-- Customer Info -->
+  <section class="details-section">
+    <h4 class="section-title">معلومات العميل</h4>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">الاسم</span>
+        <span class="info-value">{{ order()?.clientName }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">الهاتف</span>
+        <span class="info-value cv-ltr">{{ order()?.clientPhone }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Order Info -->
+  <section class="details-section">
+    <h4 class="section-title">معلومات الطلبية</h4>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">تاريخ الطلب</span>
+        <span class="info-value">{{ order()?.orderDate | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">تاريخ التسليم المفضل</span>
+        <span class="info-value">{{ order()?.preferredDeliveryDate | date: 'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">عنوان التسليم</span>
+        <span class="info-value">{{ order()?.deliveryAddress }}</span>
+      </div>
+      <div class="info-item" *ngIf="order()?.notes">
+        <span class="info-label">ملاحظات</span>
+        <span class="info-value notes-text">{{ order()?.notes }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Payment Info -->
+  <section class="details-section">
+    <h4 class="section-title">معلومات الدفع</h4>
+    <div class="payment-grid">
+      <div class="payment-item">
+        <span class="payment-label">طريقة الدفع</span>
+        <span class="payment-value">{{ getPaymentLabel(order()?.paymentMethod || '', order()?.installmentsCount) }}</span>
+      </div>
+      <div class="payment-item">
+        <span class="payment-label">الإجمالي</span>
+        <span class="payment-value highlight">{{ order()?.totalAmount | currencyAr: true }}</span>
+      </div>
+      <div class="payment-item" *ngIf="order() && order()!.downPayment && order()!.downPayment > 0">
+        <span class="payment-label">المقدم</span>
+        <span class="payment-value">{{ order()!.downPayment | currencyAr: true }}</span>
+      </div>
+      <div class="payment-item" *ngIf="order() && order()!.installmentsCount && order()!.installmentsCount > 0">
+        <span class="payment-label">القسط الشهري</span>
+        <span class="payment-value">{{ order()!.installmentAmount | currencyAr: true }}</span>
+      </div>
+      <div class="payment-item" *ngIf="order() && order()!.installmentsCount && order()!.installmentsCount > 0">
+        <span class="payment-label">عدد الأقساط</span>
+        <span class="payment-value">{{ order()!.installmentsCount }} أشهر</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Items -->
+  <section class="details-section">
+    <h4 class="section-title">
+      المنتجات
+      <span class="items-count">({{ getTotalItemsCount() }} منتج)</span>
+    </h4>
+    <div class="items-table-wrapper">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="col-name">اسم المنتج</th>
+            <th class="col-qty">الكمية</th>
+            <th class="col-price">السعر</th>
+            <th class="col-total">الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of order()?.items" class="item-row">
+            <td class="col-name">
+              <span class="product-name">{{ item.productName }}</span>
+              <span class="product-id text-muted">#{{ item.productId }}</span>
+            </td>
+            <td class="col-qty">
+              <span class="qty-badge">{{ item.quantity }}</span>
+            </td>
+            <td class="col-price">{{ item.price | currencyAr: true }}</td>
+            <td class="col-total font-weight-600">{{ item.lineTotal | currencyAr: true }}</td>
+          </tr>
+          <tr class="summary-row">
+            <td colspan="3" class="summary-label">الإجمالي</td>
+            <td class="summary-total">{{ order()?.totalAmount | currencyAr: true }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Item Details (Payment per item) -->
+  <section class="details-section" *ngIf="order()?.items?.length">
+    <h4 class="section-title">تفاصيل الدفع لكل منتج</h4>
+    <div class="item-payment-details">
+      <div *ngFor="let item of order()?.items" class="payment-detail-card">
+        <div class="card-header">
+          <h5 class="product-title">{{ item.productName }}</h5>
+          <span class="product-qty">×{{ item.quantity }}</span>
+        </div>
+        <div class="card-body">
+          <div class="detail-row">
+            <span class="detail-label">السعر:</span>
+            <span class="detail-value">{{ item.price | currencyAr: true }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">طريقة الدفع:</span>
+            <span class="detail-value">{{ getPaymentLabel(item.paymentMethod, item.installmentMonths) }}</span>
+          </div>
+          <div class="detail-row" *ngIf="item.downPayment && item.downPayment > 0">
+            <span class="detail-label">المقدم:</span>
+            <span class="detail-value">{{ item.downPayment | currencyAr: true }}</span>
+          </div>
+          <div class="detail-row" *ngIf="item.installmentMonths && item.installmentMonths > 0">
+            <span class="detail-label">القسط الشهري:</span>
+            <span class="detail-value">{{ item.monthlyInstallment | currencyAr: true }}</span>
+          </div>
+          <div class="detail-row" *ngIf="item.installmentMonths && item.installmentMonths > 0">
+            <span class="detail-label">عدد الأقساط:</span>
+            <span class="detail-value">{{ item.installmentMonths }} أشهر</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Actions -->
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-secondary" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

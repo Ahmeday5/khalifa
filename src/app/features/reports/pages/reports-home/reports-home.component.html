@@ -1,0 +1,28 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">التقارير والتصدير</div>
+    <div class="pgs">تحليلات متقدمة وتصدير البيانات</div>
+  </div>
+</div>
+
+<div class="row row-cols-lg-3 row-cols-2 g-3">
+  @for (report of reports(); track report.id) {
+    <div class="col">
+      <div class="card h-100" style="cursor:pointer" (click)="generateReport(report)">
+        <div class="chdr">
+          <div class="ct">{{ report.title }}</div>
+          <span style="font-size:20px">{{ report.icon }}</span>
+        </div>
+        <p class="mb-3" style="font-size:11px;color:var(--txt2);line-height:1.5">
+          {{ report.description }}
+        </p>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm" [class]="'btn-' + report.color">
+            {{ report.action }}
+          </button>
+          <button class="btn btn-sm">تصدير Excel</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

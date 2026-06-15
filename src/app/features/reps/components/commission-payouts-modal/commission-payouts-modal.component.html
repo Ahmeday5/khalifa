@@ -1,0 +1,77 @@
+<app-modal
+  [open]="open()"
+  title="سجل صرف العمولات"
+  size="xl"
+  (closed)="closed.emit()"
+>
+  <div class="mb-3">
+    <input
+      type="text"
+      class="form-control form-control-sm"
+      placeholder="بحث باسم المندوب..."
+      [value]="search()"
+      (input)="onSearch($any($event.target).value)"
+    />
+  </div>
+
+  <div class="tw" style="margin-bottom:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>المندوب</th>
+          <th>المبلغ</th>
+          <th>الخزينة</th>
+          <th>رقم السند</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of rows(); track p.id) {
+          <tr>
+            <td class="trf-date">{{ p.date | dateAr: 'short' }}</td>
+            <td style="font-weight:600">{{ p.representativeName }}</td>
+            <td class="trf-amount">{{ p.amount | currencyAr: true }}</td>
+            <td>{{ p.treasuryName }}</td>
+            <td dir="ltr" style="font-size:11px">{{ p.voucherNumber }}</td>
+            <td>{{ p.notes || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              @if (loading()) { جاري التحميل... } @else { لا توجد عمليات صرف بعد. }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="closed.emit()">إغلاق</button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-1"
+      [disabled]="rows().length === 0 || loading() || isPrinting()"
+      (click)="printPayouts()"
+      title="طباعة"
+    >
+      @if (isPrinting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>🖨 طباعة PDF</span>
+    </button>
+  </ng-container>
+</app-modal>

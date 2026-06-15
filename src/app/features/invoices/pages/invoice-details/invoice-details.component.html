@@ -1,0 +1,245 @@
+<!-- ── Page header (hidden on print) ── -->
+<div class="id-pgh">
+  <div class="id-pgh-left">
+    <a class="id-back" [routerLink]="['/invoices/list']" aria-label="العودة للقائمة">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      <span>العودة للقائمة</span>
+    </a>
+    <div class="id-title">
+      @if (invoice(); as inv) {
+        تفاصيل الفاتورة
+        <span class="id-num">{{ inv.invoiceNumber }}</span>
+      } @else {
+        تفاصيل الفاتورة
+      }
+    </div>
+  </div>
+
+  <div class="id-actions">
+    @if (canConfirm()) {
+      <button type="button" class="btn btn-sm btn-gr" (click)="openConfirm()">
+        ✓ تأكيد الفاتورة
+      </button>
+    }
+    @if (invoice(); as inv) {
+      @if (inv.status !== 'Draft' && inv.status !== 'Cancelled') {
+        <button
+          type="button"
+          class="btn btn-sm btn-bl"
+          [disabled]="!canPay()"
+          [title]="canPay() ? 'تسجيل دفعة على الفاتورة' : 'الفاتورة مسددة بالكامل'"
+          (click)="openPayment()"
+        >دفع</button>
+      }
+    }
+    <button
+      type="button"
+      class="btn btn-sm"
+      [disabled]="loading() || !invoice()"
+      (click)="print()"
+    >
+      🖨 طباعة
+    </button>
+  </div>
+</div>
+
+
+@if (loading()) {
+  <div class="id-state">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>جاري تحميل بيانات الفاتورة...</span>
+  </div>
+} @else if (notFound()) {
+  <div class="id-state id-state-error">
+    <div class="id-state-icon" aria-hidden="true">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div class="id-state-title">الفاتورة غير موجودة</div>
+    <div class="id-state-sub">قد تكون الفاتورة مُنشأة محلياً وغير محفوظة، أو حُذفت من قِبل مستخدم آخر.</div>
+    <button type="button" class="btn btn-sm btn-bl mt-2" (click)="goToList()">
+      العودة لقائمة الفواتير
+    </button>
+  </div>
+} @else {
+  @if (invoice(); as inv) {
+  <!-- ── Invoice document ── -->
+  <article class="id-doc">
+
+    <!-- Document header -->
+    <header class="id-doc-head">
+      <div class="id-doc-brand">
+        <div class="id-doc-logo" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div>
+          <div class="id-doc-brand-name">تقسيط برو</div>
+          <div class="id-doc-brand-sub">فاتورة مشتريات</div>
+        </div>
+      </div>
+
+      <div class="id-doc-meta">
+        <div class="id-doc-meta-row">
+          <span class="id-doc-meta-label">رقم الفاتورة</span>
+          <span class="id-doc-meta-val id-doc-meta-num">{{ inv.invoiceNumber }}</span>
+        </div>
+        <div class="id-doc-meta-row">
+          <span class="id-doc-meta-label">الحالة</span>
+          @if (status(); as st) {
+            <span class="b" [class]="'b-' + st.variant">{{ st.label }}</span>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- Parties + dates -->
+    <section class="id-parties">
+      <div class="id-party">
+        <div class="id-party-label">المورد</div>
+        <div class="id-party-name">{{ inv.supplierName }}</div>
+        <div class="id-party-meta">
+          <span class="id-party-meta-label">معرّف</span>
+          <span class="id-party-meta-val">#{{ inv.supplierId }}</span>
+        </div>
+      </div>
+
+      <div class="id-party">
+        <div class="id-party-label">المخزن المستلم</div>
+        <div class="id-party-name">{{ inv.warehouseName }}</div>
+        <div class="id-party-meta">
+          <span class="id-party-meta-label">معرّف</span>
+          <span class="id-party-meta-val">#{{ inv.warehouseId }}</span>
+        </div>
+      </div>
+
+      <div class="id-party id-party-dates">
+        <div class="id-party-label">المواعيد</div>
+        <div class="id-date-row">
+          <span class="id-date-label">تاريخ الفاتورة</span>
+          <span class="id-date-val">{{ formatDate(inv.invoiceDate) }}</span>
+        </div>
+        <div class="id-date-row">
+          <span class="id-date-label">تاريخ الاستحقاق</span>
+          <span class="id-date-val">{{ formatDate(inv.dueDate) }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Items table -->
+    <section class="id-items">
+      <div class="id-items-title">الأصناف</div>
+      <div class="tw mb-0">
+        <table class="w-100">
+          <thead>
+            <tr>
+              <th class="id-w-num">#</th>
+              <th class="id-w-name">الصنف</th>
+              <th class="id-w-qty">الكمية</th>
+              <th class="id-w-price">سعر الوحدة</th>
+              <th class="id-w-disc">الخصم</th>
+              <th class="id-w-total">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of inv.items; track $index; let i = $index) {
+              <tr>
+                <td class="id-line-num">{{ i + 1 }}</td>
+                <td class="fw-600">
+                  {{ line.productName }}
+                  <span class="id-line-pid">#{{ line.productId }}</span>
+                </td>
+                <td>{{ line.quantity }}</td>
+                <td>{{ line.unitPrice | currencyAr: true }}</td>
+                <td>
+                  @if (line.discountPercent > 0) {
+                    <span class="id-line-disc">
+                      {{ line.discountPercent | number: '1.0-1' }}%
+                      <span class="id-line-disc-val">
+                        (− {{ lineDiscountAmount(line) | currencyAr: true }})
+                      </span>
+                    </span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td class="id-line-total">{{ line.lineTotal ?? 0 | currencyAr: true }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="id-items-empty">لا توجد أصناف على هذه الفاتورة</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Totals + notes -->
+    <section class="id-footer">
+      <div class="id-notes">
+        <div class="id-notes-label">ملاحظات</div>
+        <div class="id-notes-body">{{ inv.notes || '—' }}</div>
+
+        @if (inv.treasuryId) {
+          <div class="id-treasury">
+            <span class="id-treasury-label">الخزنة المُسحب منها</span>
+            <span class="id-treasury-val">#{{ inv.treasuryId }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="id-totals">
+        <div class="id-tot-row">
+          <span>إجمالي الأصناف (قبل الخصم)</span>
+          <span>{{ inv.subtotal | currencyAr: true }}</span>
+        </div>
+        <div class="id-tot-row">
+          <span>الخصم الإجمالي</span>
+          <span class="id-tot-disc">− {{ inv.discountAmount | currencyAr: true }}</span>
+        </div>
+        <div class="id-tot-row">
+          <span>ضريبة القيمة المضافة</span>
+          <span>{{ inv.taxAmount | currencyAr: true }}</span>
+        </div>
+        <div class="id-tot-grand">
+          <span>الإجمالي شامل الضريبة</span>
+          <span>{{ inv.totalAmount | currencyAr: true }}</span>
+        </div>
+        <div class="id-tot-row id-tot-paid">
+          <span>المدفوع</span>
+          <span>{{ inv.paidAmount | currencyAr: true }}</span>
+        </div>
+        <div class="id-tot-row id-tot-rem">
+          <span>الباقي</span>
+          <span>{{ inv.remainingAmount | currencyAr: true }}</span>
+        </div>
+      </div>
+    </section>
+
+    <footer class="id-doc-foot">
+      <div>تم إنشاء هذه الفاتورة بواسطة نظام تقسيط برو</div>
+    </footer>
+  </article>
+
+  <app-confirm-invoice-modal
+    [open]="confirmOpen()"
+    [invoice]="invoice()"
+    (closed)="closeConfirm()"
+    (confirmed)="onConfirmed($event)"
+  />
+
+  <app-pay-invoice-modal
+    [open]="paymentOpen()"
+    [invoice]="invoice()"
+    (closed)="closePayment()"
+    (paid)="onPaid($event)"
+  />
+  }
+}

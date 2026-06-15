@@ -1,0 +1,137 @@
+/* ── VAT BOX ── */
+.vat-box {
+  background: linear-gradient(135deg, var(--bl) 0%, var(--bl-d) 100%);
+  border-radius: var(--rl);
+  padding: 16px;
+  color: #fff;
+
+  @media (max-width: 576px) { padding: 12px; }
+}
+
+/* ── CASHFLOW ── */
+.cf-pos { color: var(--gr); font-weight: 600; }
+.cf-neg { color: var(--re); font-weight: 600; }
+.cf-net { color: var(--bl); font-weight: 700; }
+
+/* ── TRANSFERS CARD ── */
+.trf-card { padding-bottom: 8px; }
+
+.trf-head {
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.trf-sub {
+  font-size: 10.5px;
+  color: var(--txt3);
+  margin-top: 2px;
+}
+
+.trf-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+
+  @media (max-width: 768px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
+}
+
+.trf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+
+  label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--txt3);
+  }
+}
+
+.trf-select {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: var(--bl);
+    box-shadow: 0 0 0 3px rgba(27, 95, 168, 0.12);
+  }
+}
+
+.trf-clear {
+  color: var(--re);
+  border-color: var(--re-l, rgba(220, 38, 38, 0.25));
+  background: var(--re-l, rgba(220, 38, 38, 0.08));
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.14);
+  }
+}
+
+.trf-id {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--txt3);
+  font-weight: 600;
+}
+
+.trf-from {
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.trf-to {
+  font-weight: 600;
+  color: var(--te);
+}
+
+.trf-arrow {
+  color: var(--txt3);
+  margin-inline-end: 4px;
+  font-weight: 700;
+}
+
+.trf-amount {
+  color: var(--bl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trf-date {
+  font-size: 10.5px;
+  color: var(--txt2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.trf-notes {
+  font-size: 10.5px;
+  color: var(--txt3);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── OPERATIONS TABLE ── */
+.trf-amount-positive {
+  color: var(--gr);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trf-amount-negative {
+  color: var(--re);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

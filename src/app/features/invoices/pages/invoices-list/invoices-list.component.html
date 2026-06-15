@@ -1,0 +1,184 @@
+<!-- ── SUMMARY CARDS ── (hidden for Representatives — owners-only totals) -->
+@if (!isRepresentative()) {
+<div class="iv-stats">
+  <div class="sc">
+    <div class="sc-l">إجمالي المشتريات</div>
+    <div class="sc-v">{{ summary()?.totalPurchases ?? 0 | currencyAr: true }}</div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">المدفوع</div>
+    <div class="sc-v iv-stat-pos">
+      {{ summary()?.totalPaid ?? 0 | currencyAr: true }}
+    </div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">الباقي للموردين</div>
+    <div class="sc-v iv-stat-neg">
+      {{ summary()?.totalOutstanding ?? 0 | currencyAr: true }}
+    </div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">فواتير هذا الشهر</div>
+    <div class="sc-v iv-stat-info">
+      {{ summary()?.invoicesThisMonth ?? 0 }}
+    </div>
+  </div>
+</div>
+}
+
+<!-- ── FILTERS ROW ── -->
+<div class="iv-filters">
+  <input
+    class="iv-search"
+    placeholder="بحث برقم الفاتورة أو المورد..."
+    [value]="searchTerm()"
+    (input)="onSearch($any($event.target).value)"
+  />
+
+  <select
+    class="iv-select"
+    [value]="statusFilter()"
+    (change)="onStatusChange($any($event.target).value)"
+  >
+    @for (opt of statusOptions; track opt.value) {
+      <option [value]="opt.value">{{ opt.label }}</option>
+    }
+  </select>
+
+  <select
+    class="iv-select"
+    [value]="supplierFilter()"
+    (change)="onSupplierChange($any($event.target).value)"
+  >
+    <option value="">كل الموردين</option>
+    @for (s of suppliers(); track s.id) {
+      <option [value]="s.id">{{ s.name }}</option>
+    }
+  </select>
+
+  <button
+    type="button"
+    class="btn btn-sm d-inline-flex align-items-center gap-1"
+    [disabled]="loading()"
+    (click)="refresh()"
+  >
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+
+  <button
+    type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    [disabled]="loading() || invoices().length === 0"
+    (click)="printInvoices()"
+    title="طباعة قائمة الفواتير"
+  >
+    <span>🖨 طباعة PDF</span>
+  </button>
+
+  @if (canWrite()) {
+    <button
+      class="btn btn-sm btn-bl"
+      (click)="goToNew()"
+    >+ فاتورة جديدة</button>
+  }
+</div>
+
+<!-- ── TABLE ── -->
+<div class="tw">
+  <table>
+    <thead>
+      <tr>
+        <th class="iv-w-10">الفاتورة</th>
+        <th class="iv-w-14">المورد</th>
+        <th class="iv-w-22">الأصناف</th>
+        <th class="iv-w-7">الكمية</th>
+        <th class="iv-w-9">الإجمالي</th>
+        <th class="iv-w-9">المدفوع</th>
+        <th class="iv-w-9">الباقي</th>
+        <th class="iv-w-9">التاريخ</th>
+        <th class="iv-w-9">الحالة</th>
+        <th class="iv-w-12">إجراء</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (inv of invoices(); track inv.id) {
+        <tr>
+          <td class="iv-num" (click)="viewInvoice(inv)">{{ inv.invoiceNumber }}</td>
+          <td>{{ inv.supplierName }}</td>
+          <td class="iv-items" [title]="inv.itemsSummary">{{ inv.itemsSummary }}</td>
+          <td>{{ inv.quantity }}</td>
+          <td>{{ inv.totalAmount | currencyAr: true }}</td>
+          <td class="iv-paid">{{ inv.paidAmount | currencyAr: true }}</td>
+          <td [class]="inv.remainingAmount > 0 ? 'iv-rem' : 'iv-paid'">
+            {{ inv.remainingAmount | currencyAr: true }}
+          </td>
+          <td class="fs-10">{{ formatDate(inv.invoiceDate) }}</td>
+          <td>
+            <span class="b" [class]="'b-' + statusView(inv.status).variant">
+              {{ statusView(inv.status).label }}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1 justify-content-center">
+              <button
+                type="button"
+                class="btn btn-sm"
+                (click)="viewInvoice(inv)"
+              >تفاصيل</button>
+              @if (canEdit()) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-te"
+                  (click)="editInvoice(inv)"
+                >تعديل</button>
+              }
+              @if (canWrite() && isDraft(inv)) {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-gr"
+                  (click)="openConfirm(inv)"
+                >تأكيد</button>
+              }
+              @if (canWrite() && !isDraft(inv) && inv.status !== 'Cancelled') {
+                <button
+                  type="button"
+                  class="btn btn-sm btn-bl"
+                  [disabled]="!isPayable(inv)"
+                  [title]="isPayable(inv) ? 'تسجيل دفعة على الفاتورة' : 'الفاتورة مسددة بالكامل'"
+                  (click)="openPayment(inv)"
+                >دفع</button>
+              }
+            </div>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="10" class="text-center fs-11 text-muted py-3">
+            @if (loading()) {
+              جاري تحميل الفواتير...
+            } @else {
+              لا توجد فواتير مطابقة
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<app-confirm-invoice-modal
+  [open]="confirmOpen()"
+  [invoice]="confirmTarget()"
+  (closed)="closeConfirm()"
+  (confirmed)="onConfirmed($event)"
+/>
+
+<app-pay-invoice-modal
+  [open]="paymentOpen()"
+  [invoice]="paymentTarget()"
+  (closed)="closePayment()"
+  (paid)="onPaid($event)"
+/>

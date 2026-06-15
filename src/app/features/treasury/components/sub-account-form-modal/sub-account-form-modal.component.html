@@ -1,0 +1,77 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">اسم الحساب الفرعي</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="name"
+          autocomplete="off"
+          placeholder="مثال: حساب فرعي - أحمد"
+          [class.is-invalid]="isInvalid('name')"
+        />
+        <app-form-error [control]="form.controls.name" label="اسم الحساب الفرعي" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">رقم الهاتف</label>
+        <input
+          type="tel"
+          dir="ltr"
+          class="form-control"
+          formControlName="phoneNumber"
+          autocomplete="off"
+          placeholder="01xxxxxxxxx"
+          [class.is-invalid]="isInvalid('phoneNumber')"
+        />
+        <app-form-error [control]="form.controls.phoneNumber" label="رقم الهاتف" />
+      </div>
+
+      @if (repOptions().length > 0) {
+        <div class="col-12">
+          <label class="form-label">المندوب <span class="text-muted" style="font-size:11px">(اختياري)</span></label>
+          <app-searchable-select
+            formControlName="representativeId"
+            placeholder="بدون مندوب"
+            searchPlaceholder="ابحث باسم المندوب…"
+            [options]="repOptions()"
+          />
+        </div>
+      }
+    </div>
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+
+    @if (submitLabel(); as label) {
+      <button
+        type="button"
+        class="btn btn-bl d-inline-flex align-items-center gap-2"
+        [disabled]="submitting() || form.invalid"
+        (click)="onSubmit()"
+      >
+        @if (submitting()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+      </button>
+    }
+  </ng-container>
+</app-modal>

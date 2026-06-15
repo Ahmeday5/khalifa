@@ -1,0 +1,435 @@
+<!-- ── PAGE HEADER ── -->
+<div class="pgh">
+  <div>
+    <div class="pgt">المساهمون</div>
+    <div class="pgs">إدارة الشركاء ونسب الملكية وتوزيع الأرباح</div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button class="btn btn-sm" title="كشف حساب أرباح الشركة"
+      (click)="openCompanyStatement()">كشف حساب الشركة</button>
+    <button *appHasPermission="PERMS.treasuryFullAccess" class="btn btn-sm btn-te" [disabled]="!hasPendingProfits()"
+      (click)="openCapitalizeAll()" title="ترحيل أرباح جميع المساهمين إلى رأس مالهم دفعةً واحدة">رسملة الأرباح
+      الكلية</button>
+    <!--<button
+      *appHasPermission="PERMS.treasuryFullAccess"
+      class="btn btn-sm btn-gr"
+      (click)="openDistribute()"
+    >توزيع أرباح</button>-->
+    <button *appHasPermission="PERMS.treasuryFullAccess" class="btn btn-sm btn-bl" (click)="openCreate()">+ مساهم
+      جديد</button>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
+<div class="sh-hero">
+  <div class="sh-hero-main">
+    <div class="sh-hero-label">إجمالي المساهمين</div>
+    <div class="sh-hero-value">{{ count() | number }} مساهم</div>
+
+    <div class="sh-hero-stats">
+      <div>
+        <div class="sh-hero-stat-label">الصفحة الحالية</div>
+        <div class="sh-hero-stat-val">{{ pageIndex() }} / {{ totalPages() || 1 }}</div>
+      </div>
+      <div>
+        <div class="sh-hero-stat-label">صفوف لكل صفحة</div>
+        <div class="sh-hero-stat-val">{{ pageSize() }}</div>
+      </div>
+
+      @if (loading()) {
+      <div class="d-inline-flex align-items-center gap-2" style="opacity:.85">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span style="font-size:11px">جاري التحميل...</span>
+      </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ── SUMMARY CARDS (current page) ── -->
+<div class="sh-summary">
+  <div class="sc">
+    <div class="sc-l">إجمالي المساهمات (الصفحة)</div>
+    <div class="sc-v">{{ pageContributed() | currencyAr: true }}</div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">الأرباح الموزّعة (الصفحة)</div>
+    <div class="sc-v sh-stat-pos">{{ pageProfit() | currencyAr: true }}</div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">الأرباح المستحقة (الصفحة)</div>
+    <div class="sc-v sh-stat-te">{{ pageAccruedProfit() | currencyAr: true }}</div>
+  </div>
+  <div class="sc">
+    <div class="sc-l">نسبة الملكية (الصفحة)</div>
+    <div class="sc-v sh-stat-bl">{{ pageOwnership() | number: '1.0-2' }}%</div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="sh-toolbar">
+  <div class="sh-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input type="text" placeholder="بحث بالاسم أو رقم الهاتف..." [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)" />
+    @if (hasFilters()) {
+    <button type="button" class="sh-search-clear" aria-label="مسح البحث" (click)="clearSearch()">×</button>
+    }
+  </div>
+
+  <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1" [disabled]="loading()"
+    (click)="refresh()">
+    @if (loading()) {
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+
+  <button type="button" class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    [disabled]="loading() || isPrinting() || count() === 0" (click)="printShareholders()" title="طباعة قائمة المساهمين">
+    @if (isPrinting()) {
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>🖨 طباعة PDF</span>
+  </button>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="card sh-card">
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="sh-w-id">#</th>
+          <th class="sh-w-name">المساهم</th>
+          <th class="sh-w-phone">الهاتف</th>
+          <th class="sh-w-addr">العنوان</th>
+          <th class="sh-w-amount">قيمة المساهمة</th>
+          <th class="sh-w-pct">نسبة الملكية</th>
+          <th class="sh-w-pct">نسبة الشركة</th>
+          <th class="sh-w-amount">الأرباح الموزّعة</th>
+          <th class="sh-w-amount">الأرباح المستحقة</th>
+          <th class="sh-w-treasury">خزينة رأس المال</th>
+          <th class="sh-w-date">تاريخ الانضمام</th>
+          <th class="sh-w-actions text-center">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of shareholders(); track s.id) {
+        <tr>
+          <td class="sh-id">#{{ s.id }}</td>
+          <td>
+            <div class="sh-row-name">
+              <div class="sh-avatar" aria-hidden="true">
+                {{ s.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="sh-row-name-text">
+                <span class="fw-600">{{ s.name }}</span>
+                @if (s.notes) {
+                <span class="sh-row-note" [title]="s.notes">{{ s.notes }}</span>
+                }
+              </div>
+            </div>
+          </td>
+          <td class="cv-ltr">{{ s.phoneNumber || '—' }}</td>
+          <td class="sh-addr" [title]="s.address">{{ s.address || '—' }}</td>
+          <td class="sh-amount">{{ s.contributedAmount | currencyAr: true }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="sh-pct">{{ s.ownedPercentage | number: '1.0-2' }}%</span>
+              <div class="sh-bar">
+                <div class="sh-bar-fill" [style.width.%]="s.ownedPercentage"></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="sh-pct">{{ s.companyPercentage | number: '1.0-2' }}%</span>
+              <div class="sh-bar">
+                <div class="sh-bar-fill" [style.width.%]="s.companyPercentage"></div>
+              </div>
+            </div>
+          </td>
+          <td class="sh-profit">{{ s.totalProfitReceived | currencyAr: true }}</td>
+          <td class="sh-profit">{{ s.accruedProfit | currencyAr: true }}</td>
+          <td class="sh-treasury">{{ s.capitalTreasuryName || '—' }}</td>
+          <td class="fs-10">{{ s.createdAt | dateAr: 'short' }}</td>
+          <td>
+            <div class="d-flex gap-1 justify-content-center align-items-center">
+              <button type="button" class="btn btn-sm" title="كشف حساب المساهم"
+                (click)="openStatement(s)">كشف حساب</button>
+              <ng-container *appHasPermission="PERMS.treasuryFullAccess">
+                <button type="button" class="btn btn-sm btn-te" title="إدارة رأس المال والأرباح"
+                  (click)="openCapital(s)">رأس المال</button>
+                <button type="button" class="btn btn-sm btn-bl" (click)="openEdit(s)">تعديل</button>
+                <button type="button" class="btn btn-sm btn-re d-inline-flex align-items-center gap-1"
+                  [disabled]="deletingId() === s.id" (click)="confirmDelete(s)">
+                  @if (deletingId() === s.id) {
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  }
+                  <span>حذف</span>
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="11" class="sh-empty">
+            @if (loading()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>جاري تحميل المساهمين...</span>
+            } @else if (hasFilters()) {
+            <div class="sh-empty-block">
+              <div class="sh-empty-icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+              <div class="sh-empty-title">لا نتائج لـ "{{ searchTerm() }}"</div>
+              <div class="sh-empty-sub">جرّب اسمًا أو رقم هاتف آخر، أو امسح البحث.</div>
+              <button class="btn btn-sm mt-2" (click)="clearSearch()">مسح البحث</button>
+            </div>
+            } @else {
+            <div class="sh-empty-block">
+              <div class="sh-empty-icon" aria-hidden="true">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="sh-empty-title">لا يوجد مساهمون بعد</div>
+              <div class="sh-empty-sub">ابدأ بإضافة أول مساهم لإدارة رأس المال وتوزيع الأرباح.</div>
+              <button *appHasPermission="PERMS.treasuryFullAccess" class="btn btn-sm btn-bl mt-2"
+                (click)="openCreate()">+ إضافة مساهم جديد</button>
+            </div>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+  <app-pagination [pageIndex]="pageIndex()" [pageSize]="pageSize()" [count]="count()" [totalPages]="totalPages()"
+    [disabled]="loading()" (pageChange)="onPageChange($event)" (pageSizeChange)="onPageSizeChange($event)" />
+  }
+</div>
+
+<!-- ── PENDING DISTRIBUTION PREVIEW (live) ── -->
+<div class="sh-section-head">
+  <div>
+    <div class="sh-section-title">الأرباح المتاحة للتوزيع</div>
+    <div class="sh-section-sub">معاينة مباشرة لتوزيع رصيد {{ previewTreasuryName() }} على المساهمين</div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    @if (previewLoading()) {
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <button type="button" class="btn btn-sm" [disabled]="previewLoading()" (click)="loadPreview()">تحديث</button>
+    <button *appHasPermission="PERMS.treasuryFullAccess" type="button" class="btn btn-sm btn-te"
+      [disabled]="!hasPendingProfits()" (click)="openCapitalizeAll()">رسملة الكل</button>
+    <button *appHasPermission="PERMS.treasuryFullAccess" type="button" class="btn btn-sm btn-gr"
+      [disabled]="!hasPendingProfits()" (click)="openDistribute()">توزيع الآن</button>
+  </div>
+</div>
+
+<div class="card sh-card">
+  <!-- available total banner -->
+  <div class="sh-preview-banner">
+    <div>
+      <div class="sh-preview-banner-label">إجمالي الأرباح المتاحة</div>
+      <div class="sh-preview-banner-value">{{ previewTotal() | currencyAr: true }}</div>
+    </div>
+    <div class="sh-preview-banner-meta">
+      <span>{{ previewTreasuryName() }}</span>
+      <span>·</span>
+      <span>{{ previewLines().length | number }} مساهم</span>
+      @if (previewTotalCompanyShare() > 0) {
+      <span>·</span>
+      <span>نصيب المساهمين: {{ previewTotalShareholdersShare() | currencyAr: true }}</span>
+      <span>·</span>
+      <span>نصيب الشركة: {{ previewTotalCompanyShare() | currencyAr: true }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="sh-w-name">المساهم</th>
+          <th class="sh-w-amount text-center">المساهمة</th>
+          <th class="sh-w-pct text-center">النسبة</th>
+          <th class="sh-w-amount text-end">المستحق</th>
+          <th class="sh-w-amount text-end">نصيب المساهم</th>
+          <th class="sh-w-amount text-end">نصيب الشركة</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of previewLines(); track line.shareholderId) {
+        <tr>
+          <td class="fw-600">{{ line.shareholderName }}</td>
+          <td class="text-center sh-treasury">{{ line.contributedAmount | currencyAr: true }}</td>
+          <td class="text-center">
+            <div class="d-flex align-items-center gap-2 justify-content-center">
+              <span class="sh-pct">{{ line.percentage | number: '1.0-2' }}%</span>
+              <div class="sh-bar" style="max-width:90px">
+                <div class="sh-bar-fill" [style.width.%]="line.percentage"></div>
+              </div>
+            </div>
+          </td>
+          <td class="text-end sh-profit">{{ line.amount | currencyAr: true }}</td>
+          <td class="text-end" style="color:var(--gr);font-weight:600">{{ line.shareholderShare | currencyAr: true }}
+          </td>
+          <td class="text-end" style="color:var(--txt3)">{{ line.companyShare | currencyAr: true }}</td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="6" class="sh-empty">
+            @if (previewLoading()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>جاري حساب التوزيع...</span>
+            } @else {
+            <div class="sh-empty-block">
+              <div class="sh-empty-icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+              </div>
+              <div class="sh-empty-title">لا توجد أرباح متاحة للتوزيع حاليًا</div>
+              <div class="sh-empty-sub">ستظهر هنا حصص المساهمين فور توفّر رصيد في خزينة الأرباح.</div>
+            </div>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+      @if (hasPendingProfits()) {
+      <tfoot>
+        <tr class="sh-preview-total">
+          <td colspan="3" class="fw-600">الإجمالي</td>
+          <td class="text-end sh-profit">{{ previewTotal() | currencyAr: true }}</td>
+          <td class="text-end" style="color:var(--gr);font-weight:600">{{ previewTotalShareholdersShare() | currencyAr:
+            true }}</td>
+          <td class="text-end" style="color:var(--txt3)">{{ previewTotalCompanyShare() | currencyAr: true }}</td>
+        </tr>
+      </tfoot>
+      }
+    </table>
+  </div>
+</div>
+
+<!-- ── PROFIT SETTLEMENTS (history) ── -->
+<div class="sh-section-head">
+  <div>
+    <div class="sh-section-title">سجل توزيع الأرباح</div>
+    <div class="sh-section-sub">عمليات توزيع الأرباح المنفّذة على المساهمين</div>
+  </div>
+  <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1" [disabled]="settlementsLoading()"
+    (click)="refreshSettlements()" title="تحديث السجل من الخادم">
+    @if (settlementsLoading()) {
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+</div>
+
+<div class="card sh-card">
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="sh-w-id">#</th>
+          <th class="sh-w-date">التاريخ</th>
+          <th class="sh-w-treasury">خزينة الأرباح</th>
+          <th class="sh-w-amount">إجمالي الموزّع</th>
+          <th class="sh-w-pct text-center">عدد المساهمين</th>
+          <th>ملاحظات</th>
+          <th class="sh-w-actions text-center">التفاصيل</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (st of settlements(); track st.id) {
+        <tr class="sh-clickable" (click)="openDetails(st.id)">
+          <td class="sh-id">#{{ st.id }}</td>
+          <td class="fs-10">{{ st.settlementDate | dateAr: 'short' }}</td>
+          <td class="sh-treasury">{{ st.profitsTreasuryName || '—' }}</td>
+          <td class="sh-profit">{{ st.totalAmount | currencyAr: true }}</td>
+          <td class="text-center fw-600">{{ st.shareholdersCount | number }}</td>
+          <td class="sh-addr" [title]="st.notes ?? ''">{{ st.notes || '—' }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-bl"
+              (click)="openDetails(st.id); $event.stopPropagation()">عرض</button>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="7" class="sh-empty">
+            @if (settlementsLoading()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>جاري تحميل السجل...</span>
+            } @else {
+            <div class="sh-empty-block">
+              <div class="sh-empty-icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3v18h18" />
+                  <path d="m7 14 4-4 3 3 5-6" />
+                </svg>
+              </div>
+              <div class="sh-empty-title">لا توجد عمليات توزيع بعد</div>
+              <div class="sh-empty-sub">استخدم زر «توزيع أرباح» لتوزيع رصيد خزينة الأرباح على المساهمين.</div>
+            </div>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (sCount() > 0) {
+  <app-pagination [pageIndex]="sPageIndex()" [pageSize]="sPageSize()" [count]="sCount()" [totalPages]="sTotalPages()"
+    [disabled]="settlementsLoading()" (pageChange)="onSettlementsPageChange($event)"
+    (pageSizeChange)="onSettlementsPageSizeChange($event)" />
+  }
+</div>
+
+<!-- ── CREATE / EDIT MODAL ── -->
+<app-shareholder-form-modal [open]="modalOpen()" [mode]="modalMode()" [shareholder]="modalShareholder()"
+  (closed)="closeModal()" (saved)="onSaved($event)" />
+
+<!-- ── DISTRIBUTE PROFITS MODAL ── -->
+<app-profit-distribution-modal [open]="distributeOpen()" (closed)="closeDistribute()" (settled)="onSettled($event)" />
+
+<!-- ── SETTLEMENT DETAILS MODAL ── -->
+<app-profit-settlement-details-modal [open]="detailsOpen()" [settlementId]="detailsId()" (closed)="closeDetails()" />
+
+<!-- ── CAPITAL MANAGEMENT MODAL ── -->
+<app-shareholder-capital-modal [open]="capitalOpen()" [shareholder]="capitalShareholder()" (closed)="closeCapital()"
+  (changed)="onCapitalChanged()" />
+
+<!-- ── CAPITALIZE ALL PROFITS MODAL ── -->
+<app-capitalize-all-profits-modal [open]="capitalizeAllOpen()" (closed)="closeCapitalizeAll()"
+  (capitalized)="onCapitalizedAll()" />
+
+<!-- ── SHAREHOLDER STATEMENT MODAL ── -->
+<app-shareholder-statement-modal [open]="statementOpen()" [shareholder]="statementShareholder()"
+  (closed)="closeStatement()" />
+
+<!-- ── COMPANY PROFIT STATEMENT MODAL ── -->
+<app-company-profit-statement-modal [open]="companyStatementOpen()"
+  (closed)="closeCompanyStatement()" />

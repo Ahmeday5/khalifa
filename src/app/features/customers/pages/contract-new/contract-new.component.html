@@ -1,0 +1,359 @@
+@if (loading()) {
+  <div class="loader-container">
+    <app-loader></app-loader>
+    <p class="mt-2 text-muted">جاري تحميل البيانات...</p>
+  </div>
+} @else {
+
+@if (isEditMode()) {
+  <div class="edit-banner mb-3">
+    تعديل العقد رقم #{{ editId() }}
+  </div>
+}
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="row g-3">
+
+    <!-- ── Right: forms ── -->
+    <div class="col-12 col-lg-8">
+
+      <!-- العميل -->
+      <div class="card">
+        <div class="ct mb-2">بيانات العميل</div>
+
+        <div class="row g-2">
+
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              العميل
+              <span class="text-danger">*</span>
+            </label>
+
+            <app-searchable-select
+              formControlName="clientId"
+              placeholder="اختر العميل"
+              searchPlaceholder="ابحث بالاسم أو رقم الجوال…"
+              [options]="clientOptions()"
+            />
+
+            <app-form-error
+              [control]="form.controls.clientId"
+              label="العميل"
+            />
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              المندوب (اختياري)
+            </label>
+
+            <app-searchable-select
+              formControlName="representativeId"
+              placeholder="بدون مندوب"
+              searchPlaceholder="ابحث باسم المندوب…"
+              [options]="representativeOptions()"
+            />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- بيانات العقد -->
+      <div class="card">
+        <div class="ct mb-2">
+          بيانات البضاعة والعقد
+        </div>
+
+        <div class="row g-2">
+
+          <!-- المنتج -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              المنتج
+              <span class="text-danger">*</span>
+            </label>
+
+            <app-searchable-select
+              formControlName="productId"
+              placeholder="اختر المنتج"
+              searchPlaceholder="ابحث باسم المنتج…"
+              [options]="productOptions()"
+            />
+
+            <app-form-error
+              [control]="form.controls.productId"
+              label="المنتج"
+            />
+          </div>
+
+          <!-- المخزن -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              المخزن
+              <span class="text-danger">*</span>
+            </label>
+
+            <app-searchable-select
+              formControlName="warehouseId"
+              placeholder="اختر المخزن"
+              searchPlaceholder="ابحث باسم المخزن…"
+              [options]="warehouseOptions()"
+            />
+
+            <app-form-error
+              [control]="form.controls.warehouseId"
+              label="المخزن"
+            />
+          </div>
+
+          <!-- الكمية -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              الكمية
+            </label>
+
+            <input
+              type="number"
+              formControlName="quantity"
+              class="form-control"
+              min="1"
+            />
+          </div>
+
+          <!-- تاريخ البيع -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              تاريخ البيع
+            </label>
+
+            <input
+              type="date"
+              formControlName="dateOfSale"
+              class="form-control"
+            />
+          </div>
+
+          <!-- سعر الكاش -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              سعر البيع كاش
+            </label>
+
+            <input
+              type="number"
+              formControlName="cashPrice"
+              class="form-control"
+              min="1"
+            />
+          </div>
+
+          <!-- المقدم -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              المقدم
+            </label>
+
+            <input
+              type="number"
+              formControlName="downPayment"
+              class="form-control"
+              min="0"
+            />
+          </div>
+
+          <!-- الربح -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              نسبة الربح %
+            </label>
+
+            <input
+              type="number"
+              formControlName="profitRate"
+              class="form-control"
+              min="0"
+              max="100"
+              step="0.5"
+            />
+          </div>
+
+          <!-- دورية الدفع -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              دورية الدفع
+            </label>
+
+            <select
+              formControlName="paymentFrequency"
+              class="form-select"
+            >
+              @for (f of frequencies; track f.value) {
+                <option [value]="f.value">
+                  {{ f.label }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <!-- الأقساط -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              عدد الأقساط
+            </label>
+
+            <input
+              type="number"
+              formControlName="installmentsCount"
+              class="form-control"
+              min="1"
+            />
+          </div>
+
+          <!-- أول قسط -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              تاريخ أول قسط
+            </label>
+
+            <input
+              type="date"
+              formControlName="firstInstallmentDate"
+              class="form-control"
+            />
+          </div>
+
+          <!-- الخزنة -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label">
+              الخزنة
+            </label>
+
+            <app-searchable-select
+              formControlName="treasuryId"
+              placeholder="اختر الخزنة"
+              searchPlaceholder="ابحث باسم الخزنة…"
+              [options]="treasuryOptions()"
+            />
+          </div>
+
+          <!-- ملاحظات -->
+          <div class="col-12">
+            <label class="form-label">
+              ملاحظات
+            </label>
+
+            <textarea
+              formControlName="notes"
+              class="form-control"
+              rows="2"
+            ></textarea>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary -->
+    <div class="col-12 col-lg-4">
+      <div class="card" style="position:sticky;top:0">
+
+        <div class="ct mb-2">
+          ملخص العقد المحسوب
+        </div>
+
+        @if (isEditMode()) {
+          <div class="cr" style="border-bottom:1px dashed var(--bg3);margin-bottom:8px;padding-bottom:8px">
+            <span style="color:var(--txt3)">سعر الشراء (ثابت)</span>
+            <span style="font-weight:700">{{ purchasePrice() | currencyAr }}</span>
+          </div>
+        }
+
+        <div class="cr">
+          <span>سعر البيع كاش</span>
+          <span>
+            {{ summary().cashPrice | currencyAr }}
+          </span>
+        </div>
+
+        <div class="cr">
+          <span>المقدم</span>
+          <span>
+            {{ summary().downPayment | currencyAr }}
+          </span>
+        </div>
+
+        <div class="cr">
+          <span>الإجمالي بعد المقدم</span>
+          <span>
+            {{ summary().afterDown | currencyAr }}
+          </span>
+        </div>
+
+        <div class="cr">
+          <span>
+            مبلغ الربح
+            ({{ summary().profitRate }}%)
+          </span>
+
+          <span>
+            {{ summary().profitAmount | currencyAr }}
+          </span>
+        </div>
+
+        <div class="ct2">
+          <span>إجمالي البيع بالأقساط</span>
+
+          <span>
+            {{ summary().totalAmount | currencyAr }}
+          </span>
+        </div>
+
+        <div class="ci">
+          <span>
+            القسط × {{ summary().count }}
+          </span>
+
+          <span>
+            {{ summary().installmentAmt | currencyAr }}
+          </span>
+        </div>
+
+
+        <div class="d-flex gap-2 mt-3">
+
+          <button
+            type="submit"
+            class="btn btn-bl flex-fill"
+            [disabled]="isSaving() || form.invalid"
+          >
+            @if (isSaving()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+
+            {{
+              isSaving()
+                ? 'جاري الحفظ...'
+                : isEditMode()
+                  ? 'حفظ التعديلات'
+                  : 'حفظ العقد'
+            }}
+          </button>
+
+          <button
+            type="button"
+            class="btn"
+            (click)="reset()"
+          >
+            مسح
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</form>
+
+}

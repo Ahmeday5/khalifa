@@ -1,0 +1,53 @@
+/* ── PERMISSION MATRIX ── */
+.pm-grid {
+  display: grid;
+  gap: 0;
+  font-size: 11px;
+  border: 1px solid var(--brd);
+  border-radius: var(--rl);
+  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.pm-hdr {
+  background: var(--bg3);
+  padding: 8px 10px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--brd);
+  border-left: 1px solid var(--brd);
+  text-align: center;
+  white-space: nowrap;
+  &:first-child { text-align: right; border-left: none; }
+}
+.pm-row-lbl {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--brd);
+  font-weight: 500;
+  background: var(--bg2);
+  white-space: nowrap;
+}
+.pm-cell {
+  padding: 8px;
+  border-bottom: 1px solid var(--brd);
+  border-left: 1px solid var(--brd);
+  text-align: center;
+  background: var(--bg2);
+}
+.pm-check   { color: var(--gr); font-size: 14px; }
+.pm-x       { color: var(--re); font-size: 12px; }
+.pm-partial { color: var(--am); font-size: 11px; font-weight: 600; }
+
+/* ── USER AVATAR (small inline badge) ── */
+.user-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bl-l);
+  color: var(--bl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}

@@ -1,0 +1,75 @@
+<app-modal
+  [open]="open()"
+  [title]="'صرف عمولة' + (representativeName() ? ' — ' + representativeName() : '')"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="closed.emit()"
+>
+  <div class="alert alert-info py-2 mb-3" style="font-size:12px">
+    العمولة المستحقة للمندوب:
+    <strong>{{ outstanding() | currencyAr: true }}</strong>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label">المبلغ <span class="text-danger">*</span></label>
+        <input
+          type="number"
+          class="form-control"
+          formControlName="amount"
+          min="0"
+          step="0.01"
+          [class.is-invalid]="overpaying()"
+        />
+        @if (overpaying()) {
+          <div class="text-danger" style="font-size:11px;margin-top:4px">
+            لا يمكن صرف مبلغ أكبر من العمولة المستحقة.
+          </div>
+        } @else {
+          <app-form-error [control]="form.controls.amount" label="المبلغ" />
+        }
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">التاريخ <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" formControlName="date" />
+        <app-form-error [control]="form.controls.date" label="التاريخ" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">الخزينة <span class="text-danger">*</span></label>
+        <app-searchable-select
+          formControlName="treasuryId"
+          placeholder="اختر الخزينة"
+          searchPlaceholder="ابحث باسم الخزينة…"
+          [options]="treasuries()"
+        />
+        <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">ملاحظات</label>
+        <textarea class="form-control" rows="2" formControlName="notes"></textarea>
+      </div>
+    </div>
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="closed.emit()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid || overpaying()"
+      (click)="submit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الصرف...' : 'صرف العمولة' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

@@ -1,0 +1,124 @@
+:host ::ng-deep {
+  .form-label {
+    font-size: 11px;
+    color: var(--txt2);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .input-group-text {
+    font-size: 11px;
+    color: var(--txt2);
+  }
+
+  .form-check-label {
+    font-size: 12px;
+    color: var(--txt);
+    cursor: pointer;
+  }
+
+  .btn .spinner-border-sm {
+    width: 0.95rem;
+    height: 0.95rem;
+    border-width: 0.14em;
+  }
+}
+
+/* ── Image picker / preview ── */
+.pf-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--rl);
+  border: 1.5px dashed var(--brd2);
+  background: var(--bg3);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.pf-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.pf-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--txt3);
+  font-size: 11px;
+
+  svg { color: var(--txt3); }
+}
+
+.pf-image-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pf-image-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+
+  .pf-pick {
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
+.pf-image-hint {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.pf-image-err {
+  font-size: 10.5px;
+  color: var(--re);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* ── Profit preview chip ── */
+.pf-profit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: var(--r);
+  background: var(--gr-l);
+  border: 1px solid var(--gr);
+  border-color: rgba(59, 109, 17, 0.25);
+
+  .pf-profit-label {
+    font-size: 10px;
+    color: var(--txt2);
+  }
+  .pf-profit-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gr);
+  }
+
+  &.pf-profit-neg {
+    background: var(--re-l);
+    border-color: rgba(163, 45, 45, 0.25);
+    .pf-profit-val { color: var(--re); }
+  }
+}

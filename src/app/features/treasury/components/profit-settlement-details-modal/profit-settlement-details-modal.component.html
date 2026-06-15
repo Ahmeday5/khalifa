@@ -1,0 +1,100 @@
+<app-modal
+  [open]="open()"
+  title="تفاصيل توزيع الأرباح"
+  size="lg"
+  (closed)="close()"
+>
+  @if (settlement(); as s) {
+    <!-- header -->
+    <dl class="psd-head">
+      <div class="psd-head-item">
+        <dt>رقم التوزيع</dt>
+        <dd class="cv-ltr">#{{ s.id }}</dd>
+      </div>
+      <div class="psd-head-item">
+        <dt>التاريخ</dt>
+        <dd>{{ s.settlementDate | dateAr: 'long' }}</dd>
+      </div>
+      <div class="psd-head-item">
+        <dt>خزينة الأرباح</dt>
+        <dd>{{ s.profitsTreasuryName }}</dd>
+      </div>
+      <div class="psd-head-item">
+        <dt>إجمالي الموزّع</dt>
+        <dd class="psd-amount">{{ s.totalAmount | currencyAr: true }}</dd>
+      </div>
+      @if (s.notes) {
+        <div class="psd-head-item psd-head-item--full">
+          <dt>ملاحظات</dt>
+          <dd>{{ s.notes }}</dd>
+        </div>
+      }
+    </dl>
+
+    <!-- lines -->
+    <div class="tw psd-table">
+      <table>
+        <thead>
+          <tr>
+            <th>المساهم</th>
+            <th class="text-center">المساهمة</th>
+            <th class="text-center">النسبة</th>
+            <th class="text-end">المبلغ</th>
+            <th>سند الصرف</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines(); track line.shareholderId) {
+            <tr>
+              <td class="fw-600">{{ line.shareholderName }}</td>
+              <td class="text-center psd-muted">{{ line.contributedAmount | currencyAr: true }}</td>
+              <td class="text-center">
+                <span class="psd-pct">{{ line.percentage | number: '1.0-2' }}%</span>
+              </td>
+              <td class="text-end psd-amount">{{ line.amount | currencyAr: true }}</td>
+              <td>
+                @if (line.voucherNumber) {
+                  <button
+                    type="button"
+                    class="psd-voucher"
+                    [title]="line.voucherNumber + ' — اضغط للنسخ'"
+                    (click)="copyVoucher(line.voucherNumber)"
+                  >
+                    <span class="cv-ltr">{{ shortVoucher(line.voucherNumber) }}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                    </svg>
+                  </button>
+                } @else {
+                  <span class="psd-muted">—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="psd-total-row">
+            <td colspan="3" class="fw-600">الإجمالي</td>
+            <td class="text-end psd-amount">{{ s.totalAmount | currencyAr: true }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  } @else if (loading()) {
+    <div class="psd-state">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span>جاري تحميل التفاصيل...</span>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert-danger mb-0" role="alert" style="font-size:12px;">
+      {{ error() }}
+    </div>
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

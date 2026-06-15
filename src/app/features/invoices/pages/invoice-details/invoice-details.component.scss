@@ -1,0 +1,459 @@
+/* ── Page header ── */
+.id-pgh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.id-pgh-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.id-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--txt2);
+  text-decoration: none;
+  padding: 5px 9px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd);
+  background: var(--bg2);
+  transition: all 0.12s;
+
+  &:hover {
+    color: var(--bl);
+    border-color: var(--brd2);
+    background: var(--bg3);
+  }
+}
+
+.id-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.id-num {
+  color: var(--bl);
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.id-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+
+/* ── Loading / not-found states ── */
+.id-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 18px;
+  background: var(--bg2);
+  border: 1.5px dashed var(--brd2);
+  border-radius: var(--rl);
+  color: var(--txt2);
+  font-size: 12px;
+}
+
+.id-state-error { color: var(--re); }
+
+.id-state-icon {
+  color: var(--txt3);
+  margin-bottom: 4px;
+
+  .id-state-error & { color: var(--re); opacity: 0.7; }
+}
+
+.id-state-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+
+  .id-state-error & { color: var(--re); }
+}
+
+.id-state-sub {
+  font-size: 11px;
+  color: var(--txt3);
+  text-align: center;
+  max-width: 360px;
+}
+
+
+/* ── The invoice document itself ── */
+.id-doc {
+  background: var(--bg2);
+  border: 1px solid var(--brd);
+  border-radius: var(--rl);
+  padding: 26px 30px;
+  box-shadow: var(--shadow);
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+
+/* Document header */
+.id-doc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--brd);
+}
+
+.id-doc-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.id-doc-logo {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  grid-template-columns: 14px 14px;
+  grid-template-rows: 14px 14px;
+  gap: 4px;
+
+  span {
+    display: block;
+    border-radius: 3px;
+    background: var(--bl);
+
+    &:nth-child(2),
+    &:nth-child(3) { background: #85B7EB; }
+  }
+}
+
+.id-doc-brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+.id-doc-brand-sub {
+  font-size: 11px;
+  color: var(--txt3);
+  margin-top: 1px;
+}
+
+.id-doc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+}
+
+.id-doc-meta-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.id-doc-meta-label {
+  font-size: 10px;
+  color: var(--txt3);
+  font-weight: 500;
+}
+
+.id-doc-meta-val { font-weight: 700; color: var(--txt); }
+
+.id-doc-meta-num {
+  color: var(--bl);
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+
+
+/* Status pill (re-used from invoices list) */
+.b {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+
+  &.b-ok   { background: var(--gr-l); color: var(--gr); }
+  &.b-warn { background: var(--am-l); color: var(--am); }
+  &.b-bad  { background: var(--re-l); color: var(--re); }
+  &.b-info { background: var(--bl-l); color: var(--bl-d); }
+}
+
+
+/* Parties + dates */
+.id-parties {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px dashed var(--brd);
+
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+}
+
+.id-party {
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 11px 13px;
+}
+
+.id-party-label {
+  font-size: 10px;
+  color: var(--txt3);
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.id-party-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 4px;
+}
+
+.id-party-meta,
+.id-date-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--txt2);
+  margin-top: 3px;
+}
+
+.id-party-meta-val,
+.id-date-val {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+
+/* Items table */
+.id-items {
+  padding: 18px 0;
+  border-bottom: 1px dashed var(--brd);
+}
+
+.id-items-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 9px;
+}
+
+.id-w-num   { width: 5%;  text-align: center; }
+.id-w-name  { width: 38%; }
+.id-w-qty   { width: 8%;  text-align: center; }
+.id-w-price { width: 14%; }
+.id-w-disc  { width: 17%; }
+.id-w-total { width: 18%; }
+
+.id-line-num {
+  font-family: monospace;
+  color: var(--txt3);
+  font-size: 10px;
+}
+
+.id-line-pid {
+  font-size: 9.5px;
+  color: var(--txt3);
+  font-family: monospace;
+  margin-inline-start: 5px;
+  font-weight: 500;
+}
+
+.id-line-disc {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--am);
+  font-weight: 600;
+}
+
+.id-line-disc-val {
+  font-size: 9.5px;
+  color: var(--am);
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.id-line-total {
+  color: var(--bl);
+  font-weight: 700;
+}
+
+.id-items-empty {
+  text-align: center;
+  padding: 18px;
+  color: var(--txt3);
+  font-size: 11px;
+}
+
+
+/* Totals + notes */
+.id-footer {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+  padding: 18px 0 8px;
+
+  @media (max-width: 768px) { grid-template-columns: 1fr; }
+}
+
+.id-notes-label {
+  font-size: 10px;
+  color: var(--txt3);
+  font-weight: 500;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.id-notes-body {
+  font-size: 11.5px;
+  color: var(--txt2);
+  line-height: 1.6;
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 9px 12px;
+  min-height: 62px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.id-treasury {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--txt2);
+  padding: 6px 12px;
+  background: var(--bl-l);
+  border-radius: var(--r);
+}
+
+.id-treasury-val {
+  color: var(--bl-d);
+  font-weight: 700;
+  font-family: monospace;
+}
+
+
+.id-totals {
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.id-tot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11.5px;
+  color: var(--txt2);
+  padding: 5px 0;
+
+  span:last-child {
+    color: var(--txt);
+    font-weight: 600;
+  }
+}
+
+.id-tot-disc { color: var(--re) !important; }
+
+.id-tot-grand {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid var(--brd);
+
+  span:first-child {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--txt);
+  }
+
+  span:last-child {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--bl);
+    letter-spacing: -0.3px;
+  }
+}
+
+.id-tot-paid span:last-child { color: var(--gr); font-weight: 700; }
+.id-tot-rem  span:last-child { color: var(--re); font-weight: 700; }
+
+
+/* Document footer */
+.id-doc-foot {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--brd);
+  text-align: center;
+  font-size: 10px;
+  color: var(--txt3);
+}
+
+
+/* ── Utilities ── */
+.fw-600 { font-weight: 600; }
+.text-muted { color: var(--txt3); }
+.mb-0 { margin-bottom: 0 !important; }
+
+
+/* ── Print styles ── */
+@media print {
+  :host { display: block; background: #fff; }
+
+  .id-pgh,
+  .id-state,
+  .id-doc-foot { display: none !important; }
+
+  .id-doc {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+  }
+
+  .id-totals,
+  .id-party,
+  .id-notes-body {
+    background: #f8f8f8 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .b {
+    border: 1px solid currentColor;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

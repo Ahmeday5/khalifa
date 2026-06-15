@@ -1,0 +1,163 @@
+<app-modal
+  [open]="open()"
+  [title]="isEdit() ? 'تعديل بيانات العميل' : 'إضافة عميل'"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label">الاسم الكامل</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="fullName"
+          autocomplete="off"
+          placeholder="مثال: أحمد علي"
+          [class.is-invalid]="isInvalid('fullName')"
+        />
+        <app-form-error [control]="form.controls.fullName" label="الاسم الكامل" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">الرقم القومي <span class="text-muted">(اختياري)</span></label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="nationalId"
+          autocomplete="off"
+          inputmode="numeric"
+          maxlength="14"
+          placeholder="14 رقمًا"
+          dir="ltr"
+          [class.is-invalid]="isInvalid('nationalId')"
+        />
+        <app-form-error [control]="form.controls.nationalId" label="الرقم القومي" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input
+          type="email"
+          class="form-control"
+          formControlName="email"
+          autocomplete="off"
+          placeholder="client@example.com"
+          dir="ltr"
+          [class.is-invalid]="isInvalid('email')"
+        />
+        <app-form-error [control]="form.controls.email" label="البريد الإلكتروني" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">رقم الهاتف</label>
+        <div class="input-group">
+          <input
+            type="tel"
+            class="form-control"
+            formControlName="phoneNumber"
+            autocomplete="off"
+            placeholder="01154113708"
+            dir="ltr"
+            (input)="onPhoneInput($any($event.target).value)"
+            [class.is-invalid]="isInvalid('phoneNumber')"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="pickContact()"
+            title="اختر من جهات الاتصال"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </button>
+        </div>
+        <app-form-error [control]="form.controls.phoneNumber" label="رقم الهاتف" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">رقم الواتساب</label>
+        <input
+          type="tel"
+          class="form-control"
+          formControlName="whatsappNumber"
+          autocomplete="off"
+          placeholder="01154113708"
+          dir="ltr"
+          [class.is-invalid]="isInvalid('whatsappNumber')"
+        />
+        <label class="d-inline-flex align-items-center gap-2 mt-2" style="font-size:11px;cursor:pointer;">
+          <input
+            type="checkbox"
+            [checked]="sameAsPhone()"
+            (change)="onSameAsPhoneChange($any($event.target).checked)"
+          />
+          <span>نفس رقم الهاتف</span>
+        </label>
+        <app-form-error [control]="form.controls.whatsappNumber" label="رقم الواتساب" />
+      </div>
+
+      @if (!isEdit()) {
+        <div class="col-12 col-md-6">
+          <label class="form-label">كلمة المرور</label>
+          <app-password-input
+            formControlName="password"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          />
+          <app-form-error [control]="form.controls.password" label="كلمة المرور" />
+        </div>
+      }
+
+      <div class="col-12">
+        <label class="form-label">العنوان</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="address"
+          autocomplete="off"
+          placeholder="مثال: القاهرة — مدينة نصر"
+          [class.is-invalid]="isInvalid('address')"
+        />
+        <app-form-error [control]="form.controls.address" label="العنوان" />
+      </div>
+    </div>
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || loadingDetail() || form.invalid"
+      (click)="onSubmit()"
+    >
+      @if (submitting() || loadingDetail()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{
+        submitting()
+          ? 'جاري الحفظ...'
+          : loadingDetail()
+            ? 'جاري التحميل...'
+            : isEdit()
+              ? 'حفظ التعديلات'
+              : 'إضافة'
+      }}</span>
+    </button>
+  </ng-container>
+</app-modal>

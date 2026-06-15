@@ -1,0 +1,23 @@
+.sap-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 10px;
+
+  .form-control {
+    flex: 1 1 auto;
+  }
+}
+
+/* Local copies of the treasury card-header helpers (scoped in treasury-home). */
+.trf-head {
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.trf-sub {
+  font-size: 10.5px;
+  color: var(--txt3);
+  margin-top: 2px;
+}

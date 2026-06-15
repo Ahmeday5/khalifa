@@ -1,0 +1,130 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">إشعارات WhatsApp التلقائية</div>
+    <div class="pgs">إدارة الرسائل التلقائية وسجل الإرسال</div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- ── قوالب الرسائل ── -->
+  <div class="col-12 col-lg-6">
+    <div class="card">
+      <div class="chdr">
+        <div class="ct">قوالب الرسائل التلقائية</div>
+        <button class="btn btn-sm btn-gr">+ قالب جديد</button>
+      </div>
+
+      <!-- شارة الاتصال -->
+      <div class="conn-badge mb-3">
+        <span class="dot-gr"></span>
+        متصل بـ WhatsApp Business API — رقم الأعمال: 0551234567
+      </div>
+
+      @for (tpl of templates(); track tpl.id) {
+        <div class="tpl-card mb-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-semibold" style="font-size:12px">{{ tpl.name }}</div>
+            <div class="d-flex gap-2 align-items-center">
+              <span [class]="tpl.isActive ? 'badge bok' : 'badge bbad'" style="font-size:9px">
+                {{ tpl.isActive ? 'مفعل' : 'معطل' }}
+              </span>
+              <div class="form-check form-switch mb-0" style="padding-right:2.5em">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  [checked]="tpl.isActive"
+                  (change)="toggleTemplate(tpl.id)"
+                />
+              </div>
+              <button class="btn btn-sm">تعديل</button>
+            </div>
+          </div>
+          <div class="wa-msg">
+            <div class="wa-msg-title">{{ tpl.title }}</div>
+            <div class="wa-msg-body">{{ tpl.body }}</div>
+            <div class="wa-msg-time">{{ tpl.trigger }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ── الإرسال الجماعي + السجل ── -->
+  <div class="col-12 col-lg-6">
+
+    <!-- إرسال جماعي -->
+    <div class="card mb-3">
+      <div class="chdr"><div class="ct">إرسال جماعي للمتأخرين</div></div>
+
+      <div class="alert-box alert-box-re mb-2">
+        {{ lateCustomers().length }} عملاء لديهم أقساط متأخرة بإجمالي {{ totalLateAmount() | currencyAr }}
+      </div>
+
+      <div class="tw mb-3">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:36px">
+                <input type="checkbox" (change)="toggleAll($event)" />
+              </th>
+              <th>العميل</th>
+              <th>الهاتف</th>
+              <th>المتأخر</th>
+              <th>أيام التأخر</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of lateCustomers(); track c.id) {
+              <tr>
+                <td>
+                  <input type="checkbox" [checked]="c.selected" (change)="toggleCustomer(c.id)" />
+                </td>
+                <td class="fw-semibold" style="text-align:right">{{ c.customerName }}</td>
+                <td style="font-size:11px;direction:ltr">{{ c.phone }}</td>
+                <td [style.color]="c.delayDays >= 5 ? 'var(--re)' : 'var(--am)'">
+                  {{ c.amount | currencyAr }}
+                </td>
+                <td style="font-size:11px">{{ c.delayDays }} {{ c.delayDays === 1 ? 'يوم' : 'أيام' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <button
+        class="btn btn-wa w-100"
+        style="justify-content:center;font-size:13px;padding:10px"
+        [disabled]="sending() || selectedCount() === 0"
+        (click)="sendBulk()"
+      >
+        {{ sending() ? 'جاري الإرسال...' : '📱 إرسال WhatsApp للمختارين (' + selectedCount() + ' عملاء)' }}
+      </button>
+    </div>
+
+    <!-- سجل الرسائل -->
+    <div class="card">
+      <div class="ct mb-2">سجل الرسائل المرسلة اليوم</div>
+      <div style="max-height:200px;overflow-y:auto">
+        @for (entry of messageLog(); track entry.id) {
+          <div class="log-entry" [class.log-failed]="entry.status === 'failed'">
+            <span [class]="entry.status === 'sent' ? 'badge bok' : 'badge bbad'" style="font-size:9px">
+              {{ entry.status === 'sent' ? '✓ تم' : '✗ فشل' }}
+            </span>
+            <div class="flex-grow-1" style="font-size:11px">
+              {{ entry.customerName }} — {{ entry.type }}
+              <span style="color:var(--txt2)"> — {{ entry.time }}</span>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="log-summary">
+        <span>إجمالي اليوم: <strong>{{ messageLog().length }} رسالة</strong></span>
+        <span style="color:var(--gr)">نجح: {{ logSuccess() }}</span>
+        <span style="color:var(--re)">فشل: {{ logFailed() }}</span>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,122 @@
+.pgh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  .pgt {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bl);
+  }
+
+  .pgs {
+    font-size: 0.875rem;
+    color: var(--txt3);
+    margin-top: 0.25rem;
+  }
+}
+
+.card {
+  padding: 1.5rem;
+  border: 1px solid var(--bg3);
+  background: var(--bg1);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+  .ct {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--txt);
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bg3);
+  }
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--txt2);
+  margin-bottom: 0.5rem;
+
+  &.required::after {
+    content: " *";
+    color: var(--re);
+  }
+}
+
+.form-select, .form-control {
+  background-color: var(--bg2);
+  border-color: var(--bg3);
+  color: var(--txt);
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+
+  &:focus {
+    background-color: var(--bg1);
+    border-color: var(--bl);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bl-rgb), 0.15);
+  }
+}
+
+.input-group-text {
+  background-color: var(--bg3);
+  border-color: var(--bg3);
+  color: var(--txt3);
+  font-size: 0.875rem;
+}
+
+.financial-card {
+  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+  border-left: 4px solid var(--bl);
+}
+
+.installment-result {
+  background: var(--bl);
+  color: white;
+  padding: 1.25rem;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 10px 15px -3px rgba(var(--bl-rgb), 0.3);
+  margin: 0.5rem 0;
+
+  .label {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+  }
+
+  .value {
+    font-size: 1.75rem;
+    font-weight: 800;
+  }
+}
+
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+hr {
+  opacity: 0.1;
+  margin: 1.5rem 0;
+}
+
+@media (max-width: 991.98px) {
+  .pgh {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .d-flex {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+}

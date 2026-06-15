@@ -1,0 +1,191 @@
+<app-modal
+  [open]="open()"
+  [title]="title"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  @if (order(); as o) {
+    <!-- ── Order summary header ── -->
+    <div class="cv-order">
+      <div class="cv-order-row">
+        <span class="cv-order-label">العميل</span>
+        <span class="cv-order-val">{{ o.clientName }}</span>
+      </div>
+      <div class="cv-order-row">
+        <span class="cv-order-label">الجوال</span>
+        <span class="cv-order-val cv-ltr">{{ o.clientPhone }}</span>
+      </div>
+      <div class="cv-order-row">
+        <span class="cv-order-label">طريقة الدفع</span>
+        <span class="cv-order-val">
+          {{ o.paymentMethod === 'Cash' ? 'كاش' : 'أقساط' }}
+        </span>
+      </div>
+      <div class="cv-order-row">
+        <span class="cv-order-label">الإجمالي</span>
+        <span class="cv-order-val cv-amount">
+          {{ o.totalAmount | currencyAr: true }}
+        </span>
+      </div>
+      @if (o.paymentMethod === 'Installments' && o.installmentsCount > 0) {
+        <div class="cv-order-row">
+          <span class="cv-order-label">المقدم</span>
+          <span class="cv-order-val">{{ o.downPayment | currencyAr: true }}</span>
+        </div>
+        <div class="cv-order-row">
+          <span class="cv-order-label">القسط</span>
+          <span class="cv-order-val">
+            {{ o.installmentAmount | currencyAr: true }}
+            <span class="cv-order-sub">× {{ o.installmentsCount }}</span>
+          </span>
+        </div>
+      }
+    </div>
+
+    <div class="cv-items">
+      <div class="cv-items-title">الأصناف المطلوبة</div>
+      <ul class="cv-items-list">
+        @for (item of o.items; track item.productName) {
+          <li>
+            <span class="cv-items-name">{{ item.productName }}</span>
+            <span class="cv-items-qty">× {{ item.quantity }}</span>
+            <span class="cv-items-price">{{ item.price | currencyAr: true }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Form ── -->
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      novalidate
+      autocomplete="off"
+    >
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">المخزن</label>
+          <select
+            class="form-select"
+            formControlName="warehouseId"
+            [class.is-invalid]="isInvalid('warehouseId')"
+          >
+            <option [ngValue]="0" disabled>— اختر المخزن —</option>
+            @for (w of activeWarehouses(); track w.id) {
+              <option [ngValue]="w.id">{{ w.name }}</option>
+            }
+          </select>
+          <app-form-error [control]="form.controls.warehouseId" label="المخزن" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">الخزنة</label>
+          <select
+            class="form-select"
+            formControlName="treasuryId"
+            [class.is-invalid]="isInvalid('treasuryId')"
+          >
+            <option [ngValue]="0" disabled>— اختر الخزنة —</option>
+            @for (t of activeTreasuries(); track t.id) {
+              <option [ngValue]="t.id">{{ t.name }}</option>
+            }
+          </select>
+          <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">المندوب</label>
+          <select
+            class="form-select"
+            formControlName="representativeId"
+            [class.is-invalid]="isInvalid('representativeId')"
+          >
+            <option [ngValue]="0" disabled>— اختر المندوب —</option>
+            @for (rep of reps(); track rep.id) {
+              <option [ngValue]="rep.id">{{ rep.name }}</option>
+            }
+          </select>
+          <app-form-error [control]="form.controls.representativeId" label="المندوب" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">تاريخ البيع</label>
+          <input
+            type="date"
+            class="form-control"
+            formControlName="dateOfSale"
+            [class.is-invalid]="isInvalid('dateOfSale')"
+          />
+          <app-form-error
+            [control]="form.controls.dateOfSale"
+            label="تاريخ البيع"
+          />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">تاريخ أول قسط</label>
+          <input
+            type="date"
+            class="form-control"
+            formControlName="firstInstallmentDate"
+            [class.is-invalid]="isInvalid('firstInstallmentDate')"
+          />
+          <app-form-error
+            [control]="form.controls.firstInstallmentDate"
+            label="تاريخ أول قسط"
+          />
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">ملاحظات</label>
+          <textarea
+            class="form-control"
+            formControlName="notes"
+            rows="2"
+            placeholder="أي ملاحظات إضافية على العقد (اختياري)"
+          ></textarea>
+        </div>
+      </div>
+
+      @if (loadingRefs()) {
+        <div class="cv-loading">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>جاري تحميل المخازن والخزن...</span>
+        </div>
+      }
+
+      @if (serverError(); as msg) {
+        <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+          {{ msg }}
+        </div>
+      }
+    </form>
+  }
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >
+      إلغاء
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid || !order()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري التحويل...' : 'تحويل لعقد' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

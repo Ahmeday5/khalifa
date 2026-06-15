@@ -1,0 +1,376 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="xl"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <!-- ── SUMMARY ── -->
+  <div class="cap-summary">
+    <div class="cap-stat">
+      <div class="cap-stat-label">رأس المال الحالي</div>
+      <div class="cap-stat-value">{{ currentCapital() | currencyAr: true }}</div>
+    </div>
+    <div class="cap-stat">
+      <div class="cap-stat-label">نسبة الملكية</div>
+      <div class="cap-stat-value cap-bl">{{ ownedPercentage() | number: '1.0-2' }}%</div>
+    </div>
+    <div class="cap-stat">
+      <div class="cap-stat-label">أرباح متاحة للترحيل</div>
+      <div class="cap-stat-value cap-gr">
+        {{ availableProfit() | currencyAr: true }}
+        @if (previewLoading()) {
+          <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODE TABS ── -->
+  <div class="cap-tabs" role="tablist">
+    <button
+      type="button"
+      class="cap-tab"
+      [class.cap-tab--active]="mode() === 'transaction'"
+      [disabled]="submitting()"
+      (click)="setMode('transaction')"
+    >إيداع / سحب رأس مال</button>
+    <button
+      type="button"
+      class="cap-tab"
+      [class.cap-tab--active]="mode() === 'capitalize'"
+      [disabled]="submitting()"
+      (click)="setMode('capitalize')"
+    >ترحيل أرباح إلى رأس المال</button>
+  </div>
+
+  <!-- ── CAPITAL TRANSACTION FORM ── -->
+  @if (mode() === 'transaction') {
+    <form [formGroup]="txForm" (ngSubmit)="submitTx()" novalidate autocomplete="off">
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label">نوع الحركة</label>
+          <select
+            class="form-select"
+            formControlName="type"
+            (change)="onTxTypeChange($any($event.target).value)"
+            [class.is-invalid]="isTxInvalid('type')"
+          >
+            @for (opt of typeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">الخزينة</label>
+          <app-searchable-select
+            formControlName="treasuryId"
+            [options]="treasuryOptions()"
+            [isDisabled]="treasuriesLoading()"
+            placeholder="اختر الخزينة"
+            searchPlaceholder="ابحث باسم الخزينة…"
+          />
+          <app-form-error [control]="txForm.controls.treasuryId" label="الخزينة" />
+          <div class="cap-hint">لا يمكن استخدام خزائن الأرباح أو خزائن المندوبين.</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">المبلغ</label>
+          <input
+            type="number"
+            class="form-control"
+            formControlName="amount"
+            min="0"
+            step="0.01"
+            dir="ltr"
+            placeholder="0"
+            (input)="onTxAmountChange($any($event.target).value)"
+            [class.is-invalid]="isTxInvalid('amount')"
+          />
+          <app-form-error [control]="txForm.controls.amount" label="المبلغ" />
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">التاريخ</label>
+          <input
+            type="date"
+            class="form-control"
+            formControlName="date"
+            dir="ltr"
+            [class.is-invalid]="isTxInvalid('date')"
+          />
+          <app-form-error [control]="txForm.controls.date" label="التاريخ" />
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">ملاحظات</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="notes"
+            autocomplete="off"
+            placeholder="(اختياري)"
+          />
+        </div>
+      </div>
+
+      <!-- projection -->
+      <div class="cap-projection">
+        <div>
+          <span class="cap-projection-label">رأس المال الحالي:</span>
+          <span class="cap-projection-val">{{ currentCapital() | currencyAr: true }}</span>
+        </div>
+        <div>
+          <span class="cap-projection-label">رأس المال بعد الحركة:</span>
+          <span
+            class="cap-projection-val"
+            [style.color]="wouldOverdraw() ? 'var(--re)' : (draftTxType() === CapitalTransactionType.Receipt ? 'var(--gr)' : 'var(--te)')"
+          >{{ projectedCapital() | currencyAr: true }}</span>
+        </div>
+      </div>
+
+      @if (wouldOverdraw()) {
+        <div class="alert alert-warning mt-2 mb-0" role="alert" style="font-size:11px;">
+          تنبيه: مبلغ السحب أكبر من رأس المال الحالي.
+        </div>
+      }
+
+      @if (serverError(); as msg) {
+        <div class="alert alert-danger mt-2 mb-0" role="alert" style="font-size:11px;">
+          {{ msg }}
+        </div>
+      }
+
+      <div class="d-flex justify-content-end mt-3">
+        <button
+          type="submit"
+          class="btn btn-sm btn-bl d-inline-flex align-items-center gap-2"
+          [disabled]="submitting() || txForm.invalid || wouldOverdraw()"
+        >
+          @if (submitting()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          }
+          <span>
+            {{
+              submitting()
+                ? 'جاري الحفظ...'
+                : (draftTxType() === CapitalTransactionType.Receipt ? 'تسجيل إيداع' : 'تسجيل سحب')
+            }}
+          </span>
+        </button>
+      </div>
+    </form>
+  }
+
+  <!-- ── CAPITALIZE PROFIT FORM ── -->
+  @if (mode() === 'capitalize') {
+    @if (canCapitalize()) {
+      <form [formGroup]="capForm" (ngSubmit)="submitCap()" novalidate autocomplete="off">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">الخزينة التشغيلية (مصدر الصرف)</label>
+            <app-searchable-select
+              formControlName="profitsTreasuryId"
+              [options]="capOperationalTreasuryOptions()"
+              [isDisabled]="treasuriesLoading()"
+              placeholder="اختر الخزينة"
+              searchPlaceholder="ابحث باسم الخزينة…"
+            />
+            <app-form-error [control]="capForm.controls.profitsTreasuryId" label="الخزينة" />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label d-flex justify-content-between align-items-center">
+              <span>المبلغ المُرحَّل</span>
+              <button type="button" class="cap-link" (click)="useFullProfit()">
+                كل الأرباح ({{ availableProfit() | currencyAr: true }})
+              </button>
+            </label>
+            <input
+              type="number"
+              class="form-control"
+              formControlName="amount"
+              min="0"
+              step="0.01"
+              dir="ltr"
+              placeholder="0"
+              (input)="onCapAmountChange($any($event.target).value)"
+              [class.is-invalid]="isCapInvalid('amount') || capExceedsAvailable()"
+            />
+            <app-form-error [control]="capForm.controls.amount" label="المبلغ" />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">التاريخ</label>
+            <input
+              type="date"
+              class="form-control"
+              formControlName="date"
+              dir="ltr"
+              [class.is-invalid]="isCapInvalid('date')"
+            />
+            <app-form-error [control]="capForm.controls.date" label="التاريخ" />
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label">ملاحظات</label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="notes"
+              autocomplete="off"
+              placeholder="(اختياري)"
+            />
+          </div>
+        </div>
+
+        <!-- projection -->
+        <div class="cap-projection">
+          <div>
+            <span class="cap-projection-label">نصيب المساهم من الترحيل:</span>
+            <span class="cap-projection-val cap-gr">{{ capShareholderShare() | currencyAr: true }}</span>
+          </div>
+          @if (companyPercentage() > 0) {
+            <div>
+              <span class="cap-projection-label">نصيب الشركة ({{ companyPercentage() | number: '1.0-1' }}%):</span>
+              <span class="cap-projection-val" style="color:var(--txt3)">{{ capCompanyShare() | currencyAr: true }}</span>
+            </div>
+          }
+          <div>
+            <span class="cap-projection-label">رأس المال بعد الترحيل:</span>
+            <span class="cap-projection-val cap-gr">{{ projectedCapitalAfterCap() | currencyAr: true }}</span>
+          </div>
+          <div>
+            <span class="cap-projection-label">أرباح متبقية:</span>
+            <span class="cap-projection-val">{{ remainingProfit() | currencyAr: true }}</span>
+          </div>
+        </div>
+
+        @if (capExceedsAvailable()) {
+          <div class="alert alert-warning mt-2 mb-0" role="alert" style="font-size:11px;">
+            المبلغ أكبر من الأرباح المتاحة ({{ availableProfit() | currencyAr: true }}).
+          </div>
+        }
+
+        @if (serverError(); as msg) {
+          <div class="alert alert-danger mt-2 mb-0" role="alert" style="font-size:11px;">
+            {{ msg }}
+          </div>
+        }
+
+        <div class="d-flex justify-content-end mt-3">
+          <button
+            type="submit"
+            class="btn btn-sm btn-gr d-inline-flex align-items-center gap-2"
+            [disabled]="submitting() || capForm.invalid || capExceedsAvailable() || treasuriesLoading()"
+          >
+            @if (submitting()) {
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            <span>{{ submitting() ? 'جاري الترحيل...' : 'ترحيل الأرباح' }}</span>
+          </button>
+        </div>
+      </form>
+    } @else {
+      <div class="cap-empty-block">
+        <div class="cap-empty-title">لا توجد أرباح متاحة للترحيل حاليًا</div>
+        <div class="cap-empty-sub">
+          ستظهر إمكانية ترحيل الأرباح إلى رأس المال فور توفّر رصيد أرباح لهذا المساهم.
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ── HISTORY ── -->
+  <div class="cap-section-head">
+    <div class="cap-section-title">سجل حركات رأس المال</div>
+    @if (txLoading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+  </div>
+
+  <div class="tw mb-0 cap-table">
+    <table>
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>النوع</th>
+          <th class="text-end">المبلغ</th>
+          <th class="text-end">الرصيد بعد</th>
+          <th>الخزينة</th>
+          <th>رقم السند</th>
+          <th>بواسطة</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of transactions(); track t.id) {
+          <tr>
+            <td class="fs-10">{{ t.date | dateAr: 'short' }}</td>
+            <td>
+              <app-badge [text]="directionLabel(t.direction)" [type]="directionBadge(t.direction)" />
+            </td>
+            <td class="text-end fw-600" [style.color]="isInflow(t.direction) ? 'var(--gr)' : 'var(--re)'">
+              {{ isInflow(t.direction) ? '+' : '−' }}{{ t.amount | currencyAr: true }}
+            </td>
+            <td class="text-end">{{ t.balanceAfter | currencyAr: true }}</td>
+            <td>{{ t.treasuryName || '—' }}</td>
+            <td>
+              @if (t.voucherNumber) {
+                <button
+                  type="button"
+                  class="cap-voucher"
+                  [title]="t.voucherNumber + ' — اضغط للنسخ'"
+                  (click)="copyVoucher(t.voucherNumber)"
+                >
+                  <span class="cv-ltr">{{ shortVoucher(t.voucherNumber) }}</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                  </svg>
+                </button>
+              } @else {
+                <span class="cap-muted">—</span>
+              }
+            </td>
+            <td class="fs-10">{{ t.userName || '—' }}</td>
+            <td class="cap-notes" [title]="t.notes ?? ''">{{ t.notes || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="cap-empty">
+              @if (txLoading()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>جاري تحميل الحركات...</span>
+              } @else {
+                <div class="cap-empty-block">
+                  <div class="cap-empty-title">لا توجد حركات رأس مال بعد</div>
+                  <div class="cap-empty-sub">سجّل أول إيداع أو سحب أو ترحيل أرباح من الأعلى.</div>
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="txLoading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

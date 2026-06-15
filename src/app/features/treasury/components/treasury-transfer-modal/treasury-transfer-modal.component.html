@@ -1,0 +1,123 @@
+<app-modal
+  [open]="open()"
+  title="تحويل بين خزائن"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label">من خزينة</label>
+        <select
+          class="form-select"
+          formControlName="fromTreasuryId"
+          [class.is-invalid]="isInvalid('fromTreasuryId')"
+        >
+          <option [ngValue]="null" disabled>اختر خزينة المصدر</option>
+          @for (t of activeTreasuries(); track t.id) {
+            <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        <app-form-error
+          [control]="form.controls.fromTreasuryId"
+          label="خزينة المصدر"
+        />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">إلى خزينة</label>
+        <select
+          class="form-select"
+          formControlName="toTreasuryId"
+          [class.is-invalid]="isInvalid('toTreasuryId') || showSameTreasuryError()"
+        >
+          <option [ngValue]="null" disabled>اختر خزينة الوجهة</option>
+          @for (t of activeTreasuries(); track t.id) {
+            <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        <app-form-error
+          [control]="form.controls.toTreasuryId"
+          label="خزينة الوجهة"
+        />
+        @if (showSameTreasuryError()) {
+          <div class="ttm-cross-error">لا يمكن التحويل لنفس الخزينة.</div>
+        }
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">المبلغ</label>
+        <div class="input-group">
+          <input
+            type="number"
+            class="form-control"
+            formControlName="amount"
+            min="0.01"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="0"
+            dir="ltr"
+            [class.is-invalid]="isInvalid('amount')"
+          />
+          <span class="input-group-text">ج.م</span>
+        </div>
+        <app-form-error [control]="form.controls.amount" label="المبلغ" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">تاريخ التحويل</label>
+        <input
+          type="date"
+          class="form-control"
+          formControlName="transferDate"
+          [class.is-invalid]="isInvalid('transferDate')"
+        />
+        <app-form-error
+          [control]="form.controls.transferDate"
+          label="تاريخ التحويل"
+        />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">ملاحظات</label>
+        <textarea
+          class="form-control"
+          rows="2"
+          formControlName="notes"
+          placeholder="سبب التحويل (اختياري)"
+        ></textarea>
+      </div>
+    </div>
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >
+      إلغاء
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري التنفيذ...' : 'تنفيذ التحويل' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

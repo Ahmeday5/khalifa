@@ -1,0 +1,72 @@
+/* ── WHATSAPP MESSAGE PREVIEW ── */
+.wa-msg {
+  background: #e8f9f1;
+  border-radius: 10px 10px 10px 2px;
+  padding: 10px 13px;
+  margin-bottom: 4px;
+  max-width: 100%;
+}
+.wa-msg-title { font-size: 11px; font-weight: 700; color: #1a5e32; margin-bottom: 3px; }
+.wa-msg-body  { font-size: 11px; color: #1a7a42; line-height: 1.5; }
+.wa-msg-time  { font-size: 9px; color: #5a9a6a; margin-top: 4px; text-align: left; }
+
+/* ── CONNECTION BADGE ── */
+.conn-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--gr);
+  background: var(--gr-l);
+  border-radius: var(--r);
+  padding: 6px 10px;
+}
+.dot-gr {
+  width: 8px;
+  height: 8px;
+  background: var(--gr);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── TEMPLATE CARD ── */
+.tpl-card {
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+
+/* ── ALERT BOX ── */
+.alert-box {
+  border-radius: var(--r);
+  padding: 8px 12px;
+  font-size: 11px;
+}
+.alert-box-re { background: var(--re-l); color: var(--re); }
+.alert-box-gr { background: var(--gr-l); color: var(--gr); }
+
+/* ── MESSAGE LOG ── */
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--brd);
+  &:last-child { border-bottom: none; }
+}
+.log-failed { opacity: 0.8; }
+
+.log-summary {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg3);
+  border-radius: var(--r);
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}

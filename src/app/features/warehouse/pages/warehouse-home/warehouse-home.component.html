@@ -1,0 +1,217 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">المخازن</div>
+    <div class="pgs">إدارة المخزون والتتبع بالأرقام التسلسلية</div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn btn-sm btn-bl" routerLink="/warehouse/alerts">تنبيهات المخزون</button>
+    <button
+      class="btn btn-sm d-inline-flex align-items-center gap-1"
+      [disabled]="loading()"
+      (click)="refreshSummary()"
+    >
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>تحديث</span>
+    </button>
+    <button
+      *appHasPermission="PERMS.suppliersFullAccess"
+      class="btn btn-sm btn-bl"
+      (click)="openCreate()"
+    >+ مخزن جديد</button>
+  </div>
+</div>
+
+
+<!-- ── Warehouse summary cards (LIVE) ── -->
+<div class="wh-grid">
+  @for (w of warehouses(); track w.id; let i = $index) {
+    <div
+      class="wh-card-stat"
+      [style.borderTop]="'3px solid ' + colorVar(i)"
+    >
+      <div class="wh-row" style="margin-bottom:9px">
+        <div style="font-size:13px;font-weight:700" [style.color]="colorVar(i)">{{ w.name }}</div>
+        @if (w.isActive) {
+          <span class="badge" [class]="'badge ' + badgeClass(i)">{{ w.status || 'نشط' }}</span>
+        } @else {
+          <span class="badge bbad">{{ w.status || 'موقوف' }}</span>
+        }
+      </div>
+
+      <div class="wh-card-loc">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>{{ w.location }}</span>
+      </div>
+
+      <div class="sr"><span style="color:var(--txt2)">المشتراة</span><span>{{ w.purchasedQuantity }} وحدة</span></div>
+      <div class="sr"><span style="color:var(--txt2)">المباعة</span><span style="color:var(--bl)">{{ w.soldQuantity }} وحدة</span></div>
+      <div class="sr">
+        <span style="color:var(--txt2)">المتاحة</span>
+        <span
+          [style.color]="w.soldPercent >= 85 ? 'var(--am)' : 'var(--gr)'"
+          style="font-weight:700"
+        >{{ w.availableQuantity }} وحدة</span>
+      </div>
+      <div class="sr"><span style="color:var(--txt2)">قيمة الشراء</span><span>{{ w.purchaseValue | currencyAr: true }}</span></div>
+      <div class="sr"><span style="color:var(--txt2)">إجمالي الربح</span><span style="color:var(--gr)">{{ w.totalProfit | currencyAr: true }}</span></div>
+
+      <div class="prog-bg">
+        <div class="prog-f" [style.width]="w.soldPercent + '%'" [style.background]="colorVar(i)"></div>
+      </div>
+
+      @if (w.needsRestock) {
+        <div class="wh-warn">⚠ يحتاج إعادة تعبئة</div>
+      } @else {
+        <div class="wh-pct">{{ w.soldPercent }}% مباع</div>
+      }
+
+      <!-- Card actions -->
+      <div class="wh-card-actions" *appHasPermission="PERMS.suppliersFullAccess">
+        <button type="button" class="link-btn" (click)="openEdit(w)">تعديل</button>
+        <span class="sep">·</span>
+        <button
+          type="button"
+          class="link-btn link-danger"
+          [disabled]="deletingId() === w.id"
+          (click)="confirmDelete(w)"
+        >
+          @if (deletingId() === w.id) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          }
+          حذف
+        </button>
+      </div>
+    </div>
+  } @empty {
+    <div class="wh-empty">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span>جاري تحميل المخازن...</span>
+      } @else {
+        <div class="wh-empty-icon" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10l9-5 9 5v11H3z" />
+            <path d="M7 21v-7h10v7" />
+          </svg>
+        </div>
+        <div class="wh-empty-title">لا توجد مخازن مسجلة بعد</div>
+        <div class="wh-empty-sub">استخدم زر "+ مخزن جديد" لإضافة أول مخزن.</div>
+      }
+    </div>
+  }
+</div>
+
+
+<!-- ── Live inventory table per warehouse ── -->
+<div class="card">
+  <div class="chdr">
+    <div class="ct">تفاصيل المخزون مع الأرقام التسلسلية</div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <input
+        class="wh-search"
+        type="text"
+        placeholder="بحث باسم المنتج..."
+        [value]="invSearch()"
+        [disabled]="!selectedWarehouseId()"
+        (input)="onInvSearch($any($event.target).value)"
+      />
+      <select
+        class="wh-select"
+        [value]="selectedWarehouseId()"
+        (change)="onWarehouseChange($any($event.target).value)"
+      >
+        <option [value]="0" disabled>— اختر مخزناً —</option>
+        @for (w of warehouses(); track w.id) {
+          <option [value]="w.id">{{ w.name }}</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        [disabled]="invLoading() || !selectedWarehouseId()"
+        (click)="refreshInventory()"
+      >
+        @if (invLoading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>تحديث</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="tw" style="margin-bottom:0">
+    <table class="w-100">
+      <thead>
+        <tr>
+          <th class="wh-w-name">البضاعة</th>
+          <th class="wh-w-num">المشتراة</th>
+          <th class="wh-w-num">المباعة</th>
+          <th class="wh-w-num">المتاحة</th>
+          <th class="wh-w-price">سعر الشراء</th>
+          <th class="wh-w-price">سعر البيع</th>
+          <th class="wh-w-num">الهامش %</th>
+          <th class="wh-w-price">إجمالي الربح</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of inventory(); track item.productId) {
+          <tr>
+            <td class="fw-600">{{ item.productName }}</td>
+            <td>{{ item.purchasedQuantity }}</td>
+            <td>{{ item.soldQuantity }}</td>
+            <td [class]="item.availableQuantity > 0 ? 'wh-pos' : 'wh-warn-cell'">
+              {{ item.availableQuantity }}
+            </td>
+            <td>{{ item.purchasePrice | currencyAr: true }}</td>
+            <td>{{ item.sellingPrice | currencyAr: true }}</td>
+            <td class="wh-pos">{{ item.marginPercent | number: '1.0-1' }}%</td>
+            <td class="wh-pos">{{ item.totalProfit | currencyAr: true }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="wh-inv-empty">
+              @if (!selectedWarehouseId()) {
+                اختر مخزناً لعرض الأصناف الموجودة فيه
+              } @else if (invLoading()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>جاري تحميل الأصناف...</span>
+              } @else if (invSearch()) {
+                لا أصناف مطابقة لـ "{{ invSearch() }}"
+              } @else {
+                لا توجد أصناف في هذا المخزن بعد
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (selectedWarehouseId() && invCount() > 0) {
+    <app-pagination
+      [pageIndex]="invPageIndex()"
+      [pageSize]="invPageSize()"
+      [count]="invCount()"
+      [totalPages]="invTotalPages()"
+      [disabled]="invLoading()"
+      (pageChange)="onInvPageChange($event)"
+      (pageSizeChange)="onInvPageSizeChange($event)"
+    />
+  }
+</div>
+
+
+<app-warehouse-form-modal
+  [open]="modalOpen()"
+  [mode]="modalMode()"
+  [warehouse]="modalWarehouse()"
+  (closed)="closeModal()"
+  (saved)="onSaved($event)"
+/>

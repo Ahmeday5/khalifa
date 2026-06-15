@@ -1,0 +1,68 @@
+<div class="pg" [attr.aria-busy]="disabled() ? 'true' : null">
+  <!-- Range summary + page size selector -->
+  <div class="pg-info">
+    @if (count() === 0) {
+      <span class="pg-empty">لا توجد نتائج</span>
+    } @else {
+      <span>
+        عرض
+        <strong>{{ fromIndex() }}</strong>
+        –
+        <strong>{{ toIndex() }}</strong>
+        من
+        <strong>{{ count() }}</strong>
+      </span>
+    }
+
+    @if (showPageSize()) {
+      <label class="pg-size">
+        <span>عدد الصفوف</span>
+        <select
+          [value]="pageSize()"
+          [disabled]="disabled()"
+          (change)="onPageSizeChange($any($event.target).value)"
+        >
+          @for (opt of pageSizeOptions(); track opt) {
+            <option [value]="opt">{{ opt }}</option>
+          }
+        </select>
+      </label>
+    }
+  </div>
+
+  <!-- Page navigation -->
+  @if (totalPages() > 1) {
+    <nav class="pg-nav" aria-label="ترقيم الصفحات">
+      <button
+        type="button"
+        class="pg-btn pg-btn-step"
+        [disabled]="!canPrev() || disabled()"
+        (click)="prev()"
+        aria-label="الصفحة السابقة"
+      >‹</button>
+
+      @for (item of windowItems(); track $index) {
+        @if (item.page === null) {
+          <span class="pg-ellipsis" aria-hidden="true">…</span>
+        } @else {
+          <button
+            type="button"
+            class="pg-btn"
+            [class.pg-btn-active]="item.active"
+            [disabled]="disabled()"
+            [attr.aria-current]="item.active ? 'page' : null"
+            (click)="goTo(item.page)"
+          >{{ item.page }}</button>
+        }
+      }
+
+      <button
+        type="button"
+        class="pg-btn pg-btn-step"
+        [disabled]="!canNext() || disabled()"
+        (click)="next()"
+        aria-label="الصفحة التالية"
+      >›</button>
+    </nav>
+  }
+</div>

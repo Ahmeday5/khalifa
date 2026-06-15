@@ -1,0 +1,127 @@
+<app-modal [open]="open()" [title]="title()" size="lg" [closeOnBackdrop]="!submitting()" [closeOnEsc]="!submitting()"
+  (closed)="close()">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <!-- ── الاسم الكامل ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">الاسم الكامل</label>
+        <input type="text" class="form-control" formControlName="fullName" autocomplete="off"
+          placeholder="مثال: أحمد سالم" [class.is-invalid]="isInvalid('fullName')" />
+        <app-form-error [control]="form.controls.fullName" label="الاسم" />
+      </div>
+
+      <!-- ── رقم الهاتف ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">رقم الهاتف</label>
+        <div class="input-group">
+          <input type="tel" dir="ltr" class="form-control" formControlName="phoneNumber" autocomplete="off"
+            placeholder="01xxxxxxxxx" [class.is-invalid]="isInvalid('phoneNumber')" />
+          <button type="button" class="btn btn-outline-secondary" (click)="pickContact()" title="اختر من جهات الاتصال">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </button>
+        </div>
+        <app-form-error [control]="form.controls.phoneNumber" label="رقم الهاتف" />
+      </div>
+
+      <!-- ── البريد ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input type="email" dir="ltr" class="form-control" formControlName="email" autocomplete="off"
+          placeholder="rep@example.com" [class.is-invalid]="isInvalid('email')" />
+        <app-form-error [control]="form.controls.email" label="البريد الإلكتروني" />
+      </div>
+
+      <!-- ── كلمة المرور ── -->
+      @if (!isView()) {
+      <div class="col-12 col-md-6">
+        <label class="form-label">
+          كلمة المرور
+
+          @if (isEdit()) {
+          <span class="form-label-hint">
+            (اختيارية — اتركها فارغة للإبقاء على الحالية)
+          </span>
+          }
+        </label>
+
+        <app-password-input formControlName="password" [placeholder]="
+      isEdit()
+        ? 'اكتب كلمة مرور جديدة فقط لتغييرها'
+        : '٨ أحرف على الأقل'
+    " autocomplete="new-password" />
+
+        <app-form-error [control]="form.controls.password" label="كلمة المرور" />
+      </div>
+      }
+
+      <!-- ── الصلاحيات ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">الصلاحيات</label>
+        <select class="form-select" formControlName="permissions" [class.is-invalid]="isInvalid('permissions')">
+          @for (opt of permissionOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.permissions" label="الصلاحيات" />
+      </div>
+
+      <!-- ── الحالة ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">الحالة</label>
+        <select class="form-select" formControlName="status" [class.is-invalid]="isInvalid('status')">
+          @for (opt of statusOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.status" label="الحالة" />
+      </div>
+
+      <!-- ── نسبة الربح ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">نسبة الربح (%)</label>
+        <input type="number" min="0" max="100" step="0.5" class="form-control" formControlName="profitRatePercent"
+          [class.is-invalid]="isInvalid('profitRatePercent')" />
+        <app-form-error [control]="form.controls.profitRatePercent" label="نسبة الربح" />
+      </div>
+
+      <!-- ── تقييم الأداء ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">تقييم الأداء (٠ - ٥)</label>
+        <input type="number" min="0" max="5" step="0.5" class="form-control" formControlName="performanceRating"
+          [class.is-invalid]="isInvalid('performanceRating')" />
+        <app-form-error [control]="form.controls.performanceRating" label="تقييم الأداء" />
+      </div>
+    </div>
+
+    @if (serverError(); as msg) {
+    <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+      {{ msg }}
+    </div>
+    }
+
+    @if (isCreate()) {
+    <div class="rep-hint mt-3">
+      ✨ سيتم إنشاء خزينة فرعية للمندوب تلقائيًا عند الحفظ.
+    </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      {{ isView() ? 'إغلاق' : 'إلغاء' }}
+    </button>
+
+    @if (submitLabel(); as label) {
+    <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid" (click)="onSubmit()">
+      @if (submitting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+    </button>
+    }
+  </ng-container>
+</app-modal>

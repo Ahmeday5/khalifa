@@ -1,0 +1,35 @@
+<nav class="sidebar" [class.collapsed]="layout.collapsed()" [class.open]="layout.mobileOpen()">
+  <!-- Collapse toggle (desktop only) -->
+  <button class="sb-toggle" (click)="layout.toggleCollapsed()"
+    [title]="layout.collapsed() ? 'توسيع القائمة' : 'تصغير القائمة'">
+    <svg class="sb-toggle-icon" [class.flipped]="layout.collapsed()" width="14" height="14" viewBox="0 0 14 14"
+      fill="none">
+      <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span class="sb-toggle-label">تصغير</span>
+  </button>
+
+  <!-- Nav sections -->
+  @for (section of visibleSections(); track section.label) {
+  <div class="sb-sec">{{ section.label }}</div>
+
+  @for (item of section.items; track item.id) {
+  <a class="sbi" [routerLink]="item.route" routerLinkActive="on" [title]="layout.collapsed() ? item.label : ''"
+    (click)="layout.closeMobile()">
+    <app-nav-icon class="sbi-icon" [name]="item.icon" [size]="16"></app-nav-icon>
+    <span class="sbi-label">{{ item.label }}</span>
+    @if (item.badgeKey) {
+      @if (liveCount(item.badgeKey) > 0) {
+        <span [class]="getBadgeClass(item.badgeType)" class="sbb sbb-live"
+              [attr.data-pulse]="livePulse(item.badgeKey)"
+              [attr.aria-label]="item.label + ': ' + liveCount(item.badgeKey)">
+          {{ liveCount(item.badgeKey) }}
+        </span>
+      }
+    } @else if (item.badge) {
+      <span [class]="getBadgeClass(item.badgeType)" class="sbb">{{ item.badge }}</span>
+    }
+  </a>
+  }
+  }
+</nav>

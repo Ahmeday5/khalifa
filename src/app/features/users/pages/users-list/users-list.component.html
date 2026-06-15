@@ -1,0 +1,93 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">المستخدمون</div>
+    <div class="pgs">إدارة مستخدمي النظام والصلاحيات</div>
+  </div>
+  <button class="btn btn-bl btn-sm" (click)="openCreate()">
+    + مستخدم جديد
+  </button>
+</div>
+
+<div class="card mb-2">
+  <div class="chdr">
+    <div class="ct">قائمة المستخدمين</div>
+    <button
+      type="button"
+      class="btn btn-sm d-inline-flex align-items-center gap-1"
+      [disabled]="loading()"
+      (click)="refreshUsers()"
+      title="تحديث القائمة من الخادم"
+    >
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>تحديث</span>
+    </button>
+  </div>
+  
+  <div class="tw">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>المستخدم</th>
+          <th>البريد الإلكتروني</th>
+          <th>رقم الجوال</th>
+          <th>الدور</th>
+          <th class="text-center">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of users(); track u.id) {
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="user-av">{{ initials(u.email) }}</div>
+                <span class="fw-semibold">{{ u.email.split('@')[0] }}</span>
+              </div>
+            </td>
+            <td>{{ u.email }}</td>
+            <td dir="ltr">{{ u.phoneNumber || '—' }}</td>
+            <td>
+              <app-badge [text]="getRoleLabel(u.role)" [type]="getRoleBadge(u.role)" />
+            </td>
+            <td class="text-center">
+              <div class="d-flex gap-1 justify-content-center">
+                <button class="btn btn-sm" (click)="openView(u)" title="عرض">عرض</button>
+                <button class="btn btn-sm btn-bl" (click)="openEdit(u)" title="تعديل">تعديل</button>
+                <button
+                  class="btn btn-sm btn-re d-inline-flex align-items-center gap-1"
+                  [disabled]="deletingId() === u.id"
+                  (click)="confirmDelete(u)"
+                  title="حذف"
+                >
+                  @if (deletingId() === u.id) {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  }
+                  <span>حذف</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center py-4" style="color: var(--txt3); font-size: 12px">
+              @if (loading()) {
+                جاري التحميل...
+              } @else {
+                لا يوجد مستخدمون مسجلون
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<app-app-user-form-modal
+  [open]="modalOpen()"
+  [mode]="modalMode()"
+  [user]="modalUser()"
+  (closed)="closeModal()"
+  (saved)="onSaved($event)"
+/>

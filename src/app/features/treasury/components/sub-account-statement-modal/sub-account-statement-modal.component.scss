@@ -1,0 +1,93 @@
+.sa-st-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sa-st-hero {
+  flex: 1 1 380px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--te);
+  color: #fff;
+  border-radius: var(--rl, 12px);
+  padding: 14px 16px;
+}
+
+.sa-st-eyebrow {
+  font-size: 10px;
+  opacity: 0.75;
+  margin-bottom: 2px;
+}
+
+.sa-st-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sa-st-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.sa-st-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sa-st-meta-label {
+  font-size: 9.5px;
+  opacity: 0.7;
+}
+
+.sa-st-meta-val {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sa-st-hero-right {
+  text-align: center;
+  min-width: 130px;
+}
+
+.sa-st-stat-label {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.sa-st-stat-val {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.sa-st-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Local copies of the treasury table cell helpers (scoped in treasury-home). */
+.trf-date {
+  font-size: 10.5px;
+  color: var(--txt2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.trf-notes {
+  font-size: 10.5px;
+  color: var(--txt3);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,391 @@
+/* ── ORDER FLOW BANNER ── */
+.ord-banner {
+  background: linear-gradient(135deg, var(--bl), var(--bl-d));
+  border-radius: var(--rl);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ord-banner-icon { flex-shrink: 0; }
+
+.ord-banner-body { flex: 1; }
+
+.ord-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 3px;
+}
+
+.ord-banner-steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ord-banner-pill {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.ord-banner-counter {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ord-banner-counter-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.ord-banner-counter-lbl {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── PENDING ORDERS HEADER ── */
+.ord-pending-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ord-pending-badge {
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--am-l);
+  color: var(--am);
+  font-weight: 700;
+}
+
+.ord-total-badge {
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--bg3);
+  color: var(--txt2);
+  font-weight: 600;
+}
+
+/* ── ROW VARIANTS BY STATUS ── */
+.ord-pending-row   { background: rgba(27, 95, 168, 0.03); }
+.ord-rejected-row  td { color: var(--txt3); opacity: 0.85; }
+.ord-converted-row { background: rgba(59, 109, 17, 0.04); }
+
+/* ── STATUS PILLS (terminal states replace the action buttons) ── */
+.ord-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+
+  &-re { background: var(--re-l); color: var(--re); }
+  &-gr { background: var(--gr-l); color: var(--gr); }
+  &-bl { background: var(--bl-l); color: var(--bl-d); }
+  &-am { background: var(--am-l); color: var(--am); }
+}
+
+.ord-amount {
+  color: var(--bl);
+  font-weight: 600;
+}
+
+.ord-margin {
+  color: var(--gr);
+}
+
+/* ── SOFT RED BUTTON (catalog-only) ── */
+.btn-soft-re {
+  color: var(--re);
+  border-color: var(--re-l);
+  background: var(--re-l);
+  &:hover, &:focus {
+    color: var(--re);
+    background: var(--re-l);
+    border-color: var(--re);
+    opacity: 0.95;
+  }
+}
+
+/* ── SEARCH INPUT ── */
+.ord-search {
+  padding: 5px 9px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  font-size: 11px;
+  font-family: inherit;
+  width: 140px;
+  background: var(--bg2);
+  color: var(--txt);
+  &:focus { outline: none; border-color: var(--bl); }
+}
+
+/* ── INLINE STOCK BADGE ── */
+.b {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 22px;
+  text-align: center;
+  &.bok   { background: var(--gr-l); color: var(--gr); }
+  &.bwarn { background: var(--am-l); color: var(--am); }
+}
+
+/* ── 2-COLUMN GRID ── */
+.sg {
+  display: grid;
+  gap: 13px;
+  &.sg2 { grid-template-columns: 1.4fr 1fr; }
+
+  @media (max-width: 992px) {
+    &.sg2 { grid-template-columns: 1fr; }
+  }
+}
+
+/* ── CART ── */
+.ord-cart {
+  min-height: 50px;
+}
+
+.ord-cart-empty {
+  font-size: 11px;
+  color: var(--txt3);
+  text-align: center;
+  padding: 14px 0;
+}
+
+.ord-cart-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--brd);
+  &:last-child { border-bottom: none; }
+}
+
+.ord-cart-info { flex: 1; min-width: 0; }
+
+.ord-cart-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.ord-cart-sub {
+  font-size: 10px;
+  color: var(--txt2);
+  margin-top: 1px;
+}
+
+.ord-cart-qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ord-cart-qty-val {
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  height: 1px;
+  background: var(--brd);
+  margin: 10px 0;
+}
+
+/* ── FORM GRID 2-COL ── */
+.fg2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fl {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  label {
+    font-size: 10px;
+    color: var(--txt2);
+    font-weight: 500;
+  }
+
+  input, select {
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 9px;
+    border-radius: var(--r);
+    border: 1px solid var(--brd2);
+    background: var(--bg2);
+    color: var(--txt);
+    width: 100%;
+    &:focus { outline: none; border-color: var(--bl); }
+  }
+}
+
+/* ── SUMMARY STACK ── */
+.ord-summary { margin-top: 4px; }
+
+/* ── SCHEDULE PREVIEW ── */
+.ord-schedule {
+  margin-top: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.ord-schedule-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-bottom: 1px dashed var(--brd);
+  color: var(--txt2);
+  &:last-child { border-bottom: none; }
+}
+
+/* ── ACTION BUTTONS ── */
+.ord-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.ord-btn-grow-2 { flex: 2; }
+.ord-btn-grow-1 { flex: 1; }
+
+/* ── TABLE COLUMN WIDTHS ── */
+.w-9  { width: 9%; }
+.w-10 { width: 10%; }
+.w-11 { width: 11%; }
+.w-12 { width: 12%; }
+.w-14 { width: 14%; }
+.w-15 { width: 15%; }
+.w-18 { width: 18%; }
+.w-20 { width: 20%; }
+
+/* ── UTILITIES ── */
+.cv-ltr { direction: ltr; unicode-bidi: isolate; }
+.fw-600 { font-weight: 600; }
+.fs-10 { font-size: 10px; }
+.fs-11 { font-size: 11px; }
+.text-muted { color: var(--txt3); }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-3 { margin-bottom: 14px; }
+
+/* ────────────────────────────────────────────────────────────────
+   ENHANCED TABLE STYLING FOR CLIENT ORDERS
+   ──────────────────────────────────────────────────────────────── */
+
+.tw {
+  table {
+    tbody tr {
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(59, 130, 246, 0.04);
+      }
+
+      &.ord-accepted-row {
+        background: rgba(16, 185, 129, 0.03);
+
+        &:hover {
+          background: rgba(16, 185, 129, 0.08);
+        }
+      }
+    }
+  }
+}
+
+/* ── ITEMS PREVIEW (Clickable Link) ── */
+.items-preview {
+  color: var(--bl);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-bottom-color: var(--bl);
+    opacity: 0.85;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ── ACTION BUTTONS ROW ── */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-outline-blue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--bl);
+  background: transparent;
+  border: 1px solid var(--bl-l);
+  border-radius: 4px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--bl-l);
+    border-color: var(--bl);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

@@ -1,0 +1,42 @@
+.ci-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 10px 13px;
+  margin-bottom: 10px;
+}
+
+.ci-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--txt2);
+  padding: 3px 0;
+
+  span:last-child { color: var(--txt); font-weight: 600; }
+}
+
+.ci-amount { color: var(--bl); font-weight: 700; }
+.ci-paid   { color: var(--gr); }
+.ci-rem    { color: var(--re); }
+
+.fw-700 { font-weight: 700; }
+
+.ci-hint {
+  font-size: 11px;
+  color: var(--txt2);
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.ci-loading {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--txt2);
+}

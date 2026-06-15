@@ -1,0 +1,276 @@
+/* ════════════════════════════════
+   SIDEBAR — desktop + mobile
+   ════════════════════════════════ */
+
+/* ── Sidebar shell ── */
+.sidebar {
+  --sb-width: 192px;
+  --sb-collapsed-width: 58px;
+  --sb-transition: 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+
+  width: var(--sb-width);
+  height: 100%;
+  background: var(--bg2);
+  border-left: 1px solid var(--brd);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: width var(--sb-transition);
+
+  /* Smooth, subtle scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover {
+    scrollbar-color: var(--brd2) transparent;
+  }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: var(--brd2);
+  }
+
+  /* ── Desktop collapsed ── */
+  &.collapsed {
+    width: var(--sb-collapsed-width);
+
+    .sb-sec {
+      text-align: center;
+    }
+    .sbi-label,
+    .sb-toggle-label,
+    .sbb {
+      display: none;
+    }
+    .sbi {
+      justify-content: center;
+      padding: 10px 0;
+    }
+    .sb-toggle {
+      justify-content: center;
+      padding: 10px 0;
+    }
+    .sb-toggle-icon {
+      &.flipped {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  /* ── Mobile: hidden by default, slides in as drawer ── */
+  @media (max-width: 991px) {
+    position: fixed;
+    top: 50px;
+    right: 0;
+    bottom: 0;
+    width: 240px !important; /* override collapsed state on mobile */
+    z-index: 1000;
+    border-left: none;
+    box-shadow: none;
+    transform: translateX(102%); /* fully off-screen to the right */
+    transition:
+      transform var(--sb-transition),
+      box-shadow var(--sb-transition);
+
+    /* Restore all labels on mobile (even if collapsed signal is true) */
+    .sb-sec {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    .sbi-label {
+      opacity: 1 !important;
+      width: auto !important;
+    }
+    .sbi {
+      justify-content: flex-start !important;
+      padding: 9px 13px !important;
+    }
+    .sb-toggle {
+      display: none;
+    } /* collapse btn hidden on mobile */
+
+    /* Open state */
+    &.open {
+      transform: translateX(0);
+      box-shadow: -6px 0 32px rgba(0, 0, 0, 0.16);
+    }
+  }
+}
+
+/* ── Collapse toggle button (desktop only) ── */
+.sb-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  margin: 6px 8px 2px;
+  border: 1px solid var(--brd);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--txt3);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background 0.12s,
+    color 0.12s;
+
+  &:hover {
+    background: var(--bg3);
+    color: var(--txt2);
+  }
+}
+
+.sb-toggle-icon {
+  flex-shrink: 0;
+  transition: transform var(--sb-transition);
+  &.flipped {
+    transform: rotate(180deg);
+  }
+}
+
+.sb-toggle-label {
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    opacity 0.18s,
+    width 0.22s;
+}
+
+/* ── Section label ── */
+.sb-sec {
+  padding: 10px 14px 2px;
+  font-size: 9px;
+  color: var(--txt3);
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.18s;
+}
+
+/* ── Nav item ── */
+.sbi {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--txt2);
+  border-right: 3px solid transparent;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    padding 0.24s;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+
+  &:hover {
+    background: var(--bg3);
+    color: var(--txt);
+  }
+
+  &.on {
+    background: var(--bl-l);
+    color: var(--bl);
+    border-right-color: var(--bl);
+    font-weight: 600;
+  }
+}
+
+.sbi-icon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.sbi-label {
+  white-space: nowrap;
+  flex: 1;
+  transition:
+    opacity 0.16s,
+    width 0.22s;
+}
+
+/* ── Badge ── */
+.sbb {
+  background: var(--re-l);
+  color: var(--re);
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 20px;
+  margin-right: auto;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    opacity 0.16s,
+    width 0.22s,
+    transform 0.18s;
+
+  &.sbb-am {
+    background: var(--am-l);
+    color: var(--am);
+  }
+  &.sbb-gr {
+    background: var(--gr-l);
+    color: var(--gr);
+  }
+}
+
+/* Live badge — perpetual gentle pulse + one-shot bump when count rises */
+.sbb-live {
+  position: relative;
+  animation: sbb-breathe 2.4s ease-in-out infinite;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    box-shadow: 0 0 0 0 currentColor;
+    animation: sbb-ring 2.4s ease-out infinite;
+    pointer-events: none;
+    opacity: 0.55;
+  }
+
+  &[data-pulse] {
+    animation:
+      sbb-breathe 2.4s ease-in-out infinite,
+      sbb-bump 0.65s ease-out;
+  }
+}
+
+@keyframes sbb-breathe {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(0.97); }
+}
+
+@keyframes sbb-ring {
+  0%   { box-shadow: 0 0 0 0   currentColor; opacity: 0.55; }
+  70%  { box-shadow: 0 0 0 6px currentColor; opacity: 0;    }
+  100% { box-shadow: 0 0 0 0   currentColor; opacity: 0;    }
+}
+
+@keyframes sbb-bump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}

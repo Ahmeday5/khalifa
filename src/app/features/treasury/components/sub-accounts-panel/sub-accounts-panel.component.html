@@ -1,0 +1,149 @@
+<div class="card h-100">
+  <div class="chdr trf-head">
+    <div>
+      <div class="ct">الحسابات الفرعية</div>
+      <div class="trf-sub">حسابات نقدية مستقلة داخل الخزينة مع سندات قبض وصرف وكشف حساب</div>
+    </div>
+    <div class="d-flex gap-1 flex-wrap">
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        (click)="openVouchers()"
+        title="عرض كل سندات الحسابات الفرعية"
+      >
+        📑 كل السندات
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        [disabled]="loading()"
+        (click)="refresh()"
+        title="تحديث القائمة من الخادم"
+      >
+        @if (loading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>تحديث</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-bl" (click)="openCreate()">
+        + حساب فرعي
+      </button>
+    </div>
+  </div>
+
+  <!-- search -->
+  <div class="sap-search">
+    <input
+      type="text"
+      class="form-control form-control-sm"
+      [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)"
+      placeholder="ابحث بالاسم أو رقم الهاتف…"
+    />
+    @if (hasFilters()) {
+      <button type="button" class="btn btn-sm" (click)="clearSearch()">مسح</button>
+    }
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm text-secondary" role="status" aria-hidden="true"></span>
+    }
+  </div>
+
+  <div class="tw" style="margin-bottom:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>الاسم</th>
+          <th>رقم الهاتف</th>
+          <th>المندوب</th>
+          <th>الرصيد</th>
+          <th class="text-center">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of accounts(); track a.id) {
+          <tr>
+            <td style="font-weight:600">{{ a.name }}</td>
+            <td dir="ltr" style="font-size:11px;color:var(--txt2)">{{ a.phoneNumber || '—' }}</td>
+            <td style="font-size:11px;color:var(--txt2)">{{ a.representativeName || '—' }}</td>
+            <td
+              style="font-weight:700"
+              [style.color]="a.balance < 0 ? 'var(--re,#c0392b)' : 'var(--te)'"
+            >
+              {{ a.balance | currencyAr: true }}
+            </td>
+            <td class="text-center">
+              <div class="d-flex gap-1 justify-content-center flex-wrap">
+                <button class="btn btn-sm btn-bl" (click)="openVoucher(a)" title="إضافة سند قبض/صرف">إضافة سند</button>
+                <button class="btn btn-sm" (click)="openStatement(a)" title="كشف حساب">كشف</button>
+                <button class="btn btn-sm" (click)="openEdit(a)" title="تعديل">تعديل</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              @if (loading()) {
+                جاري التحميل...
+              } @else if (hasFilters()) {
+                لا توجد حسابات مطابقة للبحث.
+              } @else {
+                لا توجد حسابات فرعية بعد. ابدأ بإضافة حساب.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+      @if (accounts().length > 0) {
+        <tfoot>
+          <tr>
+            <td colspan="3" style="font-weight:700">إجمالي أرصدة الصفحة</td>
+            <td colspan="2" style="font-weight:700;color:var(--te)">
+              {{ pageBalance() | currencyAr: true }}
+            </td>
+          </tr>
+        </tfoot>
+      }
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+</div>
+
+<!-- ── dialogs ── -->
+<app-sub-account-form-modal
+  [open]="formOpen()"
+  [mode]="formMode()"
+  [account]="formAccount()"
+  [representatives]="repsLookup()"
+  (closed)="closeForm()"
+  (saved)="onSaved($event)"
+/>
+
+<app-sub-account-voucher-modal
+  [open]="voucherOpen()"
+  [account]="voucherAccount()"
+  [treasuries]="treasuriesLookup()"
+  (closed)="closeVoucher()"
+  (saved)="onVoucherSaved($event)"
+/>
+
+<app-sub-account-statement-modal
+  [open]="statementOpen()"
+  [account]="statementAccount()"
+  (closed)="closeStatement()"
+/>
+
+<app-sub-account-vouchers-modal
+  [open]="vouchersOpen()"
+  (closed)="closeVouchers()"
+/>

@@ -1,0 +1,163 @@
+<app-modal
+  [open]="open()"
+  title="تسجيل دفعة"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  @if (invoice(); as inv) {
+    <!-- ── Invoice summary ── -->
+    <div class="pi-summary">
+      <div class="pi-summary-row">
+        <span class="pi-summary-label">الفاتورة</span>
+        <span class="pi-summary-val fw-700">{{ inv.invoiceNumber }}</span>
+      </div>
+      <div class="pi-summary-row">
+        <span class="pi-summary-label">المورد</span>
+        <span class="pi-summary-val">{{ inv.supplierName }}</span>
+      </div>
+      <div class="pi-summary-row">
+        <span class="pi-summary-label">إجمالي الفاتورة</span>
+        <span class="pi-summary-val pi-total">{{ inv.totalAmount | currencyAr: true }}</span>
+      </div>
+      <div class="pi-summary-row">
+        <span class="pi-summary-label">المدفوع حتى الآن</span>
+        <span class="pi-summary-val pi-paid">{{ inv.paidAmount | currencyAr: true }}</span>
+      </div>
+      <div class="pi-summary-row">
+        <span class="pi-summary-label">المتبقي</span>
+        <span class="pi-summary-val pi-rem">{{ remaining() | currencyAr: true }}</span>
+      </div>
+    </div>
+
+    <!-- ── Payment form ── -->
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      novalidate
+      autocomplete="off"
+      class="pi-form"
+    >
+      <div class="row g-3">
+        <!-- Treasury -->
+        <div class="col-12">
+          <label class="form-label">الخزنة</label>
+          <app-searchable-select
+            formControlName="treasuryId"
+            [options]="treasuryOptions()"
+            [isDisabled]="loadingTreasuries()"
+            placeholder="اختر الخزنة"
+            searchPlaceholder="ابحث باسم الخزنة…"
+          />
+          <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
+          @if (loadingTreasuries()) {
+            <div class="pi-loading">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span>جاري تحميل الخزن...</span>
+            </div>
+          }
+        </div>
+
+        <!-- Amount -->
+        <div class="col-12 col-md-6">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>المبلغ</span>
+            <button
+              type="button"
+              class="pi-link"
+              (click)="useFullRemaining()"
+            >كامل المتبقي ({{ remaining() | currencyAr: true }})</button>
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            formControlName="amount"
+            min="0.01"
+            step="0.01"
+            dir="ltr"
+            placeholder="0.00"
+            (input)="onAmountChange($any($event.target).value)"
+            [class.is-invalid]="isInvalid('amount') || amountExceedsRemaining()"
+          />
+          <app-form-error [control]="form.controls.amount" label="المبلغ" />
+          @if (amountExceedsRemaining()) {
+            <div class="invalid-feedback d-block" style="font-size:11px;">
+              المبلغ يتجاوز الرصيد المتبقي ({{ remaining() | currencyAr: true }}).
+            </div>
+          }
+        </div>
+
+        <!-- Date -->
+        <div class="col-12 col-md-6">
+          <label class="form-label">تاريخ الدفع</label>
+          <input
+            type="date"
+            class="form-control"
+            formControlName="paymentDate"
+            dir="ltr"
+            [class.is-invalid]="isInvalid('paymentDate')"
+          />
+          <app-form-error [control]="form.controls.paymentDate" label="تاريخ الدفع" />
+        </div>
+
+        <!-- Notes -->
+        <div class="col-12">
+          <label class="form-label">ملاحظات</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="notes"
+            autocomplete="off"
+            placeholder="(اختياري)"
+          />
+        </div>
+      </div>
+    </form>
+
+    <!-- ── Projection ── -->
+    @if (draftAmount() > 0 && !amountExceedsRemaining()) {
+      <div class="pi-projection">
+        <div class="pi-projection-row">
+          <span>المتبقي بعد الدفعة:</span>
+          <span
+            class="fw-600"
+            [class.pi-paid]="projectedRemaining() <= 0"
+            [class.pi-rem]="projectedRemaining() > 0"
+          >{{ projectedRemaining() | currencyAr: true }}</span>
+        </div>
+        @if (projectedRemaining() <= 0) {
+          <div class="pi-full-badge">ستكتمل تسوية الفاتورة بالكامل</div>
+        }
+      </div>
+    }
+
+    <!-- ── Server error ── -->
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  }
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >إلغاء</button>
+
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid || amountExceedsRemaining() || !invoice()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري التسجيل...' : 'تسجيل الدفعة' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

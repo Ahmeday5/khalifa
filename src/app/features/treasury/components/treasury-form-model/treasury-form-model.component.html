@@ -1,0 +1,135 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="onSubmit()"
+    novalidate
+    autocomplete="off"
+  >
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <label class="form-label">اسم الخزينة</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="name"
+          autocomplete="off"
+          placeholder="مثال: الخزينة المركزية"
+          [class.is-invalid]="isInvalid('name')"
+        />
+        <app-form-error
+          [control]="form.controls.name"
+          label="اسم الخزينة"
+        />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">
+          الرصيد الافتتاحي
+          @if (!isCreate()) {
+            <span class="form-label-hint">(غير قابل للتعديل بعد الإنشاء)</span>
+          }
+        </label>
+        <div class="input-group">
+          <input
+            type="number"
+            class="form-control"
+            formControlName="initialBalance"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="0"
+            dir="ltr"
+            [class.is-invalid]="isInvalid('initialBalance')"
+          />
+          <span class="input-group-text">ج.م</span>
+        </div>
+        <app-form-error
+          [control]="form.controls.initialBalance"
+          label="الرصيد الافتتاحي"
+        />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">نوع الخزينة</label>
+        <select
+          class="form-select"
+          formControlName="type"
+          [class.is-invalid]="isInvalid('type')"
+        >
+          @for (opt of typeOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.type" label="نوع الخزينة" />
+      </div>
+
+      <div class="col-12 col-md-6 d-flex align-items-end">
+        <div class="form-check form-switch w-100">
+          <input
+            id="treasury-active"
+            type="checkbox"
+            class="form-check-input"
+            formControlName="isActive"
+          />
+          <label class="form-check-label" for="treasury-active">
+            خزينة فعّالة
+          </label>
+        </div>
+      </div>
+
+      @if (isSubRepresentative()) {
+        <div class="col-12">
+          <label class="form-label">المندوب</label>
+          <app-searchable-select
+            formControlName="representativeId"
+            [options]="representativeOptions()"
+            [placeholder]="repsLoading() ? 'جاري تحميل المندوبين…' : 'اختر المندوب'"
+            searchPlaceholder="ابحث باسم المندوب…"
+          />
+          <app-form-error
+            [control]="form.controls.representativeId"
+            label="المندوب"
+          />
+        </div>
+      }
+    </div>
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >
+      {{ isView() ? 'إغلاق' : 'إلغاء' }}
+    </button>
+
+    @if (submitLabel(); as label) {
+      <button
+        type="button"
+        class="btn btn-bl d-inline-flex align-items-center gap-2"
+        [disabled]="submitting() || form.invalid"
+        (click)="onSubmit()"
+      >
+        @if (submitting()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+      </button>
+    }
+  </ng-container>
+</app-modal>

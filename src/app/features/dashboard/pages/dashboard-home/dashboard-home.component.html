@@ -1,0 +1,397 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">لوحة التحكم</div>
+    <div class="pgs">نظام سليم</div>
+  </div>
+</div>
+
+<!-- ── ملخّص الصفحة الرئيسية ── -->
+<section class="hs-block">
+  <header class="hs-block-head">
+    @if (summaryLoading()) {
+      <span class="hs-loading">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span>جاري التحميل...</span>
+      </span>
+    }
+  </header>
+
+  @if (summary(); as s) {
+    <div class="hs-grid">
+      <div class="hs-tile hs-tile--blue">
+        <div class="hs-tile-label">عملاء الأقساط</div>
+        <div class="hs-tile-value">{{ s.installmentClients.count | number }}</div>
+        <div class="hs-tile-meta">+{{ s.installmentClients.addedThisMonth | number }} هذا الشهر</div>
+      </div>
+
+      <div class="hs-tile hs-tile--orange">
+        <div class="hs-tile-label">إجمالي المستحقات</div>
+        <div class="hs-tile-value">{{ s.totalDues.amount | currencyAr: true }}</div>
+        <div class="hs-tile-meta">{{ s.totalDues.clientsCount | number }} عميل</div>
+      </div>
+
+      <div class="hs-tile hs-tile--green">
+        <div class="hs-tile-label">المُحصَّل هذا الشهر</div>
+        <div class="hs-tile-value">{{ s.collectedThisMonth.amount | currencyAr: true }}</div>
+        <div
+          class="hs-tile-meta"
+          [class.hs-up]="s.collectedThisMonth.growthPercent > 0"
+          [class.hs-down]="s.collectedThisMonth.growthPercent < 0"
+        >
+          {{ s.collectedThisMonth.growthPercent > 0 ? '▲' : s.collectedThisMonth.growthPercent < 0 ? '▼' : '•' }}
+          {{ s.collectedThisMonth.growthPercent | number: '1.0-1' }}%
+        </div>
+      </div>
+
+      <div class="hs-tile hs-tile--teal">
+        <div class="hs-tile-label">الخزينة الرئيسية</div>
+        <div class="hs-tile-value">{{ s.mainTreasury.balance | currencyAr: true }}</div>
+        <div class="hs-tile-meta">الرصيد الحالي</div>
+      </div>
+
+      <div class="hs-tile hs-tile--purple">
+        <div class="hs-tile-label">ربح الشهر</div>
+        <div class="hs-tile-value">{{ s.monthlyProfit.amount | currencyAr: true }}</div>
+        <div class="hs-tile-meta">هامش {{ s.monthlyProfit.marginPercent | number: '1.0-0' }}%</div>
+      </div>
+
+      <div class="hs-tile hs-tile--green">
+        <div class="hs-tile-label">معدل التحصيل</div>
+        <div class="hs-tile-value">{{ s.collectionRate.percent | number: '1.0-0' }}%</div>
+        <div class="hs-tile-meta">المستهدف {{ s.collectionRate.targetPercent | number: '1.0-0' }}%</div>
+      </div>
+
+      <div class="hs-tile hs-tile--red">
+        <div class="hs-tile-label">المتأخرون</div>
+        <div class="hs-tile-value">{{ s.delinquent.clientsCount | number }}</div>
+        <div class="hs-tile-meta">بقيمة {{ s.delinquent.amount | currencyAr: true }}</div>
+      </div>
+
+      <div class="hs-tile hs-tile--green">
+        <div class="hs-tile-label">تقييم ممتاز</div>
+        <div class="hs-tile-value">{{ s.excellentRating.clientsCount | number }}</div>
+        <div class="hs-tile-meta">{{ s.excellentRating.percent | number: '1.0-0' }}% من العملاء</div>
+      </div>
+
+      <div class="hs-tile hs-tile--orange">
+        <div class="hs-tile-label">مخزون منخفض</div>
+        <div class="hs-tile-value">{{ s.lowStock.productsCount | number }}</div>
+        <div class="hs-tile-meta">منتج بحاجة لإعادة الطلب</div>
+      </div>
+
+      <div class="hs-tile hs-tile--purple">
+        <div class="hs-tile-label">ضريبة الربع</div>
+        <div class="hs-tile-value">{{ s.quarterTax.amount | currencyAr: true }}</div>
+        <div class="hs-tile-meta">المستحق الحالي</div>
+      </div>
+    </div>
+  } @else if (!summaryLoading()) {
+    <div class="hs-empty">تعذّر تحميل ملخّص اللوحة.</div>
+  }
+</section>
+
+<!-- ── الفصل المالي (Financial Separation) ── -->
+<section class="fs-block">
+  <header class="fs-block-head">
+    <div>
+      <div class="fs-block-title">الفصل المالي</div>
+      <div class="fs-block-sub">صورة لحظية للوضع المالي بين الأصول والالتزامات</div>
+    </div>
+    <button
+      type="button"
+      class="btn btn-sm d-inline-flex align-items-center gap-1"
+      [disabled]="financialLoading()"
+      (click)="refreshFinancial()"
+    >
+      @if (financialLoading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>تحديث</span>
+    </button>
+  </header>
+
+  @if (financial(); as f) {
+    <div class="fs-net" [class.fs-net--neg]="f.netFinancialPosition < 0">
+      <div>
+        <div class="fs-net-label">صافي المركز المالي</div>
+        <div class="fs-net-value">{{ f.netFinancialPosition | currencyAr: true }}</div>
+      </div>
+      @if (coverageRatio(); as ratio) {
+        <div class="fs-coverage">
+          <div class="fs-coverage-label">تغطية الالتزامات</div>
+          <div
+            class="fs-coverage-value"
+            [class.fs-coverage-value--bad]="ratio < 1"
+          >×{{ ratio.toFixed(2) }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="fs-grid">
+      <div class="fs-tile fs-tile--treasury">
+        <div class="fs-tile-icon" aria-hidden="true">💼</div>
+        <div class="fs-tile-body">
+          <div class="fs-tile-label">الخزينة</div>
+          <div class="fs-tile-value">{{ f.treasury | currencyAr: true }}</div>
+        </div>
+      </div>
+
+      <div class="fs-tile fs-tile--receivable">
+        <div class="fs-tile-icon" aria-hidden="true">📥</div>
+        <div class="fs-tile-body">
+          <div class="fs-tile-label">مستحقات لنا</div>
+          <div class="fs-tile-value">{{ f.receivables | currencyAr: true }}</div>
+        </div>
+      </div>
+
+      <div class="fs-tile fs-tile--inventory">
+        <div class="fs-tile-icon" aria-hidden="true">📦</div>
+        <div class="fs-tile-body">
+          <div class="fs-tile-label">قيمة المخزون</div>
+          <div class="fs-tile-value">{{ f.inventoryValue | currencyAr: true }}</div>
+        </div>
+      </div>
+
+      <div class="fs-tile fs-tile--payable">
+        <div class="fs-tile-icon" aria-hidden="true">📤</div>
+        <div class="fs-tile-body">
+          <div class="fs-tile-label">مستحقات علينا</div>
+          <div class="fs-tile-value">{{ f.payables | currencyAr: true }}</div>
+        </div>
+      </div>
+    </div>
+  } @else if (financialLoading()) {
+    <div class="fs-loading">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span>جاري تحميل الفصل المالي...</span>
+    </div>
+  } @else {
+    <div class="fs-empty">تعذّر تحميل الفصل المالي.</div>
+  }
+</section>
+
+<!-- شارتات + أفضل العملاء -->
+<div class="row row-cols-md-2 row-cols-1 g-3">
+  <!-- مخطط الأرباح -->
+  <div class="col">
+    <div class="card profit-card h-100">
+      <header class="profit-card__head">
+        <div>
+          <div class="profit-card__title">أرباح آخر 6 أشهر</div>
+          <div class="profit-card__sub">العملة بالجنيه المصري</div>
+        </div>
+        @if (currentMonth(); as cur) {
+          <div class="profit-card__hero">
+            <div class="profit-card__hero-label">{{ cur.month }}</div>
+            <div class="profit-card__hero-value">{{ cur.formattedProfit }}</div>
+            @if (profitDeltaPct(); as d) {
+              <div
+                class="profit-card__delta"
+                [class.profit-card__delta--up]="d > 0"
+                [class.profit-card__delta--down]="d < 0"
+              >
+                <span class="profit-card__delta-arrow" aria-hidden="true">
+                  {{ d > 0 ? '▲' : d < 0 ? '▼' : '•' }}
+                </span>
+                {{ d > 0 ? '+' : '' }}{{ d | number: '1.0-1' }}%
+              </div>
+            }
+          </div>
+        }
+      </header>
+
+      @if (profitMonths().length) {
+        <div class="profit-card__plot">
+          <div class="profit-card__yaxis" aria-hidden="true">
+            @for (tick of profitGridTicks(); track $index) {
+              <span class="profit-card__ytick">{{ formatProfitTick(tick) }}</span>
+            }
+          </div>
+          <div class="profit-card__canvas">
+            <svg
+              class="profit-card__svg"
+              [attr.viewBox]="chartViewBox"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="profitArea" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--bl)" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="var(--bl)" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+
+              <!-- gridlines -->
+              @for (tick of profitGridTicks(); track $index; let i = $index) {
+                <line
+                  class="profit-card__svg-grid"
+                  [attr.x1]="0"
+                  [attr.x2]="600"
+                  [attr.y1]="18 + (200 - 40) * (i / 4)"
+                  [attr.y2]="18 + (200 - 40) * (i / 4)"
+                />
+              }
+
+              <!-- zero baseline (shown only when range includes negative values) -->
+              @if (hasNegative()) {
+                <line
+                  class="profit-card__svg-zero"
+                  x1="0" x2="600"
+                  [attr.y1]="zeroLineY()"
+                  [attr.y2]="zeroLineY()"
+                />
+              }
+
+              <!-- area fill -->
+              <path
+                class="profit-card__svg-area"
+                [attr.d]="chartAreaPath()"
+                fill="url(#profitArea)"
+              />
+
+              <!-- line -->
+              <path
+                class="profit-card__svg-line"
+                [attr.d]="chartLinePath()"
+                fill="none"
+              />
+
+              <!-- dots -->
+              @for (p of chartPoints(); track p.month; let i = $index) {
+                <circle
+                  class="profit-card__svg-dot"
+                  [class.profit-card__svg-dot--current]="isCurrentMonth(i)"
+                  [attr.cx]="p.x"
+                  [attr.cy]="p.y"
+                  [attr.r]="isCurrentMonth(i) ? 5 : 3.5"
+                />
+                <title>{{ p.month }}: {{ p.formatted }}</title>
+              }
+            </svg>
+
+            <!-- floating value label above the current month -->
+            @if (chartPoints().length; as len) {
+              @let last = chartPoints()[len - 1];
+              <div
+                class="profit-card__svg-callout"
+                [style.left.%]="last.xPct"
+                [style.top.%]="last.yPct"
+              >
+                {{ last.formatted }}
+              </div>
+            }
+
+            <!-- x-axis labels -->
+            <div class="profit-card__xaxis">
+              @for (p of chartPoints(); track p.month; let i = $index) {
+                <span
+                  class="profit-card__xlabel"
+                  [class.profit-card__xlabel--current]="isCurrentMonth(i)"
+                  [style.left.%]="p.xPct"
+                >{{ p.month }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="profit-card__empty">جاري تحميل بيانات الأرباح...</div>
+      }
+    </div>
+  </div>
+
+  <!-- أفضل 5 عملاء -->
+  <div class="col">
+    <div class="card h-100">
+      <div class="chdr">
+        <div class="ct">أفضل 5 عملاء هذا الشهر</div>
+        <button class="btn btn-sm" routerLink="/customers">تحليلات أكثر</button>
+      </div>
+      <div class="tw">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>التقييم</th>
+              <th>المدفوع</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of topClients(); track c.clientName) {
+              <tr>
+                <td style="padding:5px 0;font-weight:600">{{ c.clientName }}</td>
+                <td class="d-flex justify-content-center">
+                  <app-badge [text]="c.rating" [type]="ratingBadge(c.rating)" />
+                </td>
+                <td style="color:var(--bl)">{{ c.amount | currencyAr }}</td>
+                <td>
+                  <app-badge [text]="c.statusText" [type]="statusBadge(c.statusText)" />
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="text-center" style="padding:30px; color:var(--txt3)">
+                  لا يوجد عملاء هذا الشهر.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-12">
+    <div class="card w-100">
+      <div class="chdr">
+        <div class="ct">أقساط مستحقة هذا الأسبوع</div>
+        <div style="display:flex;gap:7px">
+          <a routerLink="/customers" class="btn btn-sm btn-bl">عرض الكل</a>
+        </div>
+      </div>
+
+      <div class="tw">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>العميل</th>
+              <th>البضاعة</th>
+              <th>القسط</th>
+              <th>المبلغ</th>
+              <th>الاستحقاق</th>
+              <th>نوع الدفع</th>
+              <th>الباقي</th>
+              <th>التقييم</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of dueInstallments(); track $index) {
+              <tr>
+                <td style="font-weight:600">{{ row.clientName }}</td>
+                <td>{{ row.productName }}</td>
+                <td>{{ row.installmentProgress }}</td>
+                <td>{{ row.amount | currencyAr }}</td>
+                <td>{{ row.dueDate }}</td>
+                <td>{{ row.paymentType }}</td>
+                <td>{{ row.remainingAmount | currencyAr }}</td>
+                <td>
+                  <app-badge [text]="row.rating" [type]="ratingBadge(row.rating)" />
+                </td>
+                <td>
+                  <app-badge [text]="row.statusText" [type]="statusBadge(row.statusText)" />
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="text-center" style="padding:30px; color:var(--txt3)">
+                  لا توجد أقساط مستحقة هذا الأسبوع.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

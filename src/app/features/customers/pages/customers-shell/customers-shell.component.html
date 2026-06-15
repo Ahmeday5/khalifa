@@ -1,0 +1,23 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">عملاء الأقساط</div>
+    <div class="pgs">إدارة كاملة للعقود والمدفوعات مع التقييم الائتماني</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-wa" routerLink="/notifications">📱 تذكيرات WhatsApp</a>
+    <a class="btn btn-sm btn-bl" routerLink="contract">+ عقد جديد</a>
+  </div>
+</div>
+
+<div class="cu-tabs">
+  @for (tab of tabs; track tab.path) {
+    <a class="cu-tab"
+       [routerLink]="tab.path"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: false }">
+      {{ tab.label }}
+    </a>
+  }
+</div>
+
+<router-outlet />

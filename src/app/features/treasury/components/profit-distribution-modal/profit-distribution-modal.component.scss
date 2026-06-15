@@ -1,0 +1,117 @@
+/* ── loading / state ── */
+.pd-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 12px;
+  color: var(--txt2);
+  font-size: 12px;
+}
+
+/* ── summary strip ── */
+.pd-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.pd-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: var(--r);
+}
+
+.pd-summary-label {
+  font-size: 10.5px;
+  color: var(--txt3);
+  font-weight: 600;
+}
+
+.pd-summary-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.pd-amount {
+  color: var(--gr);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── preview table ── */
+.pd-table {
+  margin-bottom: 14px;
+
+  table { width: 100%; }
+
+  th {
+    font-size: 10.5px;
+    white-space: nowrap;
+  }
+}
+
+.pd-pct {
+  font-weight: 700;
+  color: var(--bl);
+  font-size: 11px;
+}
+
+.pd-muted {
+  color: var(--txt2);
+  font-size: 11px;
+}
+
+.pd-total-row td {
+  border-top: 2px solid var(--brd);
+  background: var(--bg2);
+  font-size: 12px;
+}
+
+/* ── form + note ── */
+.pd-form { margin-bottom: 12px; }
+
+.pd-note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--am-d, #92400e);
+  background: var(--am-l, #fef3c7);
+  border: 1px solid var(--am, #f59e0b);
+  border-radius: var(--r);
+  padding: 9px 11px;
+}
+
+/* ── empty state ── */
+.pd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 12px;
+  text-align: center;
+}
+
+.pd-empty-icon { color: var(--txt3); }
+
+.pd-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.pd-empty-sub {
+  font-size: 11px;
+  color: var(--txt2);
+}
+
+/* ── utilities ── */
+.fw-600 { font-weight: 600; }
+.text-center { text-align: center; }
+.text-end { text-align: end; }

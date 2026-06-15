@@ -1,0 +1,136 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="xl"
+  [closeOnBackdrop]="!loading()"
+  [closeOnEsc]="!loading()"
+  (closed)="close()"
+>
+  <!-- ── HEADER / ACTIONS ── -->
+  <div class="sa-st-bar">
+    @if (header(); as a) {
+      <section class="sa-st-hero">
+        <div class="sa-st-hero-left">
+          <div class="sa-st-eyebrow">كشف حساب فرعي</div>
+          <div class="sa-st-name">{{ a.name }}</div>
+          <div class="sa-st-meta">
+            <span class="sa-st-meta-item">
+              <span class="sa-st-meta-label">رقم الهاتف</span>
+              <span class="sa-st-meta-val" dir="ltr">{{ a.phoneNumber || '—' }}</span>
+            </span>
+            <span class="sa-st-meta-item">
+              <span class="sa-st-meta-label">تاريخ الإنشاء</span>
+              <span class="sa-st-meta-val">{{ a.createdAt | dateAr: 'short' }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="sa-st-hero-right">
+          <div class="sa-st-stat-label">الرصيد الحالي</div>
+          <div class="sa-st-stat-val">{{ a.balance | currencyAr: true }}</div>
+        </div>
+      </section>
+    }
+
+    <div class="sa-st-actions">
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        @if (loading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>تحديث</span>
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+        [disabled]="vouchers().length === 0 || loading() || isPrinting()"
+        (click)="print()"
+      >
+        @if (isPrinting()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>🖨 طباعة PDF</span>
+      </button>
+    </div>
+  </div>
+
+  @if (error(); as msg) {
+    <div class="alert alert-danger mt-2" role="alert" style="font-size:12px;">{{ msg }}</div>
+  }
+
+  <!-- ── LEDGER ── -->
+  <div class="tw" style="margin-bottom:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>رقم السند</th>
+          <th>النوع</th>
+          <th>المبلغ</th>
+          <th>الرصيد بعد</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vouchers(); track v.id) {
+          <tr>
+            <td class="trf-date">{{ v.date | dateAr: 'short' }}</td>
+            <td style="font-size:10.5px;color:var(--txt2)" [title]="v.voucherNumber">
+              {{ v.voucherNumber }}
+            </td>
+            <td><app-badge [text]="typeLabel(v.type)" [type]="typeBadge(v.type)" /></td>
+            <td
+              style="font-weight:700"
+              [style.color]="isReceipt(v.type) ? 'var(--gr)' : 'var(--re,#c0392b)'"
+            >
+              {{ isReceipt(v.type) ? '+' : '−' }}{{ v.amount | currencyAr: true }}
+            </td>
+            <td style="color:var(--bl);font-weight:700">{{ v.balanceAfter | currencyAr: true }}</td>
+            <td class="trf-notes" [title]="v.notes ?? ''">{{ v.notes || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              @if (loading()) {
+                جاري التحميل...
+              } @else {
+                لا توجد حركات على هذا الحساب بعد.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+      @if (vouchers().length > 0) {
+        <tfoot>
+          <tr>
+            <td colspan="3" style="font-weight:700">إجمالي الصفحة</td>
+            <td style="font-weight:700">
+              <span style="color:var(--gr)">+{{ pageReceipts() | currencyAr: true }}</span>
+              <span style="color:var(--re,#c0392b)"> / −{{ pagePayments() | currencyAr: true }}</span>
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      }
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

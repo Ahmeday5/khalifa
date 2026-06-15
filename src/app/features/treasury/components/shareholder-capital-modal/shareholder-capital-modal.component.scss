@@ -1,0 +1,198 @@
+:host {
+  display: contents;
+}
+
+/* ── summary cards ── */
+.cap-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+
+  @media (max-width: 575px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cap-stat {
+  background: var(--bg2);
+  border: 1px solid var(--brd);
+  border-radius: var(--r, 8px);
+  padding: 10px 12px;
+}
+
+.cap-stat-label {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-bottom: 4px;
+}
+
+.cap-stat-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+.cap-gr {
+  color: var(--gr);
+}
+.cap-bl {
+  color: var(--bl);
+}
+
+/* ── mode tabs ── */
+.cap-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--brd);
+  border-radius: var(--r, 8px);
+  margin-bottom: 14px;
+}
+
+.cap-tab {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--txt2);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: var(--rl, 6px);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover:not(:disabled):not(.cap-tab--active) {
+    background: var(--bg3);
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  &--active {
+    background: var(--bl);
+    color: #fff;
+  }
+}
+
+/* ── helper text + inline link ── */
+.cap-hint {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-top: 4px;
+}
+
+.cap-link {
+  border: 0;
+  background: transparent;
+  color: var(--bl);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ── projection panel ── */
+.cap-projection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--r, 8px);
+  background: var(--bg2);
+  font-size: 12px;
+}
+
+.cap-projection-label {
+  color: var(--txt2);
+  margin-inline-end: 4px;
+}
+
+.cap-projection-val {
+  font-weight: 800;
+  color: var(--txt);
+}
+
+/* ── section heading ── */
+.cap-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 20px 0 8px;
+}
+
+.cap-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+/* ── history table ── */
+.cap-table {
+  font-size: 11px;
+}
+
+.cap-notes {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cap-muted {
+  color: var(--txt3);
+}
+
+.cap-voucher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--brd);
+  background: var(--bg2);
+  color: var(--txt2);
+  border-radius: var(--rl, 6px);
+  padding: 2px 6px;
+  font-size: 10px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--bl);
+    color: var(--bl);
+  }
+}
+
+/* ── empty states ── */
+.cap-empty {
+  text-align: center;
+  padding: 22px 8px;
+  color: var(--txt2);
+}
+
+.cap-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 8px;
+  text-align: center;
+}
+
+.cap-empty-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+.cap-empty-sub {
+  font-size: 11px;
+  color: var(--txt2);
+}

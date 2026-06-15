@@ -1,0 +1,227 @@
+/* ── Card grid wrapper ── */
+.wh-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+  margin-bottom: 12px;
+
+  @media (max-width: 992px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.wh-card-stat {
+  background: var(--bg2);
+  border: 1px solid var(--brd);
+  border-radius: var(--rl);
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header row inside each warehouse card (title + status badge) ── */
+.wh-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wh-card-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--txt3);
+  margin-bottom: 8px;
+
+  svg { color: var(--txt3); }
+}
+
+.wh-warn {
+  font-size: 10px;
+  margin-top: 3px;
+  font-weight: 600;
+  color: var(--am);
+}
+
+.wh-pct {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-top: 3px;
+}
+
+/* ── Empty card state (full-row, dashed border) ── */
+.wh-empty {
+  grid-column: 1 / -1;
+  background: var(--bg2);
+  border: 1.5px dashed var(--brd2);
+  border-radius: var(--rl);
+  padding: 32px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--txt2);
+  font-size: 12px;
+}
+
+.wh-empty-icon  { color: var(--txt3); margin-bottom: 4px; }
+.wh-empty-title { font-size: 14px; font-weight: 700; color: var(--txt); }
+.wh-empty-sub   { font-size: 11px; color: var(--txt3); text-align: center; }
+
+
+/* ── Inventory table toolbar ── */
+.wh-search,
+.wh-select {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+
+  &:focus { outline: none; border-color: var(--bl); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.wh-search { width: 200px; max-width: 100%; }
+.wh-select { min-width: 160px; }
+
+
+/* ── Inventory table column widths + cell colors ── */
+.wh-w-name   { width: 17%; }
+.wh-w-num    { width: 8%;  text-align: center; }
+.wh-w-price  { width: 11%; }
+.wh-w-serial { width: 14%; }
+
+.wh-pos        { color: var(--gr); font-weight: 600; }
+.wh-warn-cell  { color: var(--am); font-weight: 600; }
+
+.wh-serial {
+  font-size: 10px;
+  color: var(--txt3);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wh-inv-empty {
+  text-align: center;
+  padding: 24px 14px;
+  color: var(--txt3);
+  font-size: 11px;
+}
+
+.fw-600 { font-weight: 600; }
+
+/* ── Progress bar (matches the prototype's `.prog-bg / .prog-f`) ── */
+.prog-bg {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--brd);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.prog-f {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+/* ── Per-card actions row (تعديل · حذف) ── */
+.wh-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--brd);
+
+  .sep {
+    color: var(--txt3);
+    font-size: 11px;
+  }
+}
+
+/* ── Inline text-link buttons (subtle, don't compete with the card visuals) ── */
+.link-btn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--bl);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+
+  &:hover:not(:disabled) {
+    color: var(--bl-d);
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &.link-danger {
+    color: var(--re);
+    &:hover:not(:disabled) { color: var(--re); }
+  }
+
+  .spinner-border-sm {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-width: 0.12em;
+  }
+}
+
+/* ── Keep the legacy wh-card stylings in case any other view re-uses them ── */
+.wh-card {
+  background: var(--bg);
+  border: 1.5px solid var(--brd);
+  border-radius: var(--r);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover { border-color: var(--wh-color, var(--bl)); }
+
+  &.selected {
+    border-color: var(--wh-color, var(--bl));
+    box-shadow: 0 0 0 3px rgba(var(--wh-color, var(--bl)), 0.1);
+  }
+}
+
+.wh-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.wh-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--wh-color, var(--bl));
+}
+
+.wh-card-city {
+  font-size: 10px;
+  color: var(--txt2);
+}
+
+.wh-stat-label {
+  font-size: 10px;
+  color: var(--txt2);
+}
+
+.wh-stat-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt);
+}

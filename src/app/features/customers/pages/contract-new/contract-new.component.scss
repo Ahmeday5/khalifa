@@ -1,0 +1,12 @@
+.edit-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--bl-rgb), 0.08);
+  color: var(--bl);
+  border: 1px solid rgba(var(--bl-rgb), 0.2);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}

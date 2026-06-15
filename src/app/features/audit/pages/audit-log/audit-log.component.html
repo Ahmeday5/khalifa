@@ -1,0 +1,23 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">سجل التدقيق</div>
+    <div class="pgs">تتبع جميع الأنشطة في النظام</div>
+  </div>
+  <button class="btn btn-sm">تصدير السجل</button>
+</div>
+
+<div class="card">
+  @for (entry of auditLog(); track entry.id) {
+    <div class="audit-item">
+      <div class="audit-dot" [style.background]="getActionColor(entry.action)"></div>
+      <div class="audit-body">
+        <div class="audit-action">{{ entry.description }}</div>
+        <div class="audit-detail">{{ entry.entity }} — IP: {{ entry.ipAddress }}</div>
+        <div class="audit-time">{{ entry.timestamp | dateAr }}</div>
+      </div>
+      <span class="audit-user" [style.background]="getRoleBg(entry.userRole)" [style.color]="getRoleColor(entry.userRole)">
+        {{ entry.userName }}
+      </span>
+    </div>
+  }
+</div>

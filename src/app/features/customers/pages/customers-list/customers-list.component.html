@@ -1,0 +1,263 @@
+<!-- ── HERO ── -->
+<div class="cl-hero">
+  <div class="cl-hero-main">
+    <div class="cl-hero-label">عملاء الأقساط</div>
+    <div class="cl-hero-value">{{ count() }} عميل</div>
+
+    <div class="cl-hero-stats">
+      <div>
+        <div class="cl-hero-stat-label">عملاء متأخرون</div>
+        <div class="cl-hero-stat-val cl-hero-overdue">{{ overdueClientsCount() }}</div>
+      </div>
+      <div>
+        <div class="cl-hero-stat-label">الصفحة الحالية</div>
+        <div class="cl-hero-stat-val">{{ pageIndex() }} / {{ totalPages() || 1 }}</div>
+      </div>
+      <div>
+        <div class="cl-hero-stat-label">صفوف لكل صفحة</div>
+        <div class="cl-hero-stat-val">{{ pageSize() }}</div>
+      </div>
+
+      @if (loading()) {
+      <div class="d-inline-flex align-items-center gap-2" style="opacity:.85">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span style="font-size:11px">جاري التحميل...</span>
+      </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="cl-toolbar">
+  <div class="cl-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input type="text" placeholder="بحث بالاسم أو الهاتف أو العنوان..." [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)" />
+    @if (searchTerm()) {
+    <button type="button" class="cl-search-clear" aria-label="مسح البحث" (click)="clearSearch()">×</button>
+    }
+  </div>
+
+  <label class="cl-toggle" [class.cl-toggle-active]="onlyOverdue()">
+    <input type="checkbox" [checked]="onlyOverdue()" (change)="toggleOnlyOverdue($any($event.target).checked)" />
+    <span class="cl-toggle-track" aria-hidden="true">
+      <span class="cl-toggle-thumb"></span>
+    </span>
+    <span class="cl-toggle-label">المتأخرون فقط</span>
+  </label>
+
+  <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1" [disabled]="loading()"
+    (click)="refresh()">
+    @if (loading()) {
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+
+  <button
+    type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    [disabled]="loading() || isPrinting() || count() === 0"
+    (click)="printClients()"
+    title="طباعة قائمة العملاء"
+  >
+    @if (isPrinting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>🖨 طباعة PDF</span>
+  </button>
+
+  <button
+    *appHasPermission="PERMS.clientsFullAccess"
+    type="button"
+    class="btn btn-sm btn-gr d-inline-flex align-items-center gap-1"
+    (click)="openDirectContract()"
+    title="إنشاء عقد تقسيط مباشر بدون ربطه بمنتج أو مخزن"
+  >
+    <span aria-hidden="true">+</span>
+    <span>عقد مباشر جديد</span>
+  </button>
+
+  <button
+    *appHasPermission="PERMS.clientsFullAccess"
+    type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    (click)="openCreate()"
+  >
+    <span aria-hidden="true">+</span>
+    <span>إضافة عميل</span>
+  </button>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="card cl-card">
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="cl-w-id">#</th>
+          <th class="cl-w-name">العميل</th>
+          <th class="cl-w-phone">الهاتف</th>
+          <th class="cl-w-goods">البضاعة</th>
+          <th class="cl-w-progress">القسط</th>
+          <th class="cl-w-amount">مبلغ القسط</th>
+          <th class="cl-w-freq">نوع الدفع</th>
+          <th class="cl-w-amount">الإجمالي</th>
+          <th class="cl-w-amount">الباقي</th>
+          <th class="cl-w-rating">التقييم</th>
+          <th class="cl-w-status">الحالة</th>
+          <th class="cl-w-actions text-center">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of clients(); track c.id) {
+        <tr>
+          <td class="cl-id">#{{ c.id }}</td>
+          <td>
+            <div class="cl-row-name">
+              <div class="cl-avatar" aria-hidden="true">
+                {{ c.fullName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="cl-row-name-text">
+                <span class="fw-600">{{ c.fullName }}</span>
+                <span class="cl-row-addr">{{ c.address }}</span>
+              </div>
+            </div>
+          </td>
+          <td class="cv-ltr">{{ c.phoneNumber }}</td>
+          <td>
+            @if (c.goods) {
+            <span class="cl-goods" [title]="c.goods">{{ c.goods }}</span>
+            } @else {
+            <span class="text-muted">—</span>
+            }
+          </td>
+          <td>
+            @if (c.installmentProgress) {
+            <div class="cl-progress-text">{{ c.installmentProgress }}</div>
+            <div class="progress mt-1 cl-progress-bar">
+              <div class="progress-bar" [style.width.%]="progressPercent(c.installmentProgress)"
+                [style.background]="progressColor(c.status)">
+              </div>
+            </div>
+            } @else {
+            <span class="text-muted">—</span>
+            }
+          </td>
+          <td>
+            @if (c.installmentAmount !== null) {
+            <span class="cl-amount-bl">{{ c.installmentAmount | currencyAr: true }}</span>
+            } @else {
+            <span class="text-muted">—</span>
+            }
+          </td>
+          <td class="fs-10">{{ paymentFrequencyLabel(c.paymentFrequency) }}</td>
+          <td class="cl-amount-bl">{{ c.totalContractAmount | currencyAr: true }}</td>
+          <td [class]="c.remainingAmount > 0 ? 'cl-rem' : 'cl-paid'">
+            {{ c.remainingAmount | currencyAr: true }}
+          </td>
+          <td class="text-center">
+            @if (c.rating) {
+            <div [class]="'cs-ring cs-' + c.rating" [title]="ratingLabel(c.rating)"
+              style="width:30px;height:30px;font-size:10px;font-weight:700;border-width:2px;margin:auto">
+              {{ c.rating }}
+            </div>
+            } @else {
+            <span class="text-muted">—</span>
+            }
+          </td>
+          <td>
+            <app-badge [text]="statusLabel(c.status)" [type]="statusBadge(c.status)" />
+          </td>
+          <td>
+            <div class="d-flex gap-1 justify-content-center">
+              <button
+                *appHasPermission="PERMS.clientsFullAccess"
+                type="button"
+                class="btn btn-sm btn-outline-blue"
+                title="تعديل بيانات العميل"
+                aria-label="تعديل بيانات العميل"
+                (click)="openEdit(c)"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </button>
+              <button type="button" class="btn btn-sm btn-wa" title="تواصل WhatsApp" aria-label="تواصل عبر واتساب"
+                (click)="openWhatsApp(c.phoneNumber)">
+                <i class="fa-brands fa-whatsapp"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="12" class="cl-empty">
+            @if (loading()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>جاري تحميل العملاء...</span>
+            } @else if (hasFilters()) {
+            <div class="cl-empty-block">
+              <div class="cl-empty-icon" aria-hidden="true">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+              <div class="cl-empty-title">لا توجد نتائج</div>
+              <div class="cl-empty-sub">جرّب تعديل البحث أو إلغاء فلتر المتأخرين.</div>
+              <button class="btn btn-sm mt-2" (click)="clearSearch(); toggleOnlyOverdue(false)">مسح الفلاتر</button>
+            </div>
+            } @else {
+            <div class="cl-empty-block">
+              <div class="cl-empty-icon" aria-hidden="true">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <div class="cl-empty-title">لا يوجد عملاء بعد</div>
+              <div class="cl-empty-sub">ابدأ بإضافة أول عقد لتبدأ متابعة الأقساط والتحصيل.</div>
+              <button
+                *appHasPermission="PERMS.clientsFullAccess"
+                class="btn btn-sm btn-bl mt-2"
+                (click)="openCreate()"
+              >+ إضافة عميل</button>
+            </div>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+  <app-pagination [pageIndex]="pageIndex()" [pageSize]="pageSize()" [count]="count()" [totalPages]="totalPages()"
+    [disabled]="loading()" (pageChange)="onPageChange($event)" (pageSizeChange)="onPageSizeChange($event)" />
+  }
+</div>
+
+<app-client-form-modal
+  [open]="showForm()"
+  [client]="editTarget()"
+  (closed)="closeForm()"
+  (saved)="onSaved()"
+/>
+
+<app-direct-contract-modal
+  [open]="showDirectContract()"
+  (closed)="closeDirectContract()"
+  (created)="onDirectContractCreated()"
+/>

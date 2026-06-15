@@ -1,0 +1,227 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">المنتجات</div>
+    <div class="pgs">إدارة كتالوج المنتجات — الأسعار، الصور، الفئات، حالة التوافر</div>
+  </div>
+  <div class="d-flex gap-2">
+    <button
+      *appHasPermission="PERMS.suppliersFullAccess"
+      class="btn btn-sm btn-bl"
+      (click)="openCreate()"
+    >+ منتج جديد</button>
+  </div>
+</div>
+
+
+<!-- ── HERO SUMMARY ── -->
+<div class="pl-hero">
+  <div class="pl-hero-main">
+    <div class="pl-hero-label">إجمالي المنتجات</div>
+    <div class="pl-hero-value">{{ count() }} منتج</div>
+
+    <div class="pl-hero-stats">
+      <div>
+        <div class="pl-hero-stat-label">فعّالة (هذه الصفحة)</div>
+        <div class="pl-hero-stat-val pl-hero-stat-pos">{{ activeCount() }}</div>
+      </div>
+      <div>
+        <div class="pl-hero-stat-label">موقوفة (هذه الصفحة)</div>
+        <div class="pl-hero-stat-val pl-hero-stat-neg">{{ inactiveCount() }}</div>
+      </div>
+      <div>
+        <div class="pl-hero-stat-label">قيمة هذه الصفحة (تكلفة)</div>
+        <div class="pl-hero-stat-val">{{ pageInventoryCost() | currencyAr: true }}</div>
+      </div>
+      <div>
+        <div class="pl-hero-stat-label">الصفحة</div>
+        <div class="pl-hero-stat-val">{{ pageIndex() }} / {{ totalPages() || 1 }}</div>
+      </div>
+
+      @if (loading()) {
+        <div class="d-inline-flex align-items-center gap-2" style="opacity:.85">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span style="font-size:11px">جاري التحميل...</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+
+<!-- ── TOOLBAR ── -->
+<div class="pl-toolbar">
+  <div class="pl-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input
+      type="text"
+      placeholder="بحث باسم المنتج..."
+      [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)"
+    />
+  </div>
+
+  <select
+    class="pl-select"
+    [value]="categoryFilter()"
+    (change)="onCategoryChange($any($event.target).value)"
+  >
+    <option value="">كل الفئات</option>
+    @for (c of categories(); track c.id) {
+      <option [value]="c.id">{{ c.name }}</option>
+    }
+  </select>
+
+  @if (hasFilters()) {
+    <button type="button" class="btn btn-sm" (click)="clearFilters()">مسح الفلاتر</button>
+  }
+
+  <button
+    type="button"
+    class="btn btn-sm d-inline-flex align-items-center gap-1"
+    [disabled]="loading()"
+    (click)="refresh()"
+  >
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+</div>
+
+
+<!-- ── CARD GRID ── -->
+<div class="pl-grid">
+  @for (p of products(); track p.id) {
+    <div class="pl-card" [class.pl-card-inactive]="!p.isActive">
+      <!-- Media -->
+      <div class="pl-card-media">
+        @if (imageOf(p); as src) {
+          <img [src]="src" [alt]="p.name" loading="lazy" (error)="onImageError($event)" />
+        }
+        <div class="pl-card-media-fallback" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="9" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        </div>
+
+        <span class="pl-card-status" [class.pl-card-status-off]="!p.isActive">
+          {{ p.isActive ? 'فعّال' : 'موقوف' }}
+        </span>
+
+        @if (p.categoryName) {
+          <span class="pl-card-category" [title]="p.categoryName">
+            {{ p.categoryName }}
+          </span>
+        }
+      </div>
+
+      <!-- Body -->
+      <div class="pl-card-body">
+        <div class="pl-card-name" [title]="p.name">{{ p.name }}</div>
+        <div class="pl-card-desc" [title]="p.description">{{ p.description }}</div>
+
+        <div class="pl-card-prices">
+          <div>
+            <div class="pl-card-price-label">سعر الشراء</div>
+            <div class="pl-card-price-val">{{ p.purchasePrice | currencyAr: true }}</div>
+          </div>
+          <div>
+            <div class="pl-card-price-label">سعر البيع</div>
+            <div class="pl-card-price-val pl-card-price-sell">{{ p.sellingPrice | currencyAr: true }}</div>
+          </div>
+        </div>
+
+        <div class="pl-card-profit" [class.pl-card-profit-neg]="profitOf(p) < 0">
+          <span>هامش الربح</span>
+          <span class="pl-card-profit-val">
+            {{ profitOf(p) | currencyAr: true }}
+            <span class="pl-card-profit-pct">({{ marginPctOf(p) }}%)</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pl-card-actions" *appHasPermission="PERMS.suppliersFullAccess">
+        <button type="button" class="btn btn-sm btn-bl flex-grow-1" (click)="openEdit(p)">
+          تعديل
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-re d-inline-flex align-items-center justify-content-center gap-1"
+          [disabled]="deletingId() === p.id"
+          (click)="confirmDelete(p)"
+        >
+          @if (deletingId() === p.id) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          }
+          <span>حذف</span>
+        </button>
+      </div>
+    </div>
+  } @empty {
+    <div class="pl-empty">
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span>جاري تحميل المنتجات...</span>
+      } @else if (hasFilters()) {
+        <div class="pl-empty-icon" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </div>
+        <div class="pl-empty-title">لا منتجات مطابقة</div>
+        <div class="pl-empty-sub">جرّب تعديل البحث أو اختيار فئة أخرى.</div>
+        <button class="btn btn-sm mt-2" (click)="clearFilters()">مسح الفلاتر</button>
+      } @else {
+        <div class="pl-empty-icon" aria-hidden="true">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.5 7.5L13 3.5a2 2 0 0 0-2 0L3.5 7.5a1 1 0 0 0-.5.9v7.2a1 1 0 0 0 .5.9L11 20.5a2 2 0 0 0 2 0l7.5-4a1 1 0 0 0 .5-.9V8.4a1 1 0 0 0-.5-.9z" />
+            <path d="M3.3 8L12 12.5 20.7 8" />
+            <path d="M12 12.5V21" />
+          </svg>
+        </div>
+        <div class="pl-empty-title">لا توجد منتجات بعد</div>
+        <div class="pl-empty-sub">ابدأ ببناء كتالوج منتجاتك بإضافة أول منتج.</div>
+        <button
+          *appHasPermission="PERMS.suppliersFullAccess"
+          class="btn btn-sm btn-bl mt-2"
+          (click)="openCreate()"
+        >+ إضافة منتج جديد</button>
+      }
+    </div>
+  }
+</div>
+
+
+<!-- ── PAGINATION ── -->
+@if (count() > 0) {
+  <app-pagination
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [count]="count()"
+    [totalPages]="totalPages()"
+    [pageSizeOptions]="[12, 24, 48, 96]"
+    [disabled]="loading()"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+}
+
+
+<app-product-form-modal
+  [open]="modalOpen()"
+  [mode]="modalMode()"
+  [product]="modalProduct()"
+  (closed)="closeModal()"
+  (saved)="onSaved($event)"
+/>

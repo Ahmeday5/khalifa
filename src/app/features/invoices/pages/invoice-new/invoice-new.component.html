@@ -1,0 +1,206 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">{{ isEdit() ? 'تعديل فاتورة مشتريات' : 'فاتورة مشتريات جديدة' }}</div>
+    <div class="pgs">
+      @if (isEdit() && loadingInvoice()) {
+        جاري تحميل بيانات الفاتورة...
+      } @else {
+        بيانات المورد والأصناف والدفع
+      }
+    </div>
+  </div>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="saveAndConfirm()" novalidate>
+  <div class="iv-grid">
+    <!-- ── LEFT: invoice data + items ── -->
+    <div class="iv-col-main">
+      <!-- Invoice header card -->
+      <div class="card w-auto">
+        <div class="ct iv-card-title">بيانات الفاتورة</div>
+
+        <div class="fg3">
+          <div class="fl">
+            <label>المورد</label>
+            <app-searchable-select
+              formControlName="supplierId"
+              [options]="supplierOptions()"
+              [isDisabled]="loadingRefs()"
+              placeholder="— اختر المورد —"
+              searchPlaceholder="ابحث باسم المورد…"
+            />
+          </div>
+
+          <div class="fl">
+            <label>المخزن</label>
+            <app-searchable-select
+              formControlName="warehouseId"
+              [options]="warehouseOptions()"
+              [isDisabled]="loadingRefs()"
+              placeholder="— اختر المخزن —"
+              searchPlaceholder="ابحث باسم المخزن…"
+            />
+          </div>
+
+          <div class="fl">
+            <label>التاريخ</label>
+            <input type="date" formControlName="invoiceDate" />
+          </div>
+
+          <div class="fl">
+            <label>تاريخ الاستحقاق</label>
+            <input type="date" formControlName="dueDate" />
+          </div>
+
+          <div class="fl">
+            <label>الخزنة</label>
+            <app-searchable-select
+              formControlName="treasuryId"
+              [options]="treasuryOptions()"
+              [isDisabled]="loadingRefs()"
+              placeholder="— اختر الخزنة —"
+              searchPlaceholder="ابحث باسم الخزنة…"
+            />
+          </div>
+
+          <div class="fl">
+            <label>نسبة الضريبة %</label>
+            <input type="number" formControlName="taxRatePercent" readonly />
+            <small class="iv-hint">الضريبة معطّلة حالياً — ثابتة 0%</small>
+          </div>
+
+          <div class="fl">
+            <label>ملاحظات</label>
+            <input type="text" formControlName="notes" placeholder="(اختياري)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Items card -->
+      <div class="card w-auto">
+        <div class="chdr">
+          <div class="ct">الأصناف</div>
+          <button type="button" class="btn btn-sm btn-te" (click)="addLine()">+ صنف</button>
+        </div>
+
+        <div class="iv-line-h">
+          <span>الصنف</span>
+          <span>الكمية</span>
+          <span>سعر الوحدة</span>
+          <span>خصم%</span>
+          <span>الإجمالي</span>
+          <span></span>
+        </div>
+
+        <div formArrayName="items">
+          @for (line of items.controls; track line; let idx = $index) {
+          <div class="inv-line-r" [formGroupName]="idx">
+            <app-searchable-select
+              formControlName="productId"
+              [options]="productOptions()"
+              [isDisabled]="loadingRefs()"
+              placeholder="— اختر الصنف —"
+              searchPlaceholder="ابحث باسم الصنف…"
+            />
+
+            <input type="number" min="1" formControlName="quantity"
+              (input)="onLineFieldChange(idx, 'quantity', $any($event.target).value)" />
+
+            <input type="number" min="0" formControlName="unitPrice"
+              (input)="onLineFieldChange(idx, 'unitPrice', $any($event.target).value)" />
+
+            <input type="number" min="0" max="100" formControlName="discountPercent"
+              (input)="onLineFieldChange(idx, 'discountPercent', $any($event.target).value)" />
+
+            <input readonly class="fl-ro iv-line-total" [value]="lineTotal(idx) | currencyAr: true" />
+
+            <button type="button" class="del-btn" [disabled]="items.length === 1" (click)="removeLine(idx)">×</button>
+          </div>
+          }
+        </div>
+
+        @if (loadingRefs()) {
+        <div class="iv-loading">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>جاري تحميل الموردين والمخازن والمنتجات...</span>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── RIGHT: summary ── -->
+    <div class="iv-col-side">
+      <div class="card iv-summary w-auto">
+        <div class="ct iv-card-title">ملخص الفاتورة</div>
+
+        <div class="iv-summary-box">
+          <div class="sr">
+            <span class="iv-muted">إجمالي الأصناف</span>
+            <span>{{ subtotal() | currencyAr: true }}</span>
+          </div>
+          <div class="sr">
+            <span class="iv-muted">الخصم</span>
+            <span class="iv-disc">− {{ discountAmount() | currencyAr: true }}</span>
+          </div>
+          <div class="sr">
+            <span class="iv-muted">ضريبة القيمة المضافة {{ form.controls.taxRatePercent.value }}%</span>
+            <span>{{ taxAmount() | currencyAr: true }}</span>
+          </div>
+          <div class="sr iv-total-row">
+            <span>الإجمالي شامل الضريبة</span>
+            <span>{{ grandTotal() | currencyAr: true }}</span>
+          </div>
+        </div>
+
+        <div class="fg2">
+          <div class="fl">
+            <label>المدفوع الآن</label>
+            <input type="number" min="0" formControlName="paidAmount" />
+          </div>
+          <div class="fl">
+            <label>الباقي للمورد</label>
+            <input readonly class="fl-ro iv-rem-input" [value]="remaining() | currencyAr: true" />
+          </div>
+        </div>
+
+        <label class="iv-auto-post">
+          <input type="checkbox" formControlName="autoPostInventory" />
+          <span>تحديث المخزون تلقائياً + تسجيل قيد محاسبي</span>
+        </label>
+
+        @if (serverError(); as msg) {
+        <div class="alert alert-danger mb-2" role="alert" style="font-size:11px;">
+          {{ msg }}
+        </div>
+        }
+
+        <div class="iv-actions">
+          <button type="button"
+            class="btn btn-bl iv-btn-grow-2 d-inline-flex align-items-center justify-content-center gap-2"
+            [disabled]="savingDraft() || savingFinal()" (click)="saveAndConfirm()">
+            @if (savingFinal()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            <span>{{
+              savingFinal()
+                ? 'جاري الحفظ...'
+                : isEdit()
+                  ? 'حفظ التعديلات'
+                  : 'حفظ وطباعة الفاتورة'
+            }}</span>
+          </button>
+
+          <button type="button" class="btn iv-btn-grow-1 d-inline-flex align-items-center justify-content-center gap-2"
+            [disabled]="savingDraft() || savingFinal()" (click)="saveDraft()">
+            @if (savingDraft()) {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            <span>{{ savingDraft() ? 'جاري الحفظ...' : 'مسودة' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+

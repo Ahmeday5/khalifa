@@ -1,0 +1,148 @@
+<app-modal
+  [open]="open()"
+  title="كشف حساب أرباح الشركة"
+  size="xl"
+  [closeOnBackdrop]="!loading()"
+  [closeOnEsc]="!loading()"
+  (closed)="close()"
+>
+  <!-- ── SUMMARY CARDS ── -->
+  @if (statement(); as st) {
+    <div class="cps-summary">
+      <div class="cps-sc cps-sc-recv">
+        <div class="cps-sc-label">إجمالي المستلم</div>
+        <div class="cps-sc-val">{{ st.totalReceived | currencyAr: true }}</div>
+      </div>
+      <div class="cps-sc cps-sc-paid">
+        <div class="cps-sc-label">إجمالي المدفوع</div>
+        <div class="cps-sc-val">{{ st.totalPaid | currencyAr: true }}</div>
+      </div>
+      <div class="cps-sc cps-sc-bal">
+        <div class="cps-sc-label">الرصيد الحالي</div>
+        <div class="cps-sc-val">{{ st.currentBalance | currencyAr: true }}</div>
+      </div>
+    </div>
+  }
+
+  <!-- ── DATE FILTER ── -->
+  <div class="cps-filter">
+    <div class="cps-filter-group">
+      <label class="cps-filter-label">من تاريخ</label>
+      <input
+        type="date"
+        class="form-control form-control-sm"
+        [value]="fromDate()"
+        (change)="fromDate.set($any($event.target).value)"
+      />
+    </div>
+    <div class="cps-filter-group">
+      <label class="cps-filter-label">إلى تاريخ</label>
+      <input
+        type="date"
+        class="form-control form-control-sm"
+        [value]="toDate()"
+        (change)="toDate.set($any($event.target).value)"
+      />
+    </div>
+    <div class="cps-filter-actions">
+      <button
+        type="button"
+        class="btn btn-sm btn-bl"
+        [disabled]="loading()"
+        (click)="applyDates()"
+      >تطبيق</button>
+      @if (hasFilters()) {
+        <button
+          type="button"
+          class="btn btn-sm"
+          [disabled]="loading()"
+          (click)="clearDates()"
+        >مسح</button>
+      }
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        @if (loading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>تحديث</span>
+      </button>
+    </div>
+  </div>
+
+  @if (error(); as msg) {
+    <div class="alert alert-danger my-2" role="alert" style="font-size:12px">{{ msg }}</div>
+  }
+
+  <!-- ── ENTRIES TABLE ── -->
+  <div class="tw" style="margin-bottom:0">
+    <table>
+      <thead>
+        <tr>
+          <th class="cps-w-date">التاريخ</th>
+          <th class="cps-w-type">النوع</th>
+          <th class="cps-w-ref">المرجع</th>
+          <th>المساهم</th>
+          <th class="cps-w-amount">المبلغ</th>
+          <th class="cps-w-amount">الرصيد بعد</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of entries(); track e.id) {
+          <tr>
+            <td class="cps-date">{{ e.date | dateAr: 'short' }}</td>
+            <td>
+              <app-badge [text]="voucherLabel(e.voucherType)" [type]="voucherBadge(e.voucherType)" />
+            </td>
+            <td>
+              <app-badge [text]="refLabel(e.referenceType)" [type]="refBadge(e.referenceType)" />
+            </td>
+            <td class="cps-shareholder">{{ e.shareholderName || '—' }}</td>
+            <td
+              class="cps-amount"
+              [style.color]="isInflow(e.voucherType) ? 'var(--gr)' : 'var(--re,#c0392b)'"
+            >
+              {{ isInflow(e.voucherType) ? '+' : '−' }}{{ e.amount | currencyAr: true }}
+            </td>
+            <td style="color:var(--bl);font-weight:700">
+              {{ e.balanceAfter | currencyAr: true }}
+            </td>
+            <td class="cps-notes" [title]="e.notes ?? ''">{{ e.notes || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              @if (loading()) {
+                جاري التحميل...
+              } @else if (hasFilters()) {
+                لا توجد حركات في هذه الفترة.
+              } @else {
+                لا توجد حركات بعد.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

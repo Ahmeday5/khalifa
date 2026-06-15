@@ -1,0 +1,149 @@
+<app-modal
+  [open]="open()"
+  title="سجل سندات الحسابات الفرعية"
+  size="xl"
+  [closeOnBackdrop]="!loading()"
+  [closeOnEsc]="!loading()"
+  (closed)="close()"
+>
+  <!-- ── FILTERS ── -->
+  <div class="sav-filters">
+    <label class="sav-field">
+      <span class="sav-field-label">بحث</span>
+      <input
+        type="text"
+        class="form-control form-control-sm"
+        [value]="searchTerm()"
+        (input)="onSearch($any($event.target).value)"
+        placeholder="اسم الحساب أو رقم السند…"
+      />
+    </label>
+
+    <label class="sav-field">
+      <span class="sav-field-label">النوع</span>
+      <select
+        class="form-select form-select-sm"
+        [value]="typeFilter()"
+        (change)="onTypeChange($any($event.target).value)"
+      >
+        <option value="">الكل</option>
+        @for (opt of typeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="sav-field">
+      <span class="sav-field-label">الحساب الفرعي</span>
+      <app-searchable-select
+        [options]="accountOptions()"
+        [ngModel]="subAccountId()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="onSubAccountChange($event)"
+        placeholder="كل الحسابات"
+        searchPlaceholder="ابحث بالاسم أو الجوال…"
+      />
+    </label>
+  </div>
+
+  <div class="d-flex justify-content-end gap-1 mb-2">
+    @if (hasFilters()) {
+      <button type="button" class="btn btn-sm" (click)="clearFilters()">مسح</button>
+    }
+    <button
+      type="button"
+      class="btn btn-sm d-inline-flex align-items-center gap-1"
+      [disabled]="loading()"
+      (click)="refresh()"
+    >
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>تحديث</span>
+    </button>
+    <button
+      type="button"
+      class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+      [disabled]="vouchers().length === 0 || loading() || isPrinting()"
+      (click)="print()"
+    >
+      @if (isPrinting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>🖨 طباعة PDF</span>
+    </button>
+  </div>
+
+  <!-- ── TABLE ── -->
+  <div class="tw" style="margin-bottom:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>التاريخ</th>
+          <th>الحساب</th>
+          <th>رقم السند</th>
+          <th>النوع</th>
+          <th>المبلغ</th>
+          <th>الرصيد بعد</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vouchers(); track v.id) {
+          <tr>
+            <td class="trf-date">{{ v.date | dateAr: 'short' }}</td>
+            <td style="font-weight:600">{{ v.subAccountName }}</td>
+            <td style="font-size:10.5px;color:var(--txt2)" [title]="v.voucherNumber">
+              {{ v.voucherNumber }}
+            </td>
+            <td><app-badge [text]="typeLabel(v.type)" [type]="typeBadge(v.type)" /></td>
+            <td
+              style="font-weight:700"
+              [style.color]="isReceipt(v.type) ? 'var(--gr)' : 'var(--re,#c0392b)'"
+            >
+              {{ isReceipt(v.type) ? '+' : '−' }}{{ v.amount | currencyAr: true }}
+            </td>
+            <td style="color:var(--bl);font-weight:700">{{ v.balanceAfter | currencyAr: true }}</td>
+            <td class="trf-notes" [title]="v.notes ?? ''">{{ v.notes || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              @if (loading()) {
+                جاري التحميل...
+              } @else if (hasFilters()) {
+                لا توجد سندات مطابقة للفلاتر الحالية.
+              } @else {
+                لا توجد سندات بعد.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+      @if (vouchers().length > 0) {
+        <tfoot>
+          <tr>
+            <td colspan="4" style="font-weight:700">إجمالي مبالغ الصفحة</td>
+            <td colspan="3" style="font-weight:700">{{ pageTotal() | currencyAr: true }}</td>
+          </tr>
+        </tfoot>
+      }
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

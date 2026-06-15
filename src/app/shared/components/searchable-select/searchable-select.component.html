@@ -1,0 +1,68 @@
+<div
+  class="ss"
+  [class.ss--open]="open()"
+  [class.ss--disabled]="disabled()"
+>
+  <!-- closed control -->
+  <button
+    type="button"
+    class="form-select ss__control text-end"
+    [class.is-invalid]="isInvalid()"
+    [disabled]="disabled()"
+    (click)="toggle()"
+  >
+    @if (selectedOption(); as sel) {
+      <span class="ss__value">
+        {{ sel.label }}
+        @if (sel.hint) {
+          <span class="ss__hint">— {{ sel.hint }}</span>
+        }
+      </span>
+      <span
+        class="ss__clear"
+        role="button"
+        aria-label="مسح الاختيار"
+        (click)="clear($event)"
+      >&times;</span>
+    } @else {
+      <span class="ss__placeholder">{{ placeholder() }}</span>
+    }
+  </button>
+
+  <!-- dropdown panel -->
+  @if (open()) {
+    <div class="ss__panel">
+      <input
+        #searchBox
+        type="text"
+        class="form-control ss__search"
+        [placeholder]="searchPlaceholder()"
+        [value]="term()"
+        (input)="onSearch($event)"
+        (keydown)="onKeydown($event)"
+        autocomplete="off"
+      />
+
+      <ul class="ss__list">
+        @for (opt of filtered(); track opt.value; let i = $index) {
+          <li
+            class="ss__option"
+            [class.ss__option--active]="i === activeIndex()"
+            [class.ss__option--selected]="
+              selectedOption()?.value === opt.value
+            "
+            (click)="select(opt)"
+            (mouseenter)="activeIndex.set(i)"
+          >
+            <span class="ss__option-label">{{ opt.label }}</span>
+            @if (opt.hint) {
+              <span class="ss__option-hint">{{ opt.hint }}</span>
+            }
+          </li>
+        } @empty {
+          <li class="ss__empty">لا توجد نتائج مطابقة</li>
+        }
+      </ul>
+    </div>
+  }
+</div>

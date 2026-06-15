@@ -1,0 +1,108 @@
+/* ── state ── */
+.psd-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 12px;
+  color: var(--txt2);
+  font-size: 12px;
+}
+
+/* ── header grid ── */
+.psd-head {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 18px;
+  margin: 0 0 14px 0;
+
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.psd-head-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+
+  dt {
+    margin: 0;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--txt3);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--txt);
+    word-break: break-word;
+  }
+
+  &--full { grid-column: 1 / -1; }
+}
+
+/* ── lines table ── */
+.psd-table {
+  table { width: 100%; }
+  th { font-size: 10.5px; white-space: nowrap; }
+}
+
+.psd-amount {
+  color: var(--gr);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.psd-pct {
+  font-weight: 700;
+  color: var(--bl);
+  font-size: 11px;
+}
+
+.psd-muted {
+  color: var(--txt2);
+  font-size: 11px;
+}
+
+.psd-total-row td {
+  border-top: 2px solid var(--brd);
+  background: var(--bg2);
+  font-size: 12px;
+}
+
+/* ── voucher chip ── */
+.psd-voucher {
+  appearance: none;
+  background: var(--bl-l);
+  border: 1px dashed transparent;
+  border-radius: var(--r);
+  padding: 3px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bl);
+  cursor: pointer;
+  font-family: inherit;
+  max-width: 100%;
+
+  span {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg { flex-shrink: 0; opacity: 0.7; }
+
+  &:hover { border-color: var(--bl); }
+}
+
+/* ── utilities ── */
+.fw-600 { font-weight: 600; }
+.cv-ltr { direction: ltr; unicode-bidi: isolate; }
+.text-center { text-align: center; }
+.text-end { text-align: end; }

@@ -1,0 +1,61 @@
+/* ── ADMIN LAYOUT ── */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  height: var(--app-height, 100dvh);
+
+  overflow: hidden;
+  background: var(--bg-main);
+}
+
+// ─── Mobile Sidebar Overlay ──────────────────────────────────
+.sidebar-overlay {
+  display: none;
+
+  @media (max-width: 992px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 900; // just below the sidebar (which sits at 1000+)
+    cursor: pointer;
+  }
+}
+
+// ─── Sidebar Wrapper ─────────────────────────────────────────
+.sidebar-wrapper {
+  flex-shrink: 0;
+
+  // On mobile the sidebar uses position:fixed and slides in as an overlay,
+  // so the wrapper must take zero space in the flex row.
+  @media (max-width: 992px) {
+    width: 0;
+    min-width: 0;
+    overflow: visible; // let the fixed sidebar paint outside this box
+  }
+}
+
+// ─── Main Content ────────────────────────────────────────────
+.main-content {
+  flex: 1;
+  min-width: 0;   // prevent flex item from overflowing its container (width axis)
+  min-height: 0;  // prevent flex item from overflowing its container (height axis)
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // topbar is a flex child — pin it so it never shrinks or scrolls away
+  app-topbar { flex-shrink: 0; }
+}
+
+// ─── Scrollable Page Area ────────────────────────────────────
+// Only this div scrolls, not the whole main-content.
+// The topbar stays fixed at the top while pages scroll independently.
+.content-body {
+  flex: 1;
+  min-height: 0;  // critical: lets the flex child scroll instead of overflow
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}

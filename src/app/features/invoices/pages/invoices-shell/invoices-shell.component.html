@@ -1,0 +1,20 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">فواتير المشتريات</div>
+    <div class="pgs">إدارة فواتير الموردين ومتابعة المدفوعات</div>
+  </div>
+  <a class="btn btn-sm btn-bl" routerLink="new">+ فاتورة جديدة</a>
+</div>
+
+<div class="cu-tabs">
+  @for (tab of tabs; track tab.path) {
+    <a class="cu-tab"
+       [routerLink]="tab.path"
+       routerLinkActive="active"
+       [routerLinkActiveOptions]="{ exact: false }">
+      {{ tab.label }}
+    </a>
+  }
+</div>
+
+<router-outlet />

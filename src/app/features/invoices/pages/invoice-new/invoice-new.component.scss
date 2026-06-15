@@ -1,0 +1,176 @@
+/* ── 2-COLUMN GRID ── */
+.iv-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 13px;
+
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.iv-col-main { min-width: 0; }
+.iv-col-side { min-width: 0; }
+
+/* ── CARD TITLE ── */
+.iv-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+
+/* ── 3-COLUMN FORM GRID ── */
+.fg3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+/* ── 2-COLUMN FORM GRID ── */
+.fg2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 9px;
+
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+
+.fl {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  label {
+    font-size: 10px;
+    color: var(--txt2);
+    font-weight: 500;
+  }
+
+  input, select {
+    font-family: inherit;
+    font-size: 11px;
+    padding: 6px 9px;
+    border-radius: var(--r);
+    border: 1px solid var(--brd2);
+    background: var(--bg2);
+    color: var(--txt);
+    width: 100%;
+    &:focus { outline: none; border-color: var(--bl); }
+  }
+
+  .fl-ro { background: var(--bg3); }
+}
+
+/* ── INVOICE LINE HEADERS (mock spec column widths) ── */
+.iv-line-h {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr 24px;
+  gap: 6px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  color: var(--txt3);
+  padding: 0 4px;
+}
+
+/* `.inv-line-r` and `.del-btn` are defined globally; keep local tweaks here */
+.inv-line-r select,
+.inv-line-r input {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+  width: 100%;
+  &:focus { outline: none; border-color: var(--bl); }
+}
+
+.iv-line-total {
+  background: var(--bg3) !important;
+  font-weight: 600;
+  color: var(--bl);
+  text-align: end;
+}
+
+/* ── SUMMARY ── */
+.iv-summary {
+  position: sticky;
+  top: 8px;
+}
+
+.iv-summary-box {
+  background: var(--bg3);
+  border-radius: var(--r);
+  padding: 10px;
+  margin-bottom: 9px;
+}
+
+.iv-muted   { color: var(--txt2); }
+.iv-disc    { color: var(--re); }
+
+.iv-total-row {
+  border-top: 1px solid var(--brd);
+  margin-top: 4px;
+  padding-top: 7px;
+
+  span:first-child { font-weight: 700; }
+  span:last-child {
+    font-size: 13px;
+    color: var(--bl);
+    font-weight: 700;
+  }
+}
+
+.iv-rem-input {
+  color: var(--re);
+  font-weight: 700;
+}
+
+/* ── AUTO-POST CHECKBOX ── */
+.iv-auto-post {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--gr-l);
+  color: var(--gr);
+  border-radius: var(--r);
+  padding: 7px 9px;
+  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input { width: 13px; height: 13px; accent-color: var(--gr); }
+}
+
+/* ── ACTION BUTTONS ── */
+.iv-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.iv-btn-grow-2 { flex: 2; }
+.iv-btn-grow-1 { flex: 1; }
+
+/* ── INLINE HINT ── */
+.iv-hint {
+  font-size: 9.5px;
+  color: var(--txt3);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+/* ── LOADING ── */
+.iv-loading {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--txt2);
+}

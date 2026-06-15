@@ -1,0 +1,368 @@
+/* ── HERO ── */
+.vc-hero {
+  background: linear-gradient(135deg, var(--te, #0d9488), var(--bl-d));
+  border-radius: var(--rl);
+  padding: 14px 18px;
+  color: #fff;
+  margin-bottom: 11px;
+  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.18);
+}
+
+.vc-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vc-hero-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+}
+
+.vc-hero-value {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.vc-hero-stats {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.vc-hero-stat-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+
+.vc-hero-stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vc-hero-receipt { color: #d1fae5; }
+.vc-hero-payment { color: #fecaca; }
+
+/* ── TOOLBAR ── */
+.vc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 11px;
+  flex-wrap: wrap;
+}
+
+/* ── TYPE TABS ── */
+.vc-tabs {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: 999px;
+  gap: 2px;
+}
+
+.vc-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--txt2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: var(--txt);
+    background: var(--bg3, rgba(0, 0, 0, 0.04));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bl);
+    outline-offset: 2px;
+  }
+}
+
+.vc-tab-active {
+  background: var(--bl);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(27, 95, 168, 0.25);
+
+  &:hover {
+    color: #fff;
+    background: var(--bl);
+  }
+}
+
+/* ── SEARCH ── */
+.vc-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1;
+  max-width: 300px;
+  min-width: 180px;
+
+  svg {
+    position: absolute;
+    inset-inline-start: 10px;
+    color: var(--txt3);
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 7px 32px 7px 32px;
+    border-radius: var(--r);
+    border: 1px solid var(--brd2);
+    background: var(--bg2);
+    color: var(--txt);
+
+    &:focus {
+      outline: none;
+      border-color: var(--bl);
+      box-shadow: 0 0 0 3px rgba(27, 95, 168, 0.12);
+    }
+  }
+}
+
+.vc-search-clear {
+  position: absolute;
+  inset-inline-end: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg3);
+  color: var(--txt2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--brd);
+    color: var(--txt);
+  }
+}
+
+/* ── TABLE CARD ── */
+.vc-card { padding-bottom: 8px; }
+
+/* ── COLUMN WIDTHS ── */
+.vc-w-id          { width: 5%;  text-align: center; }
+.vc-w-number      { width: 11%; }
+.vc-w-type        { width: 9%;  }
+.vc-w-amount      { width: 11%; }
+.vc-w-date        { width: 9%;  }
+.vc-w-treasury    { width: 10%; }
+.vc-w-party-type  { width: 8%;  }
+.vc-w-party-name  { width: 14%; }
+.vc-w-ref         { width: 11%; }
+.vc-w-notes       { width: 12%; }
+
+/* ── CELLS ── */
+.vc-id {
+  color: var(--txt3);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.vc-number-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: var(--r);
+  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bl);
+  cursor: pointer;
+  font-family: inherit;
+  max-width: 100%;
+  text-align: start;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--bl-l);
+    border-color: var(--bl-l);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--bl);
+    background: var(--bl-l);
+  }
+}
+
+.vc-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vc-number-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.vc-amount-in {
+  color: var(--gr);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-amount-out {
+  color: var(--re);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-date {
+  font-size: 10.5px;
+  color: var(--txt2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vc-notes {
+  font-size: 10.5px;
+  color: var(--txt3);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── EMPTY STATES ── */
+.vc-empty {
+  text-align: center;
+  padding: 28px 18px;
+  color: var(--txt3);
+  font-size: 11px;
+}
+
+.vc-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0;
+}
+
+.vc-empty-icon {
+  color: var(--txt3);
+  margin-bottom: 4px;
+}
+
+.vc-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.vc-empty-sub {
+  font-size: 11px;
+  color: var(--txt2);
+  margin-bottom: 4px;
+}
+
+/* ── DETAIL MODAL ── */
+.vd-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 18px;
+  margin: 0;
+}
+
+.vd-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  dt {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--txt3);
+    margin: 0;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 12px;
+    color: var(--txt);
+    word-break: break-word;
+  }
+
+  &--full {
+    grid-column: 1 / -1;
+  }
+}
+
+.vd-number {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--txt);
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: var(--r);
+  padding: 7px 9px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.vd-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--bl);
+  border-color: var(--bl-l);
+  background: var(--bl-l);
+
+  &:hover {
+    background: var(--bl);
+    color: #fff;
+  }
+}
+
+.vd-notes {
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  white-space: pre-wrap;
+  color: var(--txt2);
+}
+
+@media (max-width: 560px) {
+  .vd-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── UTILITIES (mirror customers-list naming) ── */
+.fw-600 { font-weight: 600; }
+.cv-ltr { direction: ltr; unicode-bidi: isolate; }
+.text-muted { color: var(--txt3); }
+.mb-0   { margin-bottom: 0 !important; }
+.ms-auto { margin-inline-start: auto; }
+.flex-wrap { flex-wrap: wrap; }

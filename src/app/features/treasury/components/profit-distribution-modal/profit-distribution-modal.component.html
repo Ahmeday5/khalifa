@@ -1,0 +1,162 @@
+<app-modal
+  [open]="open()"
+  title="توزيع الأرباح"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  @if (preview(); as p) {
+    <!-- summary -->
+    <div class="pd-summary">
+      <div class="pd-summary-item">
+        <span class="pd-summary-label">خزينة الأرباح</span>
+        <span class="pd-summary-value">{{ p.profitsTreasuryName }}</span>
+      </div>
+      <div class="pd-summary-item">
+        <span class="pd-summary-label">إجمالي المبلغ الموزّع</span>
+        <span class="pd-summary-value pd-amount">{{ totalAmount() | currencyAr: true }}</span>
+      </div>
+      <div class="pd-summary-item">
+        <span class="pd-summary-label">نصيب المساهمين</span>
+        <span class="pd-summary-value" style="color:var(--gr)">{{ totalShareholdersShare() | currencyAr: true }}</span>
+      </div>
+      <div class="pd-summary-item">
+        <span class="pd-summary-label">نصيب الشركة</span>
+        <span class="pd-summary-value" style="color:var(--txt2)">{{ totalCompanyShare() | currencyAr: true }}</span>
+      </div>
+      <div class="pd-summary-item">
+        <span class="pd-summary-label">عدد المساهمين</span>
+        <span class="pd-summary-value">{{ lines().length }}</span>
+      </div>
+    </div>
+
+    @if (!canDistribute()) {
+      <div class="pd-empty">
+        <div class="pd-empty-icon" aria-hidden="true">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+        </div>
+        <div class="pd-empty-title">لا توجد أرباح للتوزيع حاليًا</div>
+        <div class="pd-empty-sub">رصيد خزينة الأرباح صفر — لن يتم إنشاء أي سندات.</div>
+      </div>
+    } @else {
+      <!-- distribution preview -->
+      <div class="tw pd-table">
+        <table>
+          <thead>
+            <tr>
+              <th>المساهم</th>
+              <th class="text-center">المساهمة</th>
+              <th class="text-center">النسبة</th>
+              <th class="text-end">المستحق</th>
+              <th class="text-end">نصيب المساهم</th>
+              <th class="text-end">نصيب الشركة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track line.shareholderId) {
+              <tr>
+                <td class="fw-600">{{ line.shareholderName }}</td>
+                <td class="text-center pd-muted">{{ line.contributedAmount | currencyAr: true }}</td>
+                <td class="text-center">
+                  <span class="pd-pct">{{ line.percentage | number: '1.0-2' }}%</span>
+                  @if (line.companyPercentage > 0) {
+                    <span class="pd-muted" style="font-size:10px;display:block">شركة {{ line.companyPercentage }}%</span>
+                  }
+                </td>
+                <td class="text-end pd-amount">{{ line.amount | currencyAr: true }}</td>
+                <td class="text-end" style="color:var(--gr);font-weight:600">{{ line.shareholderShare | currencyAr: true }}</td>
+                <td class="text-end pd-muted">{{ line.companyShare | currencyAr: true }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="pd-total-row">
+              <td colspan="3" class="fw-600">الإجمالي</td>
+              <td class="text-end pd-amount">{{ totalAmount() | currencyAr: true }}</td>
+              <td class="text-end" style="color:var(--gr);font-weight:600">{{ totalShareholdersShare() | currencyAr: true }}</td>
+              <td class="text-end pd-muted">{{ totalCompanyShare() | currencyAr: true }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- form -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off" class="pd-form">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">الخزينة التشغيلية (مصدر الصرف)</label>
+            <app-searchable-select
+              formControlName="treasuryId"
+              [options]="operationalTreasuryOptions()"
+              [isDisabled]="loadingTreasuries()"
+              placeholder="اختر الخزينة"
+              searchPlaceholder="ابحث باسم الخزينة…"
+            />
+            <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">تاريخ التوزيع</label>
+            <input
+              type="date"
+              class="form-control"
+              formControlName="date"
+              [class.is-invalid]="isInvalid('date')"
+            />
+            <app-form-error [control]="form.controls.date" label="تاريخ التوزيع" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">ملاحظات</label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="notes"
+              autocomplete="off"
+              placeholder="(اختياري)"
+            />
+          </div>
+        </div>
+      </form>
+
+      <div class="pd-note" role="note">
+        سيتم خصم إجمالي المبلغ من الخزينة التشغيلية المحددة وإصدار سند صرف لكل مساهم. هذا الإجراء لا يمكن التراجع عنه.
+      </div>
+    }
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  } @else if (loadingPreview()) {
+    <div class="pd-state">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span>جاري تجهيز بيانات التوزيع...</span>
+    </div>
+  } @else if (previewError()) {
+    <div class="alert alert-danger mb-0" role="alert" style="font-size:12px;">
+      {{ previewError() }}
+    </div>
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || loadingPreview() || !canDistribute() || form.invalid || loadingTreasuries()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري التوزيع...' : 'تأكيد التوزيع' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

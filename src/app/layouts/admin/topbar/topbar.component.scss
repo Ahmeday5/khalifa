@@ -1,0 +1,260 @@
+/* ── TOPBAR ── */
+.topbar {
+  height: 50px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--brd);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+  @media (max-width: 992px) {
+    z-index: 1100;
+  }
+}
+
+/* ── Hamburger (mobile only) ── */
+.t-hamburger {
+  display: none;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--brd);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--txt2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--bg3);
+  }
+
+  @media (max-width: 991px) {
+    display: flex;
+  }
+}
+
+/* ── Logo ── */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bl);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  /* On desktop, leave room matching sidebar width */
+  @media (min-width: 992px) {
+    min-width: 140px;
+  }
+}
+
+.logo-text {
+  @media (max-width: 576px) {
+    display: none;
+  }
+}
+
+/* ── Quick Search ── */
+.tsearch {
+  flex: 1;
+  max-width: 300px;
+  padding: 6px 11px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd);
+  background: var(--bg);
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--txt);
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--bl);
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+/* ── Right actions group ── */
+.tright {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Quick Pills ── */
+.tpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: opacity 0.12s, transform 0.18s, box-shadow 0.2s;
+  position: relative;
+
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+  &-re {
+    background: var(--re-l);
+    color: var(--re);
+  }
+  &-am {
+    background: var(--am-l);
+    color: var(--am);
+  }
+  &-gr {
+    background: var(--gr-l);
+    color: var(--gr);
+  }
+  &-bl {
+    background: var(--bl-l);
+    color: var(--bl);
+  }
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
+}
+
+/* Pulsing status dot for live pills */
+.tpill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: t-dot-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes t-dot-pulse {
+  0%   { box-shadow: 0 0 0 0    rgba(255, 255, 255, 0); }
+  35%  { box-shadow: 0 0 0 5px  rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0    rgba(255, 255, 255, 0); }
+}
+
+/* One-shot pulse when count rises — re-triggered by `data-pulse` value bump */
+.tpill-live {
+  &[data-pulse] {
+    animation: t-pill-bump 0.7s ease-out;
+  }
+}
+
+@keyframes t-pill-bump {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0 currentColor; }
+  20%  { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+.tdot-live {
+  animation: t-dot-live 1.6s ease-in-out infinite;
+}
+
+@keyframes t-dot-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.8); }
+}
+
+/* ── Icon button ── */
+.ticon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd);
+  background: var(--bg2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  text-decoration: none;
+  color: var(--txt);
+  flex-shrink: 0;
+  transition: background 0.12s;
+
+  &:hover {
+    background: var(--bg3);
+  }
+}
+
+.tdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e24b4a;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+}
+
+/* ── User avatar ── */
+.tav {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bl-l);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bl);
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: opacity 0.12s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.tname {
+  font-size: 11px;
+  color: var(--txt2);
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.trole {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--gr-l);
+  color: var(--gr);
+  font-weight: 600;
+  white-space: nowrap;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}

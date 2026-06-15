@@ -1,0 +1,62 @@
+<header class="topbar">
+
+  <!-- Mobile: hamburger to open sidebar drawer -->
+  <button class="t-hamburger" (click)="layout.toggleMobile()" aria-label="القائمة">
+    @if (layout.mobileOpen()) {
+    <!-- X icon when open -->
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </svg>
+    } @else {
+    <!-- hamburger icon when closed -->
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </svg>
+    }
+  </button>
+
+  <!-- Logo -->
+  <a class="logo" routerLink="/dashboard">
+    <img src="/assets/img/logo.jpeg" alt="logo" class="img-fluid" style="max-width: 50px; max-height: 50px;">
+    <span class="logo-text">الخليفة</span>
+  </a>
+
+  <div class="tright">
+    <!-- Quick pills — hidden on tablet/below. Live from NavCountsStore. -->
+    @if (counts.lowStockProducts() > 0) {
+    <button class="tpill tpill-re tpill-live" [attr.data-pulse]="counts.lowStockPulse()" routerLink="/warehouse/alerts"
+      title="منتجات بمخزون منخفض">
+      <span class="tpill-dot"></span>
+      {{ counts.lowStockProducts() }} {{ counts.lowStockProducts() === 1 ? 'صنف سينفد' : 'أصناف ستنفد' }}
+    </button>
+    }
+    @if (counts.overdueClients() > 0) {
+    <button class="tpill tpill-am tpill-live" [attr.data-pulse]="counts.overduePulse()" routerLink="/customers"
+      title="عملاء متأخرون عن السداد">
+      <span class="tpill-dot"></span>
+      {{ counts.overdueClients() }} {{ counts.overdueClients() === 1 ? 'عميل متأخر' : 'متأخرون' }}
+    </button>
+    }
+    @if (counts.pendingClientOrders() > 0) {
+    <button class="tpill tpill-bl tpill-live" [attr.data-pulse]="counts.pendingPulse()" routerLink="/catalog"
+      title="طلبات لم تتم مراجعتها">
+      <span class="tpill-dot"></span>
+      {{ counts.pendingClientOrders() }} {{ counts.pendingClientOrders() === 1 ? 'طلبية جديدة' : 'طلبيات جديدة' }}
+    </button>
+    }
+    @if (!counts.hasAlerts() && !counts.loading()) {
+    <button class="tpill tpill-gr" title="لا توجد تنبيهات حالياً">نظام سليم</button>
+    }
+
+    <!-- User avatar -->
+    <a class="tav" routerLink="/users" title="{{ currentUser()?.name }}">
+      {{ currentUser()?.avatar }}
+    </a>
+    <span class="tname">{{ currentUser()?.name }}</span>
+    <span class="trole">{{ getRoleLabel() }}</span>
+
+    <!-- Logout -->
+    <button class="btn btn-sm" (click)="logout()" title="تسجيل الخروج">تسجيل الخروج</button>
+  </div>
+
+</header>

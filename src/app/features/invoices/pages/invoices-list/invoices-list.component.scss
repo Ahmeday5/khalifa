@@ -1,0 +1,84 @@
+/* ── STAT CARDS GRID ── */
+.iv-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 11px;
+  margin-bottom: 11px;
+
+  @media (max-width: 768px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
+}
+
+.iv-stat-pos  { color: var(--gr); }
+.iv-stat-neg  { color: var(--re); }
+.iv-stat-info { color: var(--bl); }
+
+/* ── FILTERS BAR ── */
+.iv-filters {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.iv-search,
+.iv-select {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--brd2);
+  background: var(--bg2);
+  color: var(--txt);
+
+  &:focus { outline: none; border-color: var(--bl); }
+}
+
+.iv-search { width: 220px; max-width: 100%; }
+.iv-select { min-width: 150px; }
+
+/* ── TABLE COLS ── */
+.iv-w-7  { width: 7%; }
+.iv-w-9  { width: 9%; }
+.iv-w-10 { width: 10%; }
+.iv-w-12 { width: 12%; }
+.iv-w-14 { width: 14%; }
+.iv-w-22 { width: 22%; }
+
+.iv-num {
+  color: var(--bl);
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+
+.iv-items {
+  font-size: 11px;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iv-paid { color: var(--gr); }
+.iv-rem  { color: var(--re); font-weight: 600; }
+
+/* ── INLINE STATUS PILL (matches catalog page palette) ── */
+.b {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+
+  &.b-ok   { background: var(--gr-l); color: var(--gr); }
+  &.b-warn { background: var(--am-l); color: var(--am); }
+  &.b-bad  { background: var(--re-l); color: var(--re); }
+  &.b-info { background: var(--bl-l); color: var(--bl-d); }
+}
+
+.fs-10 { font-size: 10px; }
+.fs-11 { font-size: 11px; }
+.text-muted { color: var(--txt3); }

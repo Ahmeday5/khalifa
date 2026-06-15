@@ -1,0 +1,180 @@
+.shst-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--bl);
+  color: #fff;
+  border-radius: var(--rl, 12px);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.shst-eyebrow {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.shst-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.shst-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.shst-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.shst-meta-label {
+  font-size: 9.5px;
+  opacity: 0.65;
+}
+
+.shst-meta-val {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shst-hero-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.shst-hero-stat {
+  text-align: center;
+  min-width: 90px;
+}
+
+.shst-hs-label {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.shst-hs-val {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.shst-bl { color: #a8d4ff; }
+.shst-te { color: #80e8d0; }
+
+// ── summary cards ──
+
+.shst-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.shst-sc {
+  flex: 1 1 140px;
+  border-radius: var(--rl, 10px);
+  padding: 10px 12px;
+  border: 1px solid var(--brd, #e5e7eb);
+  background: var(--bg2, #f9fafb);
+}
+
+.shst-sc-label {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-bottom: 4px;
+}
+
+.shst-sc-val {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shst-sc-dep .shst-sc-val { color: var(--gr); }
+.shst-sc-wit .shst-sc-val { color: var(--re, #c0392b); }
+.shst-sc-cap .shst-sc-val { color: var(--purple, #7c3aed); }
+.shst-sc-dist .shst-sc-val { color: var(--te); }
+.shst-sc-acc .shst-sc-val { color: var(--txt1); }
+
+// ── date filter ──
+
+.shst-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.shst-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 150px;
+  max-width: 200px;
+}
+
+.shst-filter-label {
+  font-size: 11px;
+  color: var(--txt2);
+  font-weight: 600;
+}
+
+.shst-filter-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+// ── table cell helpers ──
+
+.shst-w-date    { width: 90px; }
+.shst-w-voucher { width: 140px; }
+.shst-w-type    { width: 120px; }
+.shst-w-amount  { width: 110px; text-align: end; }
+.shst-w-treasury { width: 120px; }
+
+.shst-date {
+  font-size: 10.5px;
+  color: var(--txt2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.shst-voucher {
+  font-size: 10px;
+  color: var(--txt2);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shst-amount {
+  text-align: end;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.shst-treasury {
+  font-size: 11px;
+  color: var(--txt2);
+}
+
+.shst-notes {
+  font-size: 10.5px;
+  color: var(--txt3);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

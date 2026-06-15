@@ -1,0 +1,86 @@
+:host { display: contents; }
+
+.cap-all-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 12px 16px;
+  background: var(--bg-soft, #f8f9fa);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.cap-all-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cap-all-label {
+  font-size: 11px;
+  color: var(--muted, #6c757d);
+  font-weight: 500;
+}
+
+.cap-all-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #212529);
+}
+
+.cap-all-amount {
+  color: var(--gr, #198754);
+}
+
+.cap-all-table {
+  margin-bottom: 16px;
+}
+
+.cap-all-total-row td {
+  border-top: 2px solid var(--border, #dee2e6);
+  padding-top: 8px;
+  font-weight: 700;
+}
+
+.cap-all-form {
+  margin-bottom: 12px;
+}
+
+.cap-all-note {
+  font-size: 11px;
+  color: var(--muted, #6c757d);
+  background: var(--warn-soft, #fff3cd);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.cap-all-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  justify-content: center;
+  color: var(--muted, #6c757d);
+  font-size: 13px;
+}
+
+.cap-all-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted, #6c757d);
+}
+
+.cap-all-empty-icon { opacity: .45; }
+
+.cap-all-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #212529);
+}
+
+.cap-all-empty-sub { font-size: 12px; }

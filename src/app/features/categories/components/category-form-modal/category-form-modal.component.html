@@ -1,0 +1,57 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="sm"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="onSubmit()"
+    novalidate
+    autocomplete="off"
+  >
+    <label class="form-label">اسم الفئة</label>
+    <input
+      type="text"
+      class="form-control"
+      formControlName="name"
+      autocomplete="off"
+      placeholder="مثال: هواتف ذكية"
+      [class.is-invalid]="isInvalid('name')"
+    />
+    <app-form-error [control]="form.controls.name" label="اسم الفئة" />
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >
+      {{ isView() ? 'إغلاق' : 'إلغاء' }}
+    </button>
+
+    @if (submitLabel(); as label) {
+      <button
+        type="button"
+        class="btn btn-bl d-inline-flex align-items-center gap-2"
+        [disabled]="submitting() || form.invalid"
+        (click)="onSubmit()"
+      >
+        @if (submitting()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+      </button>
+    }
+  </ng-container>
+</app-modal>

@@ -1,0 +1,19 @@
+:host ::ng-deep {
+  .form-label {
+    font-size: 11px;
+    color: var(--txt2);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .form-label-hint {
+    color: var(--txt3);
+    font-weight: 400;
+    margin-inline-start: 4px;
+    font-size: 10px;
+  }
+  .btn .spinner-border-sm {
+    width: 0.95rem;
+    height: 0.95rem;
+    border-width: 0.14em;
+  }
+}

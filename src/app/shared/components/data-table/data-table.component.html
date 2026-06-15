@@ -1,0 +1,44 @@
+<div class="tw">
+  <table class="table">
+    <thead>
+      <tr>
+        @for (col of columns(); track col.key) {
+        <th [style.width]="col.width" [style.text-align]="col.align ?? 'right'">
+          {{ col.label }}
+        </th>
+        }
+        @if (hasActions()) {
+        <th style="width: 100px; text-align: center">إجراءات</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @if (data().length === 0) {
+      <tr>
+        <td [attr.colspan]="hasActions() ? columns().length + 1 : columns().length"
+          style="text-align:center; padding: 24px; color: var(--txt3)">
+          لا توجد بيانات
+        </td>
+      </tr>
+      }
+      @for (row of data(); track rowKey(row)) {
+      <tr (click)="rowClick.emit(row)" [style.cursor]="rowClickable() ? 'pointer' : ''">
+        @for (col of columns(); track col.key) {
+        <td [style.text-align]="col.align ?? 'right'">
+          @if (col.cellTemplate) {
+          <ng-container *ngTemplateOutlet="col.cellTemplate; context: { $implicit: row }" />
+          } @else {
+          {{ getCellValue(row, col.key) }}
+          }
+        </td>
+        }
+        @if (hasActions()) {
+        <td style="text-align: center">
+          <ng-content select="[actions]" />
+        </td>
+        }
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>

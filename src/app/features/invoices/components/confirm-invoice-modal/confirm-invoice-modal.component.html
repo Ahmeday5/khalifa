@@ -1,0 +1,94 @@
+<app-modal
+  [open]="open()"
+  [title]="title"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  @if (invoice(); as inv) {
+    <div class="ci-summary">
+      <div class="ci-row"><span>الفاتورة</span><span class="fw-700">{{ inv.invoiceNumber }}</span></div>
+      <div class="ci-row"><span>المورد</span><span>{{ inv.supplierName }}</span></div>
+      <div class="ci-row">
+        <span>الإجمالي</span>
+        <span class="ci-amount">{{ inv.totalAmount | currencyAr: true }}</span>
+      </div>
+      <div class="ci-row">
+        <span>المدفوع</span>
+        <span class="ci-paid">{{ inv.paidAmount | currencyAr: true }}</span>
+      </div>
+      <div class="ci-row">
+        <span>الباقي</span>
+        <span class="ci-rem">{{ inv.remainingAmount | currencyAr: true }}</span>
+      </div>
+    </div>
+
+    <p class="ci-hint">
+      اختر الخزنة التي ستُسحب منها قيمة المدفوع. سيتم تحديث المخزون
+      وإصدار القيد المحاسبي بعد التأكيد.
+    </p>
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      novalidate
+      autocomplete="off"
+    >
+      <label class="form-label">الخزنة</label>
+      <select
+        class="form-select"
+        formControlName="treasuryId"
+        [class.is-invalid]="isInvalid('treasuryId')"
+      >
+        <option [ngValue]="0" disabled>— اختر الخزنة —</option>
+        @for (t of activeTreasuries(); track t.id) {
+          <option [ngValue]="t.id">{{ t.name }}</option>
+        }
+      </select>
+      <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
+
+      @if (loadingTreasuries() || loadingInvoice()) {
+        <div class="ci-loading">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>
+            @if (loadingInvoice()) {
+              جاري تحميل تفاصيل الفاتورة...
+            } @else {
+              جاري تحميل الخزن...
+            }
+          </span>
+        </div>
+      }
+
+      @if (serverError(); as msg) {
+        <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+          {{ msg }}
+        </div>
+      }
+    </form>
+  }
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="close()"
+    >
+      إلغاء
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid || !invoice()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري التأكيد...' : 'تأكيد الفاتورة' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

@@ -1,0 +1,298 @@
+<!-- ── HERO ── -->
+<div class="vc-hero">
+  <div class="vc-hero-main">
+    <div class="vc-hero-label">السندات</div>
+    <div class="vc-hero-value">{{ count() | number }} سند</div>
+
+    <div class="vc-hero-stats">
+      <div>
+        <div class="vc-hero-stat-label">سندات قبض في الصفحة</div>
+        <div class="vc-hero-stat-val vc-hero-receipt">{{ receiptCount() | number }}</div>
+      </div>
+      <div>
+        <div class="vc-hero-stat-label">سندات صرف في الصفحة</div>
+        <div class="vc-hero-stat-val vc-hero-payment">{{ paymentCount() | number }}</div>
+      </div>
+      <div>
+        <div class="vc-hero-stat-label">إجمالي الصفحة</div>
+        <div class="vc-hero-stat-val">{{ totalAmount() | currencyAr: true }}</div>
+      </div>
+      <div>
+        <div class="vc-hero-stat-label">الصفحة الحالية</div>
+        <div class="vc-hero-stat-val">{{ pageIndex() }} / {{ totalPages() || 1 }}</div>
+      </div>
+      <div>
+        <div class="vc-hero-stat-label">صفوف لكل صفحة</div>
+        <div class="vc-hero-stat-val">{{ pageSize() }}</div>
+      </div>
+
+      @if (loading()) {
+        <div class="d-inline-flex align-items-center gap-2" style="opacity:.85">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span style="font-size:11px">جاري التحميل...</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="vc-toolbar">
+  <div class="vc-tabs" role="tablist" aria-label="تصفية حسب النوع">
+    <button
+      type="button"
+      role="tab"
+      class="vc-tab"
+      [class.vc-tab-active]="typeFilter() === ''"
+      [attr.aria-selected]="typeFilter() === ''"
+      (click)="onTypeChange('')"
+    >
+      الكل
+    </button>
+    @for (opt of typeOptions; track opt.value) {
+      <button
+        type="button"
+        role="tab"
+        class="vc-tab"
+        [class.vc-tab-active]="typeFilter() === opt.value"
+        [attr.aria-selected]="typeFilter() === opt.value"
+        (click)="onTypeChange(opt.value)"
+      >
+        {{ opt.label }}
+      </button>
+    }
+  </div>
+
+  <div class="vc-search ms-auto">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input
+      type="text"
+      placeholder="بحث باسم الجهة..."
+      [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)"
+    />
+    @if (searchTerm()) {
+      <button
+        type="button"
+        class="vc-search-clear"
+        aria-label="مسح البحث"
+        (click)="clearSearch()"
+      >×</button>
+    }
+  </div>
+
+  <button
+    type="button"
+    class="btn btn-sm d-inline-flex align-items-center gap-1"
+    [disabled]="loading()"
+    (click)="refresh()"
+  >
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+
+  <button
+    type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    [disabled]="loading() || isPrinting() || count() === 0"
+    (click)="printVouchers()"
+    title="طباعة سجل السندات"
+  >
+    @if (isPrinting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>🖨 طباعة PDF</span>
+  </button>
+
+  <button
+    *appHasPermission="PERMS.treasuryFullAccess"
+    type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    (click)="openForm()"
+  >
+    <span aria-hidden="true">+</span>
+    <span>سند جديد</span>
+  </button>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="card vc-card">
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="vc-w-id">#</th>
+          <th class="vc-w-type">النوع</th>
+          <th class="vc-w-amount">المبلغ</th>
+          <th class="vc-w-date">التاريخ</th>
+          <th class="vc-w-treasury">الخزينة</th>
+          <th class="vc-w-party-type">نوع الجهة</th>
+          <th class="vc-w-party-name">الجهة</th>
+          <th class="vc-w-ref">المرجع</th>
+          <th class="vc-w-notes">ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (v of vouchers(); track v.id) {
+          <tr>
+            <td class="vc-id">
+              <button
+                type="button"
+                class="vc-number-btn"
+                title="اضغط لعرض تفاصيل السند"
+                (click)="openDetail(v)"
+              >#{{ v.id }}</button>
+            </td>
+            <td>
+              <app-badge [text]="v.type | voucherTypeLabel" [type]="typeBadge(v.type)" />
+            </td>
+            <td [class]="isReceipt(v.type) ? 'vc-amount-in' : 'vc-amount-out'">
+              {{ isReceipt(v.type) ? '+' : '−' }} {{ v.amount | currencyAr: true }}
+            </td>
+            <td class="vc-date">{{ v.date | dateAr: 'short' }}</td>
+            <td>{{ v.treasuryName || '—' }}</td>
+            <td>
+              <app-badge
+                [text]="v.relatedPartyType | relatedPartyTypeLabel"
+                [type]="relatedPartyBadge(v.relatedPartyType)"
+              />
+            </td>
+            <td class="fw-600">{{ v.relatedPartyName || '—' }}</td>
+            <td>
+              <app-badge
+                [text]="v.referenceType | referenceTypeLabel"
+                [type]="referenceBadge(v.referenceType)"
+              />
+            </td>
+            <td class="vc-notes" [title]="v.notes ?? ''">{{ cleanNotes(v.notes) }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="vc-empty">
+              @if (loading()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>جاري تحميل السندات...</span>
+              } @else if (hasFilters()) {
+                <div class="vc-empty-block">
+                  <div class="vc-empty-icon" aria-hidden="true">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </div>
+                  <div class="vc-empty-title">لا توجد نتائج</div>
+                  <div class="vc-empty-sub">لا توجد سندات من هذا النوع.</div>
+                  <button class="btn btn-sm mt-2" (click)="clearFilters()">عرض الكل</button>
+                </div>
+              } @else {
+                <div class="vc-empty-block">
+                  <div class="vc-empty-icon" aria-hidden="true">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z" />
+                      <path d="M9 8h6M9 12h6M9 16h4" />
+                    </svg>
+                  </div>
+                  <div class="vc-empty-title">لا توجد سندات بعد</div>
+                  <div class="vc-empty-sub">ستظهر هنا سندات القبض والصرف فور إنشائها.</div>
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+</div>
+
+<!-- ── VOUCHER DETAIL MODAL ── -->
+<app-modal
+  [open]="detailOpen()"
+  title="تفاصيل السند"
+  size="md"
+  (closed)="closeDetail()"
+>
+  @if (detailVoucher(); as v) {
+    <dl class="vd-list">
+      <div class="vd-row">
+        <dt>النوع</dt>
+        <dd>
+          <app-badge [text]="v.type | voucherTypeLabel" [type]="typeBadge(v.type)" />
+        </dd>
+      </div>
+
+      <div class="vd-row">
+        <dt>المبلغ</dt>
+        <dd [class]="isReceipt(v.type) ? 'vc-amount-in' : 'vc-amount-out'">
+          {{ isReceipt(v.type) ? '+' : '−' }} {{ v.amount | currencyAr: true }}
+        </dd>
+      </div>
+
+      <div class="vd-row">
+        <dt>التاريخ</dt>
+        <dd>{{ v.date | dateAr: 'long' }}</dd>
+      </div>
+
+      <div class="vd-row">
+        <dt>الخزينة</dt>
+        <dd>{{ v.treasuryName || '—' }}</dd>
+      </div>
+
+      <div class="vd-row">
+        <dt>الجهة</dt>
+        <dd class="d-flex align-items-center gap-2 flex-wrap">
+          <app-badge
+            [text]="v.relatedPartyType | relatedPartyTypeLabel"
+            [type]="relatedPartyBadge(v.relatedPartyType)"
+          />
+          <span class="fw-600">{{ v.relatedPartyName || '—' }}</span>
+        </dd>
+      </div>
+
+      <div class="vd-row">
+        <dt>المرجع</dt>
+        <dd>
+          <app-badge
+            [text]="v.referenceType | referenceTypeLabel"
+            [type]="referenceBadge(v.referenceType)"
+          />
+        </dd>
+      </div>
+
+      <div class="vd-row vd-row--full">
+        <dt>ملاحظات</dt>
+        <dd class="vd-notes">{{ cleanNotes(v.notes) }}</dd>
+      </div>
+    </dl>
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn btn-sm" (click)="closeDetail()">إغلاق</button>
+  </ng-container>
+</app-modal>
+
+<!-- ── CREATE VOUCHER MODAL ── -->
+<app-voucher-form-modal
+  [open]="showForm()"
+  (closed)="closeForm()"
+  (saved)="onVoucherCreated()"
+/>

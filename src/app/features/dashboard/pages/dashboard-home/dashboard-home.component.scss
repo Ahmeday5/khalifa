@@ -1,0 +1,534 @@
+/* ════════════════════════════════════════════════════════════════
+   Profit chart — last 6 months of net profit
+   ════════════════════════════════════════════════════════════════ */
+.profit-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.profit-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.profit-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.2;
+}
+
+.profit-card__sub {
+  font-size: 11px;
+  color: var(--txt3);
+  margin-top: 3px;
+}
+
+.profit-card__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profit-card__hero-label {
+  font-size: 10px;
+  color: var(--txt3);
+  font-weight: 500;
+}
+
+.profit-card__hero-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--txt);
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+}
+
+.profit-card__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--bg3);
+  color: var(--txt2);
+
+  &--up {
+    background: var(--gr-l);
+    color: var(--gr);
+  }
+  &--down {
+    background: var(--re-l);
+    color: var(--re);
+  }
+}
+
+.profit-card__delta-arrow {
+  font-size: 8px;
+  line-height: 1;
+}
+
+/* ── plot area: y-axis + canvas ── */
+.profit-card__plot {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 180px;
+}
+
+.profit-card__yaxis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block: 0 22px; /* leave room for the x-axis labels under the canvas */
+  text-align: end;
+}
+
+.profit-card__ytick {
+  font-size: 9px;
+  color: var(--txt3);
+  font-weight: 500;
+  line-height: 1;
+  transform: translateY(-50%); /* center on its gridline */
+
+  &:first-child {
+    transform: translateY(0);
+  }
+  &:last-child {
+    transform: translateY(-100%);
+  }
+}
+
+.profit-card__canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 22px; /* x-axis label band */
+}
+
+/* SVG chart fills the canvas; viewBox is stretched to whatever pixel
+   size the canvas resolves to. preserveAspectRatio="none" handles that. */
+.profit-card__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0 0 22px 0;
+  overflow: visible;
+}
+
+.profit-card__svg-grid {
+  stroke: var(--brd);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.65;
+  vector-effect: non-scaling-stroke;
+
+  &:last-of-type {
+    stroke: var(--brd2);
+    stroke-dasharray: 0;
+    opacity: 1;
+  }
+}
+
+.profit-card__svg-line {
+  stroke: var(--bl);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 2px 4px rgba(27, 95, 168, 0.18));
+}
+
+.profit-card__svg-dot {
+  fill: var(--bg2);
+  stroke: var(--bl);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transition: r 0.2s ease;
+
+  &--current {
+    fill: var(--te);
+    stroke: #fff;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 3px 6px rgba(13, 148, 136, 0.32));
+  }
+}
+
+.profit-card__svg-zero {
+  stroke: var(--txt3);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  opacity: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.profit-card__svg-callout {
+  position: absolute;
+  transform: translate(50%, -130%);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--te);
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.28);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 50%;
+    bottom: -4px;
+    transform: translateX(50%) rotate(45deg);
+    width: 6px;
+    height: 6px;
+    background: var(--te);
+  }
+}
+
+.profit-card__xaxis {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 22px;
+}
+
+.profit-card__xlabel {
+  position: absolute;
+  transform: translateX(50%);
+  font-size: 10.5px;
+  color: var(--txt3);
+  font-weight: 500;
+  white-space: nowrap;
+  bottom: 0;
+
+  &--current {
+    color: var(--te);
+    font-weight: 700;
+  }
+}
+
+.profit-card__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  color: var(--txt3);
+  font-size: 12px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Financial separation block — driven by /dashboard/financial-separation
+   ════════════════════════════════════════════════════════════════ */
+.fs-block {
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: var(--rl);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.fs-block-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fs-block-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.fs-block-sub {
+  font-size: 11px;
+  color: var(--txt3);
+  margin-top: 2px;
+}
+
+/* ── NET POSITION (hero stripe) ── */
+.fs-net {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, #153a80);
+  color: #fff;
+  border-radius: var(--rl);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  &--neg {
+    background: linear-gradient(135deg, var(--re), #b91c1c);
+  }
+}
+
+.fs-net-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.fs-net-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.fs-coverage {
+  text-align: end;
+}
+
+.fs-coverage-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+}
+
+.fs-coverage-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+
+  &--bad {
+    color: #fde68a; // amber on the dark green / dark red surface
+  }
+}
+
+/* ── TILE GRID ── */
+.fs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 420px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fs-tile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: var(--rl);
+  padding: 11px 12px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block: 0;
+    width: 3px;
+    background: var(--brd);
+  }
+
+  &--treasury {
+    &::before {
+      background: var(--te);
+    }
+    .fs-tile-icon {
+      background: rgba(13, 148, 136, 0.12);
+    }
+  }
+  &--receivable {
+    &::before {
+      background: var(--bl);
+    }
+    .fs-tile-icon {
+      background: var(--bl-l);
+    }
+  }
+  &--inventory {
+    &::before {
+      background: var(--am);
+    }
+    .fs-tile-icon {
+      background: var(--am-l);
+    }
+  }
+  &--payable {
+    &::before {
+      background: var(--re);
+    }
+    .fs-tile-icon {
+      background: var(--re-l);
+    }
+  }
+}
+
+.fs-tile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.fs-tile-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.fs-tile-label {
+  font-size: 11px;
+  color: var(--txt3);
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+
+.fs-tile-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── STATES ── */
+.fs-loading,
+.fs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  color: var(--txt3);
+  font-size: 12px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Home summary block — driven by /dashboard/home-summary
+   ════════════════════════════════════════════════════════════════ */
+.hs-block {
+  margin-bottom: 14px;
+}
+
+.hs-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hs-block-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.hs-block-sub {
+  font-size: 11px;
+  color: var(--txt3);
+  margin-top: 2px;
+}
+
+.hs-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--txt3);
+}
+
+.hs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  color: var(--txt3);
+  font-size: 12px;
+  background: var(--bg2);
+  border: 1px dashed var(--brd2);
+  border-radius: var(--rl);
+}
+
+.hs-up   { color: var(--gr); font-weight: 600; }
+.hs-down { color: var(--re); font-weight: 600; }
+
+.hs-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 0;
+
+  @media (max-width: 1200px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 900px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 600px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.hs-tile {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: var(--rl);
+  padding: 12px 14px;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block: 0;
+    width: 3px;
+    background: var(--brd);
+  }
+
+  &--blue::before   { background: var(--bl); }
+  &--green::before  { background: var(--gr); }
+  &--teal::before   { background: var(--te); }
+  &--purple::before { background: #7c3aed; }
+  &--orange::before { background: var(--am, #ea580c); }
+  &--red::before    { background: var(--re); }
+}
+
+.hs-tile-label {
+  font-size: 10.5px;
+  color: var(--txt3);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.hs-tile-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt);
+  line-height: 1.2;
+  letter-spacing: -0.2px;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hs-tile-meta {
+  font-size: 10.5px;
+  color: var(--txt3);
+  font-weight: 500;
+}

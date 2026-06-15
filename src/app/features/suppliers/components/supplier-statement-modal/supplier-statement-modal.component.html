@@ -1,0 +1,346 @@
+<app-modal
+  [open]="open()"
+  [title]="title()"
+  size="xl"
+  [closeOnBackdrop]="!loading()"
+  [closeOnEsc]="!loading()"
+  (closed)="close()"
+>
+  <!-- ── FILTER ROW ── -->
+  <form
+    [formGroup]="form"
+    class="ss-filter"
+    novalidate
+    autocomplete="off"
+  >
+    <div class="ss-filter-fields">
+      <label class="ss-field">
+        <span class="ss-field-label">من تاريخ</span>
+        <input type="date" class="form-control form-control-sm" formControlName="from" />
+      </label>
+
+      <label class="ss-field">
+        <span class="ss-field-label">إلى تاريخ</span>
+        <input type="date" class="form-control form-control-sm" formControlName="to" />
+      </label>
+
+      <label class="ss-toggle">
+        <input type="checkbox" formControlName="includeDrafts" />
+        <span>تضمين المسودات</span>
+      </label>
+    </div>
+
+    <div class="ss-filter-actions">
+      <button type="button" class="btn btn-sm" (click)="resetFilters()">إعادة ضبط</button>
+      <button
+        type="button"
+        class="btn btn-sm d-inline-flex align-items-center gap-1"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        @if (loading()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>تحديث</span>
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-bl"
+        [disabled]="!hasStatement() || loading()"
+        (click)="print()"
+      >طباعة</button>
+    </div>
+  </form>
+
+  <!-- ── ERROR ── -->
+  @if (error(); as msg) {
+    <div class="alert alert-danger ss-alert" role="alert">{{ msg }}</div>
+  }
+
+  <!-- ── BODY ── -->
+  <div class="ss-printable" id="ss-printable">
+    @if (statement(); as st) {
+      <!-- HERO -->
+      <section class="ss-hero">
+        <div class="ss-hero-left">
+          <div class="ss-hero-eyebrow">كشف حساب مورد</div>
+          <div class="ss-hero-name">{{ st.supplier.fullName }}</div>
+          <div class="ss-hero-meta">
+            <span class="ss-hero-meta-item">
+              <span class="ss-hero-meta-label">رقم الهاتف</span>
+              <span class="ss-hero-meta-val" dir="ltr">{{ st.supplier.phoneNumber }}</span>
+            </span>
+            <span class="ss-hero-meta-item">
+              <span class="ss-hero-meta-label">العنوان</span>
+              <span class="ss-hero-meta-val">{{ st.supplier.address || '—' }}</span>
+            </span>
+            <span class="ss-hero-meta-item">
+              <span class="ss-hero-meta-label">الفترة</span>
+              <span class="ss-hero-meta-val">
+                @if (st.period.from || st.period.to) {
+                  {{ formatDate(st.period.from) }} ← {{ formatDate(st.period.to) }}
+                } @else {
+                  جميع التواريخ
+                }
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <div class="ss-hero-right">
+          <div class="ss-hero-stat">
+            <div class="ss-hero-stat-label">إجمالي المشتريات</div>
+            <div class="ss-hero-stat-val ss-text-bl">
+              {{ st.summary.totalPurchases | currencyAr: true }}
+            </div>
+          </div>
+          <div class="ss-hero-stat">
+            <div class="ss-hero-stat-label">المدفوع</div>
+            <div class="ss-hero-stat-val ss-text-gr">
+              {{ st.summary.totalPaid | currencyAr: true }}
+            </div>
+          </div>
+          <div class="ss-hero-stat">
+            <div class="ss-hero-stat-label">الباقي</div>
+            <div class="ss-hero-stat-val ss-text-re">
+              {{ st.summary.totalRemaining | currencyAr: true }}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROGRESS -->
+      <div class="ss-progress" aria-hidden="true">
+        <div class="ss-progress-bar" [style.width.%]="paidRatio()"></div>
+        <div class="ss-progress-label">
+          {{ paidRatio() | number: '1.0-1' }}% مدفوع من إجمالي المشتريات
+        </div>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+      <div class="ss-summary">
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">عدد الفواتير</div>
+          <div class="ss-summary-val">{{ st.summary.invoicesCount }}</div>
+        </div>
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">مدفوع عبر الفواتير</div>
+          <div class="ss-summary-val ss-text-gr">{{ st.summary.invoicePaidTotal | currencyAr: true }}</div>
+        </div>
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">مدفوع مباشر</div>
+          <div class="ss-summary-val ss-text-gr">{{ st.summary.standalonePaidTotal | currencyAr: true }}</div>
+        </div>
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">أول توريد</div>
+          <div class="ss-summary-val">{{ formatDate(st.summary.firstSupplyDate) }}</div>
+        </div>
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">آخر توريد</div>
+          <div class="ss-summary-val">{{ formatDate(st.summary.lastSupplyDate) }}</div>
+        </div>
+        <div class="ss-summary-card">
+          <div class="ss-summary-label">متوسط الفاتورة</div>
+          <div class="ss-summary-val">
+            @if (st.summary.invoicesCount > 0) {
+              {{ st.summary.totalPurchases / st.summary.invoicesCount | currencyAr: true }}
+            } @else {
+              —
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- INVOICES -->
+      <section class="ss-invoices">
+        <div class="ss-section-head">
+          <div class="ss-section-title">الفواتير</div>
+          <div class="ss-section-sub">{{ st.invoices.length }} فاتورة في النطاق المختار</div>
+        </div>
+
+        @if (st.invoices.length === 0) {
+          <div class="ss-empty">
+            لا توجد فواتير ضمن النطاق المحدد.
+          </div>
+        } @else {
+          <div class="ss-invoice-list">
+            @for (inv of st.invoices; track inv.id) {
+              <article class="ss-invoice" [class.ss-invoice--open]="isExpanded(inv.id)">
+                <header class="ss-invoice-head" (click)="toggleInvoice(inv.id)">
+                  <div class="ss-invoice-id">
+                    <span class="ss-invoice-num">{{ inv.invoiceNumber }}</span>
+                    <span class="ss-invoice-date">{{ formatDate(inv.invoiceDate) }}</span>
+                  </div>
+
+                  <div class="ss-invoice-meta">
+                    <div class="ss-invoice-meta-cell">
+                      <span class="ss-invoice-meta-label">الإجمالي</span>
+                      <span class="ss-invoice-meta-val">
+                        {{ inv.totalAmount | currencyAr: true }}
+                      </span>
+                    </div>
+                    <div class="ss-invoice-meta-cell">
+                      <span class="ss-invoice-meta-label">المدفوع</span>
+                      <span class="ss-invoice-meta-val ss-text-gr">
+                        {{ inv.paidAmount | currencyAr: true }}
+                      </span>
+                    </div>
+                    <div class="ss-invoice-meta-cell">
+                      <span class="ss-invoice-meta-label">الباقي</span>
+                      <span
+                        class="ss-invoice-meta-val"
+                        [class.ss-text-re]="inv.remainingAmount > 0"
+                        [class.ss-text-gr]="inv.remainingAmount === 0"
+                      >{{ inv.remainingAmount | currencyAr: true }}</span>
+                    </div>
+                    <div class="ss-invoice-meta-cell ss-invoice-status">
+                      <app-badge
+                        [text]="statusLabel(inv.status)"
+                        [type]="statusBadge(inv.status)"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="ss-invoice-toggle"
+                    [attr.aria-expanded]="isExpanded(inv.id)"
+                    [attr.aria-label]="isExpanded(inv.id) ? 'إخفاء البنود' : 'عرض البنود'"
+                    (click)="toggleInvoice(inv.id); $event.stopPropagation()"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                         [style.transform]="isExpanded(inv.id) ? 'rotate(180deg)' : 'rotate(0)'">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                </header>
+
+                @if (isExpanded(inv.id)) {
+                  <div class="ss-invoice-body">
+                    <div class="ss-invoice-keylines">
+                      <div>
+                        <span class="ss-key-label">تاريخ الاستحقاق</span>
+                        <span class="ss-key-val">{{ formatDate(inv.dueDate) }}</span>
+                      </div>
+                      <div>
+                        <span class="ss-key-label">المجموع قبل الضريبة</span>
+                        <span class="ss-key-val">{{ inv.subtotal | currencyAr: true }}</span>
+                      </div>
+                      <div>
+                        <span class="ss-key-label">الخصم</span>
+                        <span class="ss-key-val">{{ inv.discountAmount | currencyAr: true }}</span>
+                      </div>
+                      <div>
+                        <span class="ss-key-label">الضريبة</span>
+                        <span class="ss-key-val">{{ inv.taxAmount | currencyAr: true }}</span>
+                      </div>
+                    </div>
+
+                    <div class="ss-items-wrap">
+                      <table class="ss-items">
+                        <thead>
+                          <tr>
+                            <th class="ss-col-#">#</th>
+                            <th>الصنف</th>
+                            <th class="ss-col-num">الكمية</th>
+                            <th class="ss-col-num">سعر الوحدة</th>
+                            <th class="ss-col-num">خصم</th>
+                            <th class="ss-col-num">الإجمالي</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (item of inv.items; track item.productId; let i = $index) {
+                            <tr>
+                              <td class="ss-col-#">{{ i + 1 }}</td>
+                              <td>{{ item.productName }}</td>
+                              <td class="ss-col-num">{{ item.quantity | number }}</td>
+                              <td class="ss-col-num">{{ item.unitPrice | currencyAr: true }}</td>
+                              <td class="ss-col-num">{{ item.discountPercent }}%</td>
+                              <td class="ss-col-num ss-text-bl">
+                                {{ item.lineTotal | currencyAr: true }}
+                              </td>
+                            </tr>
+                          } @empty {
+                            <tr>
+                              <td colspan="6" class="ss-empty-cell">لا توجد بنود.</td>
+                            </tr>
+                          }
+                        </tbody>
+                        @if (inv.items.length > 0) {
+                          <tfoot>
+                            <tr>
+                              <td colspan="5" class="ss-foot-label">إجمالي البنود</td>
+                              <td class="ss-col-num ss-foot-val">
+                                {{ itemsTotal(inv.items) | currencyAr: true }}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        }
+                      </table>
+                    </div>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- STANDALONE PAYMENTS -->
+      @if (st.payments.length > 0) {
+        <section class="ss-payments">
+          <div class="ss-section-head">
+            <div class="ss-section-title">المدفوعات المباشرة</div>
+            <div class="ss-section-sub">{{ st.payments.length }} دفعة</div>
+          </div>
+
+          <div class="tw ss-pay-table mb-0">
+            <table>
+              <thead>
+                <tr>
+                  <th>رقم السند</th>
+                  <th class="text-center">التاريخ</th>
+                  <th class="text-end">المبلغ</th>
+                  <th>ملاحظات</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of st.payments; track p.id) {
+                  <tr>
+                    <td class="cv-ltr ss-pay-voucher" [title]="p.voucherNumber">
+                      {{ p.voucherNumber }}
+                    </td>
+                    <td class="text-center">{{ formatDate(p.date) }}</td>
+                    <td class="text-end ss-text-gr fw-600">{{ p.amount | currencyAr: true }}</td>
+                    <td class="ss-pay-notes">{{ p.notes || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="fw-600">الإجمالي</td>
+                  <td class="text-end ss-text-gr fw-600">
+                    {{ paymentsTotal(st.payments) | currencyAr: true }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      }
+    } @else if (loading()) {
+      <div class="ss-loading">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span>جاري تحميل كشف الحساب...</span>
+      </div>
+    } @else if (!error()) {
+      <div class="ss-empty">لا توجد بيانات لعرضها.</div>
+    }
+  </div>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" (click)="close()">إغلاق</button>
+  </ng-container>
+</app-modal>

@@ -1,0 +1,7 @@
+<div class="sc">
+  <div class="sc-l">{{ label() }}</div>
+  <div class="sc-v" [style.color]="valueColor()">{{ value() }}</div>
+  @if (sub()) {
+    <div class="sc-s" [style.color]="subColor()">{{ sub() }}</div>
+  }
+</div>

@@ -1,0 +1,153 @@
+<app-modal
+  [open]="open()"
+  title="رسملة الأرباح الكلية"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  @if (preview(); as p) {
+    <!-- summary -->
+    <div class="cap-all-summary">
+      <div class="cap-all-summary-item">
+        <span class="cap-all-label">خزينة الأرباح</span>
+        <span class="cap-all-value">{{ p.profitsTreasuryName }}</span>
+      </div>
+      <div class="cap-all-summary-item">
+        <span class="cap-all-label">إجمالي الأرباح المستحقة</span>
+        <span class="cap-all-value cap-all-amount">{{ totalAmount() | currencyAr: true }}</span>
+      </div>
+      <div class="cap-all-summary-item">
+        <span class="cap-all-label">نصيب المساهمين</span>
+        <span class="cap-all-value" style="color:var(--gr)">{{ totalShareholdersShare() | currencyAr: true }}</span>
+      </div>
+      <div class="cap-all-summary-item">
+        <span class="cap-all-label">نصيب الشركة</span>
+        <span class="cap-all-value" style="color:var(--txt2)">{{ totalCompanyShare() | currencyAr: true }}</span>
+      </div>
+      <div class="cap-all-summary-item">
+        <span class="cap-all-label">عدد المساهمين</span>
+        <span class="cap-all-value">{{ lines().length }}</span>
+      </div>
+    </div>
+
+    @if (!canCapitalize()) {
+      <div class="cap-all-empty">
+        <div class="cap-all-empty-icon" aria-hidden="true">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+        </div>
+        <div class="cap-all-empty-title">لا توجد أرباح مستحقة للرسملة حاليًا</div>
+        <div class="cap-all-empty-sub">لا يوجد مساهمون لديهم أرباح متراكمة غير مُسوَّاة.</div>
+      </div>
+    } @else {
+      <!-- breakdown table -->
+      <div class="tw cap-all-table">
+        <table>
+          <thead>
+            <tr>
+              <th>المساهم</th>
+              <th class="text-end">الأرباح المستحقة</th>
+              <th class="text-end">نصيب المساهم</th>
+              <th class="text-end">نصيب الشركة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track line.shareholderId) {
+              <tr>
+                <td class="fw-600">{{ line.shareholderName }}</td>
+                <td class="text-end cap-all-amount">{{ line.amount | currencyAr: true }}</td>
+                <td class="text-end" style="color:var(--gr);font-weight:600">{{ line.shareholderShare | currencyAr: true }}</td>
+                <td class="text-end" style="color:var(--txt3)">{{ line.companyShare | currencyAr: true }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="cap-all-total-row">
+              <td class="fw-600">الإجمالي</td>
+              <td class="text-end cap-all-amount">{{ totalAmount() | currencyAr: true }}</td>
+              <td class="text-end" style="color:var(--gr);font-weight:600">{{ totalShareholdersShare() | currencyAr: true }}</td>
+              <td class="text-end" style="color:var(--txt3)">{{ totalCompanyShare() | currencyAr: true }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- form -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off" class="cap-all-form">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">الخزينة التشغيلية (مصدر الصرف)</label>
+            <app-searchable-select
+              formControlName="profitsTreasuryId"
+              [options]="operationalTreasuryOptions()"
+              [isDisabled]="loadingTreasuries()"
+              placeholder="اختر الخزينة"
+              searchPlaceholder="ابحث باسم الخزينة…"
+            />
+            <app-form-error [control]="form.controls.profitsTreasuryId" label="الخزينة" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">تاريخ الرسملة</label>
+            <input
+              type="date"
+              class="form-control"
+              formControlName="date"
+              [class.is-invalid]="isInvalid('date')"
+            />
+            <app-form-error [control]="form.controls.date" label="تاريخ الرسملة" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">ملاحظات</label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="notes"
+              autocomplete="off"
+              placeholder="(اختياري)"
+            />
+          </div>
+        </div>
+      </form>
+
+      <div class="cap-all-note" role="note">
+        سيتم ترحيل الأرباح المتراكمة من الخزينة التشغيلية المحددة إلى رأس مال كل مساهم وتصفير رصيد أرباحه. هذا الإجراء لا يمكن التراجع عنه.
+      </div>
+    }
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  } @else if (loadingPreview()) {
+    <div class="cap-all-state">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span>جاري تحميل بيانات الأرباح...</span>
+    </div>
+  } @else if (previewError()) {
+    <div class="alert alert-danger mb-0" role="alert" style="font-size:12px;">
+      {{ previewError() }}
+    </div>
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-gr d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || loadingPreview() || !canCapitalize() || form.invalid || loadingTreasuries()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الرسملة...' : 'رسملة الأرباح' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

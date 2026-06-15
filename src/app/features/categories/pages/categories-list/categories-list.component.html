@@ -1,0 +1,195 @@
+<!-- ── PAGE HEADER ── -->
+<div class="pgh">
+  <div>
+    <div class="pgt">فئات المنتجات</div>
+    <div class="pgs">تصنيف المنتجات لتنظيم أفضل في الكتالوج والتقارير</div>
+  </div>
+  <div class="d-flex gap-2">
+    <button
+      *appHasPermission="PERMS.suppliersFullAccess"
+      class="btn btn-sm btn-bl"
+      (click)="openCreate()"
+    >+ فئة جديدة</button>
+  </div>
+</div>
+
+<!-- ── HERO STATS ── -->
+<div class="cat-hero">
+  <div class="cat-hero-icon" aria-hidden="true">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  </div>
+  <div class="cat-hero-main">
+    <div class="cat-hero-label">إجمالي الفئات</div>
+    <div class="cat-hero-value">{{ count() }} فئة</div>
+    <div class="cat-hero-stats">
+      <div>
+        <div class="cat-hero-stat-label">الصفحة</div>
+        <div class="cat-hero-stat-val">{{ pageIndex() }} / {{ totalPages() || 1 }}</div>
+      </div>
+      <div>
+        <div class="cat-hero-stat-label">صفوف لكل صفحة</div>
+        <div class="cat-hero-stat-val">{{ pageSize() }}</div>
+      </div>
+      @if (loading()) {
+        <div class="d-inline-flex align-items-center gap-2" style="opacity:.85">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span style="font-size:11px">جاري التحميل...</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="cat-toolbar">
+  <div class="cat-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input
+      type="text"
+      placeholder="بحث باسم الفئة..."
+      [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)"
+    />
+    @if (hasFilters()) {
+      <button
+        type="button"
+        class="cat-search-clear"
+        aria-label="مسح البحث"
+        (click)="clearSearch()"
+      >×</button>
+    }
+  </div>
+
+  <button
+    type="button"
+    class="btn btn-sm d-inline-flex align-items-center gap-1"
+    [disabled]="loading()"
+    (click)="refresh()"
+  >
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="card cat-card">
+  <div class="tw mb-0">
+    <table>
+      <thead>
+        <tr>
+          <th class="cat-w-id">#</th>
+          <th class="cat-w-name">اسم الفئة</th>
+          <th class="cat-w-actions text-center">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of categories(); track c.id) {
+          <tr>
+            <td class="cat-id">#{{ c.id }}</td>
+            <td>
+              <div class="cat-row-name">
+                <div class="cat-tag" aria-hidden="true">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                </div>
+                <span class="fw-600">{{ c.name }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex gap-1 justify-content-center" *appHasPermission="PERMS.suppliersFullAccess">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-bl"
+                  (click)="openEdit(c)"
+                >تعديل</button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-re d-inline-flex align-items-center gap-1"
+                  [disabled]="deletingId() === c.id"
+                  (click)="confirmDelete(c)"
+                >
+                  @if (deletingId() === c.id) {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  }
+                  <span>حذف</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="3" class="cat-empty">
+              @if (loading()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>جاري تحميل الفئات...</span>
+              } @else if (hasFilters()) {
+                <div class="cat-empty-block">
+                  <div class="cat-empty-icon" aria-hidden="true">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </div>
+                  <div class="cat-empty-title">لا نتائج لـ "{{ searchTerm() }}"</div>
+                  <div class="cat-empty-sub">جرّب كلمة بحث أخرى أو امسح الفلتر.</div>
+                  <button class="btn btn-sm mt-2" (click)="clearSearch()">مسح البحث</button>
+                </div>
+              } @else {
+                <div class="cat-empty-block">
+                  <div class="cat-empty-icon" aria-hidden="true">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                      <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                  </div>
+                  <div class="cat-empty-title">لا توجد فئات بعد</div>
+                  <div class="cat-empty-sub">ابدأ بتصنيف منتجاتك بإضافة أول فئة.</div>
+                  <button
+                    *appHasPermission="PERMS.suppliersFullAccess"
+                    class="btn btn-sm btn-bl mt-2"
+                    (click)="openCreate()"
+                  >+ إضافة فئة جديدة</button>
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+</div>
+
+<app-category-form-modal
+  [open]="modalOpen()"
+  [mode]="modalMode()"
+  [category]="modalCategory()"
+  (closed)="closeModal()"
+  (saved)="onSaved($event)"
+/>

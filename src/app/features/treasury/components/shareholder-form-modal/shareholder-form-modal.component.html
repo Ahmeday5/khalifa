@@ -1,0 +1,90 @@
+<app-modal [open]="open()" [title]="title()" size="md" [closeOnBackdrop]="!submitting()" [closeOnEsc]="!submitting()"
+  (closed)="close()">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">اسم المساهم</label>
+        <input type="text" class="form-control" formControlName="name" autocomplete="off" placeholder="مثال: أحمد محمد"
+          [class.is-invalid]="isInvalid('name')" />
+        <app-form-error [control]="form.controls.name" label="اسم المساهم" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">رقم الهاتف</label>
+        <input type="tel" dir="ltr" class="form-control" formControlName="phoneNumber" autocomplete="off"
+          placeholder="01xxxxxxxxx" [class.is-invalid]="isInvalid('phoneNumber')" />
+        <app-form-error [control]="form.controls.phoneNumber" label="رقم الهاتف" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">العنوان</label>
+        <input type="text" class="form-control" formControlName="address" autocomplete="off"
+          placeholder="مثال: الهرم، الجيزة" [class.is-invalid]="isInvalid('address')" />
+        <app-form-error [control]="form.controls.address" label="العنوان" />
+      </div>
+
+      @if (isCreate()) {
+      <div class="col-12 col-md-6">
+        <label class="form-label">قيمة المساهمة</label>
+        <input type="number" class="form-control" formControlName="contributedAmount" min="0" step="0.01" dir="ltr"
+          placeholder="0" [class.is-invalid]="isInvalid('contributedAmount')" />
+        <app-form-error [control]="form.controls.contributedAmount" label="قيمة المساهمة" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">خزينة رأس المال</label>
+        <select class="form-select" formControlName="capitalTreasuryId"
+          [class.is-invalid]="isInvalid('capitalTreasuryId')">
+          <option [ngValue]="0" disabled>
+            {{ treasuriesLoading() ? 'جاري التحميل...' : '— اختر —' }}
+          </option>
+          @for (t of treasuries(); track t.id) {
+          <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.capitalTreasuryId" label="خزينة رأس المال" />
+      </div>
+      }
+
+      <div class="col-12">
+        <label class="form-label">نسبة الشركة</label>
+        <input type="number" class="form-control" formControlName="companyPercentage" min="0" dir="ltr"
+          placeholder="0" [class.is-invalid]="isInvalid('companyPercentage')" />
+        <app-form-error [control]="form.controls.companyPercentage" label="نسبة الشركة" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">ملاحظات</label>
+        <input type="text" class="form-control" formControlName="notes" autocomplete="off" placeholder="(اختياري)" />
+      </div>
+    </div>
+
+    @if (!isCreate()) {
+    <div class="alert alert-info mt-3 mb-0" role="note" style="font-size:11px;">
+      قيمة المساهمة وخزينة رأس المال تُحدَّد عند الإنشاء فقط ولا يمكن تعديلها.
+    </div>
+    }
+
+    @if (serverError(); as msg) {
+    <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+      {{ msg }}
+    </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+
+    @if (submitLabel(); as label) {
+    <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid" (click)="onSubmit()">
+      @if (submitting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+    </button>
+    }
+  </ng-container>
+</app-modal>

@@ -1,0 +1,127 @@
+<app-modal
+  [open]="open()"
+  [title]="'سند جديد — ' + (account()?.name ?? '')"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">الخزينة</label>
+        <select
+          class="form-select"
+          formControlName="treasuryId"
+          [class.is-invalid]="isInvalid('treasuryId')"
+        >
+          <option [value]="0" disabled>— اختر خزينة —</option>
+          @for (t of treasuries(); track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">نوع السند</label>
+        <select
+          class="form-select"
+          formControlName="type"
+          (change)="onTypeChange($any($event.target).value)"
+          [class.is-invalid]="isInvalid('type')"
+        >
+          @for (opt of typeOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">المبلغ</label>
+        <input
+          type="number"
+          class="form-control"
+          formControlName="amount"
+          min="0"
+          step="0.01"
+          dir="ltr"
+          placeholder="0"
+          (input)="onAmountChange($any($event.target).value)"
+          [class.is-invalid]="isInvalid('amount')"
+        />
+        <app-form-error [control]="form.controls.amount" label="المبلغ" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">التاريخ</label>
+        <input
+          type="date"
+          class="form-control"
+          formControlName="date"
+          dir="ltr"
+          [class.is-invalid]="isInvalid('date')"
+        />
+        <app-form-error [control]="form.controls.date" label="التاريخ" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">ملاحظات</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="notes"
+          autocomplete="off"
+          placeholder="(اختياري)"
+        />
+      </div>
+    </div>
+
+    <!-- live balance projection -->
+    <div
+      class="d-flex justify-content-between align-items-center mt-3 p-2"
+      style="border-radius:var(--rs,8px);background:var(--bg2,#f6f7f9);font-size:12px"
+    >
+      <div>
+        <span style="color:var(--txt2)">الرصيد الحالي:</span>
+        <span style="font-weight:700">{{ currentBalance() | currencyAr: true }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <span style="color:var(--txt2)">الرصيد بعد السند:</span>
+        <span
+          style="font-weight:700"
+          [style.color]="wouldOverdraw() ? 'var(--re,#c0392b)' : (draftType() === VoucherType.Receipt ? 'var(--gr)' : 'var(--te)')"
+        >{{ projectedBalance() | currencyAr: true }}</span>
+      </div>
+    </div>
+
+    @if (wouldOverdraw()) {
+      <div class="alert alert-warning mt-2 mb-0" role="alert" style="font-size:11px;">
+        تنبيه: هذا السند سيجعل رصيد الحساب بالسالب.
+      </div>
+    }
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-2 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  </form>
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : 'تسجيل السند' }}</span>
+    </button>
+  </ng-container>
+</app-modal>
