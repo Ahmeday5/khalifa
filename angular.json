@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "tagseetDashboard": {
+    "khalifaDashboard": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -19,7 +19,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/tagseet-dashboard",
+            "outputPath": "dist/khalifa-dashboard",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -72,10 +72,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "tagseetDashboard:build:production"
+              "buildTarget": "khalifaDashboard:build:production"
             },
             "development": {
-              "buildTarget": "tagseetDashboard:build:development"
+              "buildTarget": "khalifaDashboard:build:development"
             }
           },
           "defaultConfiguration": "development"

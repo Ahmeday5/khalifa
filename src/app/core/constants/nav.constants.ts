@@ -35,7 +35,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'users',
         requiredAnyPermission: [PERMISSIONS.clientsView],
       },
-      {
+      /*{
         id: 'catalog',
         label: 'الكتالوج والطلبيات',
         route: '/catalog',
@@ -43,7 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeType: 'amber',
         icon: 'box',
         requiredAnyPermission: [PERMISSIONS.clientsView],
-      },
+      },*/
       {
         id: 'reps',
         label: 'المندوبون',
