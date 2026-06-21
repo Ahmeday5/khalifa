@@ -30,13 +30,15 @@
 
 <!-- ── TOOLBAR ── -->
 <div class="cl-toolbar">
+
+  <!-- بحث موحّد -->
   <div class="cl-search">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <path d="m21 21-4.3-4.3" />
     </svg>
-    <input type="text" placeholder="بحث بالاسم أو الهاتف أو العنوان..." [value]="searchTerm()"
+    <input type="text" placeholder="بحث بالاسم أو الهاتف أو العنوان أو الكود..." [value]="searchTerm()"
       (input)="onSearch($any($event.target).value)" />
     @if (searchTerm()) {
     <button type="button" class="cl-search-clear" aria-label="مسح البحث" (click)="clearSearch()">×</button>
@@ -59,36 +61,23 @@
     <span>تحديث</span>
   </button>
 
-  <button
-    type="button"
-    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
-    [disabled]="loading() || isPrinting() || count() === 0"
-    (click)="printClients()"
-    title="طباعة قائمة العملاء"
-  >
+  <button type="button" class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
+    [disabled]="loading() || isPrinting() || count() === 0" (click)="printClients()" title="طباعة قائمة العملاء">
     @if (isPrinting()) {
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
     }
     <span>🖨 طباعة PDF</span>
   </button>
 
-  <button
-    *appHasPermission="PERMS.clientsFullAccess"
-    type="button"
-    class="btn btn-sm btn-gr d-inline-flex align-items-center gap-1"
-    (click)="openDirectContract()"
-    title="إنشاء عقد تقسيط مباشر بدون ربطه بمنتج أو مخزن"
-  >
+  <button *appHasPermission="PERMS.clientsFullAccess" type="button"
+    class="btn btn-sm btn-gr d-inline-flex align-items-center gap-1" (click)="openDirectContract()"
+    title="إنشاء عقد تقسيط مباشر بدون ربطه بمنتج أو مخزن">
     <span aria-hidden="true">+</span>
     <span>عقد مباشر جديد</span>
   </button>
 
-  <button
-    *appHasPermission="PERMS.clientsFullAccess"
-    type="button"
-    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1"
-    (click)="openCreate()"
-  >
+  <button *appHasPermission="PERMS.clientsFullAccess" type="button"
+    class="btn btn-sm btn-bl d-inline-flex align-items-center gap-1" (click)="openCreate()">
     <span aria-hidden="true">+</span>
     <span>إضافة عميل</span>
   </button>
@@ -176,16 +165,18 @@
           </td>
           <td>
             <div class="d-flex gap-1 justify-content-center">
-              <button
-                *appHasPermission="PERMS.clientsFullAccess"
-                type="button"
-                class="btn btn-sm btn-outline-blue"
-                title="تعديل بيانات العميل"
-                aria-label="تعديل بيانات العميل"
-                (click)="openEdit(c)"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <button type="button" class="btn btn-sm btn-outline-secondary" title="عرض بيانات العميل"
+                aria-label="عرض بيانات العميل" (click)="openViewClient(c.id)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+              <button *appHasPermission="PERMS.clientsFullAccess" type="button" class="btn btn-sm btn-outline-blue"
+                title="تعديل بيانات العميل" aria-label="تعديل بيانات العميل" (click)="openEdit(c)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 20h9" />
                   <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                 </svg>
@@ -213,8 +204,8 @@
                 </svg>
               </div>
               <div class="cl-empty-title">لا توجد نتائج</div>
-              <div class="cl-empty-sub">جرّب تعديل البحث أو إلغاء فلتر المتأخرين.</div>
-              <button class="btn btn-sm mt-2" (click)="clearSearch(); toggleOnlyOverdue(false)">مسح الفلاتر</button>
+              <div class="cl-empty-sub">جرّب تعديل البحث أو إلغاء الفلاتر المفعّلة.</div>
+              <button class="btn btn-sm mt-2" (click)="clearAllFilters()">مسح الفلاتر</button>
             </div>
             } @else {
             <div class="cl-empty-block">
@@ -229,11 +220,8 @@
               </div>
               <div class="cl-empty-title">لا يوجد عملاء بعد</div>
               <div class="cl-empty-sub">ابدأ بإضافة أول عقد لتبدأ متابعة الأقساط والتحصيل.</div>
-              <button
-                *appHasPermission="PERMS.clientsFullAccess"
-                class="btn btn-sm btn-bl mt-2"
-                (click)="openCreate()"
-              >+ إضافة عميل</button>
+              <button *appHasPermission="PERMS.clientsFullAccess" class="btn btn-sm btn-bl mt-2"
+                (click)="openCreate()">+ إضافة عميل</button>
             </div>
             }
           </td>
@@ -249,15 +237,116 @@
   }
 </div>
 
-<app-client-form-modal
-  [open]="showForm()"
-  [client]="editTarget()"
-  (closed)="closeForm()"
-  (saved)="onSaved()"
-/>
+<app-client-form-modal [open]="showForm()" [client]="editTarget()" (closed)="closeForm()" (saved)="onSaved()" />
 
-<app-direct-contract-modal
-  [open]="showDirectContract()"
-  (closed)="closeDirectContract()"
-  (created)="onDirectContractCreated()"
-/>
+<app-direct-contract-modal [open]="showDirectContract()" (closed)="closeDirectContract()"
+  (created)="onDirectContractCreated()" />
+
+<app-modal [open]="showViewClient()" title="بيانات العميل" size="lg" (closed)="closeViewClient()">
+  @if (loadingViewClient()) {
+  <div class="d-flex align-items-center justify-content-center gap-2 py-5">
+    <span class="spinner-border" role="status"></span>
+    <span>جاري التحميل...</span>
+  </div>
+  } @else if (viewClientData()) {
+  <!-- Client card header -->
+  <div class="cv-header">
+    <div class="cv-avatar">{{ viewClientData()!.fullName.charAt(0).toUpperCase() }}</div>
+    <div class="cv-header-info">
+      <div class="cv-name">{{ viewClientData()!.fullName }}</div>
+      @if (viewClientData()!.clientCode) {
+      <div class="cv-code">{{ viewClientData()!.clientCode }}</div>
+      }
+      <div class="cv-joined">عضو منذ {{ viewClientData()!.createdAt | dateAr }}</div>
+    </div>
+  </div>
+
+  <!-- Section: البيانات الأساسية -->
+  <div class="cv-section-title">البيانات الأساسية</div>
+  <div class="cv-grid">
+    <div class="cv-field">
+      <span class="cv-field-label">الرقم</span>
+      <span class="cv-field-val cv-ltr">#{{ viewClientData()!.id }}</span>
+    </div>
+    <div class="cv-field">
+      <span class="cv-field-label">الهاتف</span>
+      <span class="cv-field-val cv-ltr">{{ viewClientData()!.phoneNumber }}</span>
+    </div>
+    <div class="cv-field">
+      <span class="cv-field-label">واتساب</span>
+      <span class="cv-field-val cv-ltr">{{ viewClientData()!.whatsappNumber }}</span>
+    </div>
+    <div class="cv-field">
+      <span class="cv-field-label">البريد الإلكتروني</span>
+      <span class="cv-field-val cv-ltr">{{ viewClientData()!.email || '—' }}</span>
+    </div>
+    <div class="cv-field">
+      <span class="cv-field-label">الرقم القومي</span>
+      <span class="cv-field-val cv-ltr">{{ viewClientData()!.nationalId || '—' }}</span>
+    </div>
+    <div class="cv-field cv-field--full">
+      <span class="cv-field-label">العنوان</span>
+      <span class="cv-field-val">{{ viewClientData()!.address || '—' }}</span>
+    </div>
+  </div>
+
+  <!-- Section: البيانات التفصيلية -->
+  @if (viewClientData()!.region || viewClientData()!.occupation || viewClientData()!.building || viewClientData()!.floor
+  || viewClientData()!.department || viewClientData()!.clientCode) {
+  <div class="cv-section-title">بيانات تفصيلية</div>
+  <div class="cv-grid">
+    @if (viewClientData()!.clientCode) {
+    <div class="cv-field">
+      <span class="cv-field-label">كود العميل</span>
+      <span class="cv-field-val cv-ltr">{{ viewClientData()!.clientCode }}</span>
+    </div>
+    }
+    @if (viewClientData()!.region) {
+    <div class="cv-field">
+      <span class="cv-field-label">المنطقة / الحي</span>
+      <span class="cv-field-val">{{ viewClientData()!.region }}</span>
+    </div>
+    }
+    @if (viewClientData()!.occupation) {
+    <div class="cv-field">
+      <span class="cv-field-label">المهنة</span>
+      <span class="cv-field-val">{{ viewClientData()!.occupation }}</span>
+    </div>
+    }
+    @if (viewClientData()!.building) {
+    <div class="cv-field">
+      <span class="cv-field-label">المبنى</span>
+      <span class="cv-field-val">{{ viewClientData()!.building }}</span>
+    </div>
+    }
+    @if (viewClientData()!.floor) {
+    <div class="cv-field">
+      <span class="cv-field-label">الدور</span>
+      <span class="cv-field-val">{{ viewClientData()!.floor }}</span>
+    </div>
+    }
+    @if (viewClientData()!.department) {
+    <div class="cv-field">
+      <span class="cv-field-label">الشقة / القسم</span>
+      <span class="cv-field-val">{{ viewClientData()!.department }}</span>
+    </div>
+    }
+  </div>
+  }
+  }
+
+  <ng-container modal-footer>
+    @if (viewClientData()) {
+    <button type="button" class="btn btn-sm" (click)="printClientCard()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+      </svg>
+      طباعة
+    </button>
+    }
+    <button type="button" class="btn btn-bl" (click)="closeViewClient()">إغلاق</button>
+  </ng-container>
+</app-modal>

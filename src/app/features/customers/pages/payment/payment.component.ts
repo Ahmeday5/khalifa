@@ -277,7 +277,13 @@ export class PaymentComponent {
   }
 
   protected contractOptionLabel(c: ClientContractRow): string {
-    return `عقد #${c.id} — ${c.productName} (${c.installmentsCount} قسط)`;
+    const firstItem = c.items?.[0];
+    const label = firstItem
+      ? c.items.length > 1
+        ? `${firstItem.productName} +${c.items.length - 1}`
+        : firstItem.productName
+      : 'عقد مباشر';
+    return `عقد #${c.id} — ${label} (${c.installmentsCount} قسط)`;
   }
 
   // ─────────── internals ───────────

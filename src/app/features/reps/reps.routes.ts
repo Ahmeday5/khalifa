@@ -8,4 +8,11 @@ export const repsRoutes: Routes = [
         (m) => m.RepsListComponent,
       ),
   },
+  {
+    path: 'requests',
+    loadComponent: () =>
+      import('./pages/rep-requests/rep-requests.component').then(
+        (m) => m.RepRequestsComponent,
+      ),
+  },
 ];

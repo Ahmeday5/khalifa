@@ -52,6 +52,13 @@ export const NAV_SECTIONS: NavSection[] = [
         requiredAnyPermission: [PERMISSIONS.userManagement],
       },
       {
+        id: 'rep-requests',
+        label: 'طلبيات المندوبين',
+        route: '/reps/requests',
+        icon: 'clipboard',
+        requiredAnyPermission: [PERMISSIONS.userManagement],
+      },
+      {
         id: 'my-account',
         label: 'كشف حسابي',
         route: '/my-account',

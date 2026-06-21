@@ -101,7 +101,7 @@ export class CustomersService {
   }
 
   private normalizeCreate(payload: CreateClientPayload): CreateClientPayload {
-    return {
+    const base: CreateClientPayload = {
       fullName: payload.fullName.trim(),
       email: payload.email.trim(),
       nationalId: payload.nationalId.trim(),
@@ -110,6 +110,13 @@ export class CustomersService {
       whatsappNumber: payload.whatsappNumber.trim(),
       password: payload.password,
     };
+    if (payload.clientCode?.trim())  base.clientCode  = payload.clientCode.trim();
+    if (payload.region?.trim())      base.region      = payload.region.trim();
+    if (payload.occupation?.trim())  base.occupation  = payload.occupation.trim();
+    if (payload.building?.trim())    base.building    = payload.building.trim();
+    if (payload.floor?.trim())       base.floor       = payload.floor.trim();
+    if (payload.department?.trim())  base.department  = payload.department.trim();
+    return base;
   }
 
   /**
@@ -141,7 +148,7 @@ export class CustomersService {
   }
 
   private normalizeUpdate(payload: UpdateClientPayload): UpdateClientPayload {
-    return {
+    const base: UpdateClientPayload = {
       fullName: payload.fullName.trim(),
       email: payload.email.trim(),
       nationalId: payload.nationalId.trim(),
@@ -149,17 +156,26 @@ export class CustomersService {
       phoneNumber: payload.phoneNumber.trim(),
       whatsappNumber: payload.whatsappNumber.trim(),
     };
+    if (payload.clientCode !== undefined) base.clientCode  = payload.clientCode.trim();
+    if (payload.region !== undefined)     base.region      = payload.region.trim();
+    if (payload.occupation !== undefined) base.occupation  = payload.occupation.trim();
+    if (payload.building !== undefined)   base.building    = payload.building.trim();
+    if (payload.floor !== undefined)      base.floor       = payload.floor.trim();
+    if (payload.department !== undefined) base.department  = payload.department.trim();
+    return base;
   }
 
   private toClientsParams(
     query: DashboardClientsQuery,
   ): Record<string, unknown> {
-    return {
+    const params: Record<string, unknown> = {
       PageIndex: query.pageIndex ?? 1,
       PageSize: query.pageSize ?? 10,
-      search: query.search?.trim() || undefined,
-      onlyOverdue: query.onlyOverdue ? true : undefined,
     };
+    if (query.search?.trim()) params['search'] = query.search.trim();
+    if (query.onlyOverdue)    params['onlyOverdue'] = true;
+    if (query.clientCode?.trim()) params['clientCode'] = query.clientCode.trim();
+    return params;
   }
 
   // ── Client contracts (real API) ─────────────────────────────────────────

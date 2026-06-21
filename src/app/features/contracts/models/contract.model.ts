@@ -35,15 +35,10 @@ export interface ContractFormData {
 
 // ─────────────────────────────────────────────────────────────────
 //  Live API: POST /dashboard/contracts
-//  Direct installment-contract creation (separate from the
-//  client-order conversion flow).
 // ─────────────────────────────────────────────────────────────────
 
-/**
- * Backend `PaymentFrequency` enum (Monthly = 1, Quarterly = 3, SemiAnnual = 4).
- * Sent/received by name. Daily/Weekly/Yearly are no longer supported.
- */
-export type ContractPaymentFrequency = 'Monthly' | 'Quarterly' | 'SemiAnnual';
+/** Backend PaymentFrequency — Quarterly / SemiAnnual / Annual only. */
+export type ContractPaymentFrequency = 'Quarterly' | 'SemiAnnual' | 'Annual';
 
 export type ContractStatus =
   | 'Active'
@@ -51,29 +46,38 @@ export type ContractStatus =
   | 'Defaulted'
   | 'Cancelled';
 
-/**
- * Payload for `POST /dashboard/contracts`.
- *
- *   IMPORTANT — `representativeId` is OPTIONAL:
- *   - When the user attached a representative, send the id.
- *   - When the user didn't, OMIT the field entirely from the JSON
- *     body. Sending `0` or `null` makes the backend try to attach a
- *     non-existent rep and fail.
- *
- * Use `buildCreateContractPayload()` to assemble the body — it strips
- * `representativeId` when missing/zero so call sites can keep a single
- * form-state shape regardless of whether a rep is selected.
- */
-export interface CreateContractPayload {
-  clientId: number;
+// ─── item shapes ───
+
+/** Wire payload for a single line-item in a contract. */
+export interface ContractItemPayload {
   productId: number;
   warehouseId: number;
   quantity: number;
-  /** ISO datetime (date of sale) — e.g. `2026-05-11T08:19:34.462Z`. */
+}
+
+/** Form-level item (nullable ids before the user selects a value). */
+export interface ContractItemFormState {
+  productId: number | null;
+  warehouseId: number | null;
+  quantity: number;
+}
+
+// ─── create ───
+
+/**
+ * Payload for `POST /dashboard/contracts`.
+ *
+ * IMPORTANT — `representativeId`: omit entirely when no rep is selected.
+ * Use `buildCreateContractPayload()` to assemble the body safely.
+ */
+export interface CreateContractPayload {
+  clientId: number;
+  items: ContractItemPayload[];
+  /** ISO datetime (date of sale). */
   dateOfSale: string;
   cashPrice: number;
   downPayment: number;
-  /** 0..100. */
+  /** 0..100 */
   profitRate: number;
   installmentsCount: number;
   installmentAmount: number;
@@ -90,11 +94,8 @@ export interface CreateContractPayload {
 export interface CreatedContract {
   id: number;
   clientId: number;
-  productId: number;
-  warehouseId: number;
-  quantity: number;
+  items?: ContractItemPayload[];
   dateOfSale: string;
-  purchasePrice: number;
   cashPrice: number;
   downPayment: number;
   profitRate: number;
@@ -103,23 +104,71 @@ export interface CreatedContract {
   paymentFrequency: ContractPaymentFrequency;
   firstInstallmentDate: string;
   status: ContractStatus;
-  /** May be `null` when no rep was attached. */
   representativeId: number | null;
   representativeCommission: number;
   notes: string | null;
 }
 
 /**
- * Form-state shape consumed by the contract creation UI. Mirrors the
- * payload but keeps `representativeId` typed as `number | null` so the
- * select control can bind to it directly; the payload builder takes
- * care of stripping the field when it's nullish or zero.
+ * Form-state shape consumed by the contract UI. `representativeId` is
+ * kept nullable so the select can bind to it; builder strips it when absent.
  */
 export interface ContractFormState {
+  clientId: number | null;
+  items: ContractItemFormState[];
+  dateOfSale: string;
+  cashPrice: number;
+  downPayment: number;
+  profitRate: number;
+  installmentsCount: number;
+  installmentAmount: number;
+  paymentFrequency: ContractPaymentFrequency;
+  firstInstallmentDate: string;
+  treasuryId: number | null;
+  representativeId: number | null;
+  notes?: string;
+}
+
+/** Build `POST /dashboard/contracts` body from form state. */
+export function buildCreateContractPayload(
+  form: ContractFormState,
+): CreateContractPayload {
+  const payload: CreateContractPayload = {
+    clientId: Number(form.clientId),
+    items: form.items
+      .filter((i) => i.productId && i.warehouseId && Number(i.quantity) >= 1)
+      .map((i) => ({
+        productId: Number(i.productId),
+        warehouseId: Number(i.warehouseId),
+        quantity: Number(i.quantity),
+      })),
+    dateOfSale: form.dateOfSale,
+    cashPrice: form.cashPrice,
+    downPayment: form.downPayment,
+    profitRate: form.profitRate,
+    installmentsCount: form.installmentsCount,
+    installmentAmount: form.installmentAmount,
+    paymentFrequency: form.paymentFrequency,
+    firstInstallmentDate: form.firstInstallmentDate,
+    treasuryId: Number(form.treasuryId),
+  };
+
+  if (form.representativeId && form.representativeId > 0) {
+    payload.representativeId = form.representativeId;
+  }
+
+  const trimmedNotes = form.notes?.trim();
+  if (trimmedNotes) payload.notes = trimmedNotes;
+
+  return payload;
+}
+
+// ─── update ───
+
+/** Payload for `PUT /dashboard/contracts/{id}`. */
+export interface UpdateContractPayload {
   clientId: number;
-  productId: number;
-  warehouseId: number;
-  quantity: number;
+  items: ContractItemPayload[];
   dateOfSale: string;
   cashPrice: number;
   downPayment: number;
@@ -129,41 +178,42 @@ export interface ContractFormState {
   paymentFrequency: ContractPaymentFrequency;
   firstInstallmentDate: string;
   treasuryId: number;
-  representativeId: number | null;
+  representativeId?: number;
   notes?: string;
+}
+
+/** Form-state shape for the edit page — identical to ContractFormState. */
+export type UpdateContractFormState = ContractFormState;
+
+/** Build `PUT /dashboard/contracts/{id}` body. */
+export function buildUpdateContractPayload(
+  form: UpdateContractFormState,
+): UpdateContractPayload {
+  return buildCreateContractPayload(form) as UpdateContractPayload;
 }
 
 // ─────────────────────────────────────────────────────────────────
 //  Live API: POST /dashboard/contracts/direct
-//  Direct contract — free-text product name, no warehouse/inventory.
 // ─────────────────────────────────────────────────────────────────
 
 /**
  * Payload for `POST /dashboard/contracts/direct`.
- *
- * Identical to `CreateContractPayload` except:
- *  - `productName` replaces `productId`
- *  - no `warehouseId` — not inventory-linked
- *  - has `purchasePrice` (the dealer's cost price)
+ * Free-text product name — no warehouse / inventory link.
  */
 export interface CreateDirectContractPayload {
   clientId: number;
   productName: string;
   quantity: number;
-  /** ISO datetime. */
   dateOfSale: string;
   purchasePrice: number;
   cashPrice: number;
   downPayment: number;
-  /** 0..100. */
   profitRate: number;
   installmentsCount: number;
   installmentAmount: number;
   paymentFrequency: ContractPaymentFrequency;
-  /** ISO datetime. */
   firstInstallmentDate: string;
   treasuryId: number;
-  /** Omit when no representative — do NOT send 0 or null. */
   representativeId?: number;
   notes?: string;
 }
@@ -190,8 +240,8 @@ export interface CreatedDirectContract {
 }
 
 /**
- * Build a `POST /dashboard/contracts/direct` body from raw form values.
- * Strips `representativeId` when null/zero, trims/drops empty notes.
+ * Build a `POST /dashboard/contracts/direct` body.
+ * Strips `representativeId` when null/zero; trims/drops empty notes.
  */
 export function buildDirectContractPayload(
   form: CreateDirectContractPayload,
@@ -212,125 +262,6 @@ export function buildDirectContractPayload(
     treasuryId: form.treasuryId,
   };
 
-  if (form.representativeId && form.representativeId > 0) {
-    payload.representativeId = form.representativeId;
-  }
-
-  const trimmedNotes = form.notes?.trim();
-  if (trimmedNotes) payload.notes = trimmedNotes;
-
-  return payload;
-}
-
-// ─────────────────────────────────────────────────────────────────
-//  Live API: PUT /dashboard/contracts/{id}
-// ─────────────────────────────────────────────────────────────────
-
-/**
- * Payload for `PUT /dashboard/contracts/{id}`.
- *
- * Identical to `CreateContractPayload` except `purchasePrice` is NOT
- * sent — it is immutable after creation.
- *
- * Same rule as create: OMIT `representativeId` when not selected.
- * Use `buildUpdateContractPayload()` to assemble the body safely.
- */
-export interface UpdateContractPayload {
-  clientId: number;
-  productId: number;
-  warehouseId: number;
-  quantity: number;
-  dateOfSale: string;
-  cashPrice: number;
-  downPayment: number;
-  profitRate: number;
-  installmentsCount: number;
-  installmentAmount: number;
-  paymentFrequency: ContractPaymentFrequency;
-  firstInstallmentDate: string;
-  treasuryId: number;
-  representativeId?: number;
-  notes?: string;
-}
-
-/** Form-state shape for the edit page. */
-export interface UpdateContractFormState {
-  clientId: number;
-  productId: number;
-  warehouseId: number;
-  quantity: number;
-  dateOfSale: string;
-  cashPrice: number;
-  downPayment: number;
-  profitRate: number;
-  installmentsCount: number;
-  installmentAmount: number;
-  paymentFrequency: ContractPaymentFrequency;
-  firstInstallmentDate: string;
-  treasuryId: number;
-  representativeId: number | null;
-  notes?: string;
-}
-
-/** Build a `PUT /dashboard/contracts/{id}` body. Strips representativeId when absent. */
-export function buildUpdateContractPayload(
-  form: UpdateContractFormState,
-): UpdateContractPayload {
-  const payload: UpdateContractPayload = {
-    clientId: form.clientId,
-    productId: form.productId,
-    warehouseId: form.warehouseId,
-    quantity: form.quantity,
-    dateOfSale: form.dateOfSale,
-    cashPrice: form.cashPrice,
-    downPayment: form.downPayment,
-    profitRate: form.profitRate,
-    installmentsCount: form.installmentsCount,
-    installmentAmount: form.installmentAmount,
-    paymentFrequency: form.paymentFrequency,
-    firstInstallmentDate: form.firstInstallmentDate,
-    treasuryId: form.treasuryId,
-  };
-
-  if (form.representativeId && form.representativeId > 0) {
-    payload.representativeId = form.representativeId;
-  }
-
-  const trimmedNotes = form.notes?.trim();
-  if (trimmedNotes) payload.notes = trimmedNotes;
-
-  return payload;
-}
-
-/**
- * Build a `POST /dashboard/contracts` body from form state.
- *
- * - Trims `notes` and drops the field when empty.
- * - OMITS `representativeId` entirely when the form has no rep
- *   selected (`null`, `undefined`, or `0`) — never sends `0`/`null`.
- *
- * Returning a fresh object also keeps the form state immutable.
- */
-export function buildCreateContractPayload(
-  form: ContractFormState,
-): CreateContractPayload {
-  const payload: CreateContractPayload = {
-    clientId: form.clientId,
-    productId: form.productId,
-    warehouseId: form.warehouseId,
-    quantity: form.quantity,
-    dateOfSale: form.dateOfSale,
-    cashPrice: form.cashPrice,
-    downPayment: form.downPayment,
-    profitRate: form.profitRate,
-    installmentsCount: form.installmentsCount,
-    installmentAmount: form.installmentAmount,
-    paymentFrequency: form.paymentFrequency,
-    firstInstallmentDate: form.firstInstallmentDate,
-    treasuryId: form.treasuryId,
-  };
-
-  // Omit — DO NOT send 0/null — when no rep is attached.
   if (form.representativeId && form.representativeId > 0) {
     payload.representativeId = form.representativeId;
   }

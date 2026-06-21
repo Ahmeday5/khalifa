@@ -1,0 +1,346 @@
+<app-modal
+  [open]="open()"
+  [title]="isCreate() ? 'تحويل مخزون بين المخازن' : 'تفاصيل التحويل'"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+
+  <!-- ══════════════ CREATE MODE ══════════════ -->
+  @if (isCreate()) {
+
+    @if (loadingLookups()) {
+      <div class="d-flex align-items-center gap-2 py-3" style="color:var(--txt3)">
+        <span class="spinner-border spinner-border-sm"></span>
+        <span>جاري تحميل بيانات المخازن والمنتجات...</span>
+      </div>
+    } @else {
+
+      <form [formGroup]="form" novalidate autocomplete="off">
+        <div class="row g-3">
+
+          <!-- المخزن المصدر -->
+          <div class="col-12 col-md-6">
+            <label class="form-label">
+              المخزن المصدر <span class="text-danger">*</span>
+            </label>
+            <app-searchable-select
+              formControlName="fromWarehouseId"
+              placeholder="اختر المخزن المصدر"
+              searchPlaceholder="ابحث باسم المخزن…"
+              [options]="warehouseOptions()"
+            />
+            <app-form-error [control]="form.controls.fromWarehouseId" label="المخزن المصدر" />
+          </div>
+
+          <!-- المخزن الوجهة -->
+          <div class="col-12 col-md-6">
+            <label class="form-label">
+              المخزن الوجهة <span class="text-danger">*</span>
+            </label>
+            <app-searchable-select
+              formControlName="toWarehouseId"
+              placeholder="اختر المخزن الوجهة"
+              searchPlaceholder="ابحث باسم المخزن…"
+              [options]="warehouseOptions()"
+            />
+            <app-form-error [control]="form.controls.toWarehouseId" label="المخزن الوجهة" />
+            @if (sameWarehouseError) {
+              <div class="form-text" style="color:var(--re)">
+                المخزن المصدر والوجهة يجب أن يكونا مختلفَين
+              </div>
+            }
+          </div>
+
+          <!-- تاريخ التحويل -->
+          <div class="col-12 col-md-6">
+            <label class="form-label">
+              تاريخ التحويل <span class="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              class="form-control"
+              formControlName="transferDate"
+              [class.is-invalid]="isInvalid('transferDate')"
+            />
+            <app-form-error [control]="form.controls.transferDate" label="تاريخ التحويل" />
+          </div>
+
+          <!-- ملاحظات -->
+          <div class="col-12 col-md-6">
+            <label class="form-label">ملاحظات</label>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="notes"
+              placeholder="اختياري"
+            />
+          </div>
+
+        </div>
+
+        <!-- ───── الأصناف ───── -->
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span style="font-size:13px;font-weight:700;color:var(--txt1)">
+              أصناف التحويل
+              <span class="text-danger">*</span>
+            </span>
+            <button
+              type="button"
+              class="btn btn-sm btn-bl"
+              (click)="addItem()"
+            >
+              + إضافة صنف
+            </button>
+          </div>
+
+          <div formArrayName="items" class="d-flex flex-column gap-2">
+            @for (grp of itemGroups; track $index; let i = $index) {
+              <div [formGroupName]="i" class="tf-item-row">
+
+                <!-- المنتج -->
+                <div class="tf-item-product">
+                  <label class="form-label mb-1" style="font-size:11px">المنتج</label>
+                  <app-searchable-select
+                    formControlName="productId"
+                    placeholder="اختر المنتج"
+                    searchPlaceholder="ابحث باسم المنتج…"
+                    [options]="productOptions()"
+                  />
+                  @if (isItemInvalid(i, 'productId')) {
+                    <div class="form-text" style="color:var(--re);font-size:10px">اختر المنتج</div>
+                  }
+                </div>
+
+                <!-- الكمية -->
+                <div class="tf-item-qty">
+                  <label class="form-label mb-1" style="font-size:11px">الكمية</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="quantity"
+                    min="1"
+                    [class.is-invalid]="isItemInvalid(i, 'quantity')"
+                  />
+                </div>
+
+                <!-- حذف -->
+                <button
+                  type="button"
+                  class="tf-item-remove"
+                  [disabled]="itemsArray.length === 1"
+                  (click)="removeItem(i)"
+                  title="حذف الصنف"
+                  aria-label="حذف الصنف"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2.5"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (serverError(); as msg) {
+          <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px">
+            {{ msg }}
+          </div>
+        }
+
+      </form>
+    }
+
+  }
+
+  <!-- ══════════════ VIEW MODE ══════════════ -->
+  @if (!isCreate()) {
+
+    @if (loadingDetail()) {
+      <div class="d-flex align-items-center gap-2 py-4" style="color:var(--txt3)">
+        <span class="spinner-border spinner-border-sm"></span>
+        <span>جاري تحميل التفاصيل...</span>
+      </div>
+    } @else if (transferDetail()) {
+
+      <!-- رأس التفاصيل -->
+      <div class="tf-detail-header">
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">رقم التحويل</span>
+          <span class="tf-detail-val fw-600">#{{ transferDetail()!.id }}</span>
+        </div>
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">المخزن المصدر</span>
+          <span class="tf-detail-val">{{ transferDetail()!.fromWarehouse.name }}</span>
+        </div>
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">المخزن الوجهة</span>
+          <span class="tf-detail-val">{{ transferDetail()!.toWarehouse.name }}</span>
+        </div>
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">تاريخ التحويل</span>
+          <span class="tf-detail-val" dir="ltr">{{ transferDetail()!.transferDate | dateAr }}</span>
+        </div>
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">بواسطة</span>
+          <span class="tf-detail-val">{{ transferDetail()!.createdBy }}</span>
+        </div>
+        <div class="tf-detail-row">
+          <span class="tf-detail-label">تاريخ الإنشاء</span>
+          <span class="tf-detail-val" dir="ltr">{{ transferDetail()!.createdAt | dateAr }}</span>
+        </div>
+        @if (transferDetail()!.notes) {
+          <div class="tf-detail-row">
+            <span class="tf-detail-label">ملاحظات</span>
+            <span class="tf-detail-val">{{ transferDetail()!.notes }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- جدول الأصناف -->
+      <div class="mt-3">
+        <div style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px">
+          الأصناف المحوّلة ({{ transferDetail()!.items.length }})
+        </div>
+        <div class="tw" style="margin-bottom:0">
+          <table class="w-100">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المنتج</th>
+                <th class="text-center">الكمية</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of transferDetail()!.items; track item.productId; let i = $index) {
+                <tr>
+                  <td style="color:var(--txt3)">{{ i + 1 }}</td>
+                  <td class="fw-600">{{ item.productName }}</td>
+                  <td class="text-center">{{ item.quantity }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3" class="text-center" style="color:var(--txt3);padding:16px">
+                    لا توجد أصناف مسجّلة
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    } @else {
+      <div class="text-center py-4" style="color:var(--txt3)">
+        تعذّر تحميل بيانات التحويل
+      </div>
+    }
+
+  }
+
+  <!-- ══════════════ FOOTER (outside @if to allow content projection) ══════════════ -->
+  <ng-container modal-footer>
+    @if (isCreate()) {
+      <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+        إلغاء
+      </button>
+      <button
+        type="button"
+        class="btn btn-bl d-inline-flex align-items-center gap-2"
+        [disabled]="submitting() || loadingLookups() || form.invalid || sameWarehouseError"
+        (click)="submit()"
+      >
+        @if (submitting()) {
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+        <span>{{ submitting() ? 'جاري التحويل...' : 'تأكيد التحويل' }}</span>
+      </button>
+    } @else {
+      <button type="button" class="btn btn-bl" (click)="close()">إغلاق</button>
+    }
+  </ng-container>
+
+</app-modal>
+
+<style>
+  .tf-item-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 32px;
+    gap: 8px;
+    align-items: end;
+    padding: 10px 12px;
+    background: var(--bg2);
+    border-radius: 8px;
+    border: 1px solid var(--bg3);
+  }
+
+  .tf-item-product {}
+
+  .tf-item-qty {}
+
+  .tf-item-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--bg3);
+    border-radius: 6px;
+    color: var(--re);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    padding: 0;
+    margin-top: 4px;
+  }
+
+  .tf-item-remove:hover:not(:disabled) {
+    background: var(--re);
+    color: #fff;
+    border-color: var(--re);
+  }
+
+  .tf-item-remove:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+  }
+
+  .tf-detail-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    background: var(--bg2);
+    border-radius: 10px;
+    border: 1px solid var(--bg3);
+  }
+
+  .tf-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .tf-detail-row + .tf-detail-row {
+    border-top: 1px dashed var(--bg3);
+    padding-top: 6px;
+  }
+
+  .tf-detail-label {
+    color: var(--txt3);
+    flex-shrink: 0;
+  }
+
+  .tf-detail-val {
+    font-weight: 500;
+    color: var(--txt1);
+    text-align: end;
+  }
+</style>

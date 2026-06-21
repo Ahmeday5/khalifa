@@ -24,6 +24,9 @@ import {
   RepresentativesQuery,
   UpdateRepresentativePayload,
 } from '../models/rep.model';
+import { RepRequest, RepRequestsPage, RepRequestsQuery } from '../models/rep-request.model';
+
+const REQUESTS_TTL_MS = 2 * 60 * 1000;
 
 const REPS_CACHE_KEY = 'representatives';
 const REPS_TTL_MS = 5 * 60 * 1000;
@@ -212,6 +215,34 @@ export class RepsService {
   }
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  // ─────────── representative requests ───────────
+
+  requests(query: RepRequestsQuery = {}): Observable<RepRequestsPage> {
+    return this.api
+      .get<unknown>(API_ENDPOINTS.representatives.requests, {
+        params: {
+          PageIndex: query.pageIndex ?? 1,
+          PageSize: query.pageSize ?? 10,
+          search: query.search?.trim() || undefined,
+        },
+        context: withCache({ ttlMs: REQUESTS_TTL_MS }),
+      })
+      .pipe(toPaged<RepRequest>());
+  }
+
+  refreshRequests(query: RepRequestsQuery = {}): Observable<RepRequestsPage> {
+    return this.api
+      .get<unknown>(API_ENDPOINTS.representatives.requests, {
+        params: {
+          PageIndex: query.pageIndex ?? 1,
+          PageSize: query.pageSize ?? 10,
+          search: query.search?.trim() || undefined,
+        },
+        context: withCacheBypass(withCache({ ttlMs: REQUESTS_TTL_MS })),
+      })
+      .pipe(toPaged<RepRequest>());
+  }
 
   private toParams(query: RepresentativesQuery): Record<string, unknown> {
     return {

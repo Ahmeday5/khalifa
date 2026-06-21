@@ -15,4 +15,11 @@ export const warehouseRoutes: Routes = [
         (m) => m.InvAlertsComponent
       ),
   },
+  {
+    path: 'transfers',
+    loadComponent: () =>
+      import('./pages/warehouse-transfers/warehouse-transfers.component').then(
+        (m) => m.WarehouseTransfersComponent
+      ),
+  },
 ];

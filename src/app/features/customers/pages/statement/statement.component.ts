@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
@@ -14,6 +15,7 @@ import { InstallmentsService } from '../../services/installments.service';
 import { ContractsService } from '../../../contracts/services/contracts.service';
 import { TreasuryService } from '../../../treasury/services/treasury.service';
 import {
+  ClientContractListItem,
   ClientContractRow,
   ContractDetails,
   ContractInstallmentRow,
@@ -61,6 +63,7 @@ interface PaymentForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DecimalPipe,
     FormsModule,
     RouterModule,
     BadgeComponent,
@@ -275,7 +278,7 @@ export class StatementComponent {
           orientation: 'landscape',
           columns: [
             { key: 'id',                  header: 'العقد',         align: 'center', width: '52px', format: (v) => `#${v}` },
-            { key: 'productName',         header: 'المنتج',         align: 'start',  bold: true },
+            { key: 'items',               header: 'الأصناف',        align: 'start',  bold: true,  format: (v) => this.itemsLabel(v as ClientContractListItem[]) },
             { key: 'quantity',            header: 'الكمية',         align: 'center', format: 'number' },
             { key: 'dateOfSale',          header: 'تاريخ البيع',   align: 'center', format: 'shortDate' },
             { key: 'cashPrice',           header: 'سعر النقد',     align: 'end',    format: 'currency' },
@@ -440,6 +443,28 @@ export class StatementComponent {
       Annually: 'سنوي',
     };
     return map[freq] ?? freq;
+  }
+
+  protected itemsLabel(items: ClientContractListItem[] | null | undefined): string {
+    if (!items?.length) return '—';
+    return items.map((i) => `${i.productName} (${i.quantity})`).join(' / ');
+  }
+
+  protected paymentMethodLabel(method: string | null | undefined): string {
+    if (!method) return '—';
+    const map: Record<string, string> = {
+      Cash: 'نقدي',
+      cash: 'نقدي',
+      Transfer: 'تحويل بنكي',
+      transfer: 'تحويل بنكي',
+      Card: 'بطاقة',
+      card: 'بطاقة',
+      STCPay: 'STC Pay',
+      stcpay: 'STC Pay',
+      ApplePay: 'Apple Pay',
+      applepay: 'Apple Pay',
+    };
+    return map[method] ?? method;
   }
 
   protected contractStatusLabel(status: string): string {

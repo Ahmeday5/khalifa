@@ -490,6 +490,14 @@
   border-radius: var(--rl);
   padding: 12px 14px;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--brd);
+  }
 
   &::before {
     content: "";

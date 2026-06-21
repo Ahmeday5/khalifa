@@ -172,3 +172,85 @@ export interface WarehouseInventoryQuery {
   pageSize?: number;
   search?: string;
 }
+
+// ─────────────────────────────────────────────────────────────────
+//  Live API: POST /dashboard/warehouses/transfers
+//  GET  /dashboard/warehouses/transfers?PageIndex=&PageSize=&fromWarehouseId=&toWarehouseId=
+//  GET  /dashboard/warehouses/transfers/{id}
+// ─────────────────────────────────────────────────────────────────
+
+/** Single item in a transfer request. */
+export interface WarehouseTransferItemPayload {
+  productId: number;
+  quantity: number;
+}
+
+/** POST /dashboard/warehouses/transfers body. */
+export interface CreateWarehouseTransferPayload {
+  fromWarehouseId: number;
+  toWarehouseId: number;
+  /** ISO datetime string. */
+  transferDate: string;
+  notes?: string;
+  items: WarehouseTransferItemPayload[];
+}
+
+/** Compact warehouse reference embedded in transfer responses. */
+export interface WarehouseTransferWarehouseRef {
+  id: number;
+  name: string;
+}
+
+/** Item with resolved product name (responses only). */
+export interface WarehouseTransferItemResult {
+  productId: number;
+  productName: string;
+  quantity: number;
+}
+
+/** Shape returned by POST /dashboard/warehouses/transfers. */
+export interface CreateWarehouseTransferResponse {
+  transferId: number;
+  fromWarehouse: WarehouseTransferWarehouseRef;
+  toWarehouse: WarehouseTransferWarehouseRef;
+  transferDate: string;
+  notes: string;
+  createdBy: string;
+  items: WarehouseTransferItemResult[];
+}
+
+/**
+ * Single row in the paginated transfers list
+ * (GET /dashboard/warehouses/transfers — no items array in the list).
+ */
+export interface WarehouseTransferListItem {
+  id: number;
+  fromWarehouse: WarehouseTransferWarehouseRef;
+  toWarehouse: WarehouseTransferWarehouseRef;
+  transferDate: string;
+  notes: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+/** Full transfer detail including items (GET /dashboard/warehouses/transfers/{id}). */
+export interface WarehouseTransferDetail {
+  id: number;
+  fromWarehouse: WarehouseTransferWarehouseRef;
+  toWarehouse: WarehouseTransferWarehouseRef;
+  transferDate: string;
+  notes: string;
+  createdBy: string;
+  createdAt: string;
+  items: WarehouseTransferItemResult[];
+}
+
+/** Query params for the paginated transfers list. */
+export interface WarehouseTransfersQuery {
+  pageIndex?: number;
+  pageSize?: number;
+  /** Filter: show only transfers originating from this warehouse. */
+  fromWarehouseId?: number | null;
+  /** Filter: show only transfers arriving at this warehouse. */
+  toWarehouseId?: number | null;
+}

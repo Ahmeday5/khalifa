@@ -55,9 +55,12 @@ export interface DashboardClient {
 export interface DashboardClientsQuery {
   pageIndex?: number;
   pageSize?: number;
+  /** Text search — name, phone, address. */
   search?: string;
   /** When true, restrict the result set to overdue clients only. */
   onlyOverdue?: boolean;
+  /** Barcode / client-code exact search. */
+  clientCode?: string;
 }
 
 /**
@@ -79,6 +82,13 @@ export interface CreateClientPayload {
   phoneNumber: string;
   whatsappNumber: string;
   password: string;
+  // ── extended profile ──
+  clientCode?: string;
+  region?: string;
+  occupation?: string;
+  building?: string;
+  floor?: string;
+  department?: string;
 }
 
 /**
@@ -93,6 +103,13 @@ export interface UpdateClientPayload {
   address: string;
   phoneNumber: string;
   whatsappNumber: string;
+  // ── extended profile ──
+  clientCode?: string;
+  region?: string;
+  occupation?: string;
+  building?: string;
+  floor?: string;
+  department?: string;
 }
 
 /**
@@ -109,4 +126,11 @@ export interface CreatedClient {
   phoneNumber: string;
   whatsappNumber: string;
   createdAt: string;
+  // ── extended profile (nullable — may not have been set) ──
+  clientCode: string | null;
+  region: string | null;
+  occupation: string | null;
+  building: string | null;
+  floor: string | null;
+  department: string | null;
 }

@@ -3,8 +3,9 @@
     <div class="pgt">المخازن</div>
     <div class="pgs">إدارة المخزون والتتبع بالأرقام التسلسلية</div>
   </div>
-  <div style="display:flex;gap:7px">
-    <button class="btn btn-sm btn-bl" routerLink="/warehouse/alerts">تنبيهات المخزون</button>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="btn btn-sm" routerLink="/warehouse/alerts">تنبيهات المخزون</button>
+    <button class="btn btn-sm btn-bl" routerLink="/warehouse/transfers">التحويلات بين المخازن</button>
     <button
       class="btn btn-sm d-inline-flex align-items-center gap-1"
       [disabled]="loading()"

@@ -92,7 +92,7 @@
         @for (row of contracts(); track row.id) {
         <tr>
           <td class="st-id">#{{ row.id }}</td>
-          <td class="st-prod">{{ row.productName }}</td>
+          <td class="st-prod">{{ itemsLabel(row.items) }}</td>
           <td>{{ row.quantity }}</td>
           <td>{{ formatDate(row.dateOfSale) }}</td>
           <td>{{ row.purchasePrice | currencyAr }}</td>
@@ -163,16 +163,24 @@
       <div class="st-d-block-s">📱 {{ d.client.phoneNumber }}</div>
     </div>
     <div class="st-d-block">
-      <div class="st-d-block-l">المنتج</div>
-      <div class="st-d-block-v">{{ d.product?.name ?? d.contract.productName ?? '—' }}</div>
-      <div class="st-d-block-s">الكمية: {{ d.contract.quantity }}</div>
+      <div class="st-d-block-l">الأصناف</div>
+      <div class="st-d-block-v">
+        @if (d.contract.items.length === 1) {
+          {{ d.contract.items[0].productName }}
+        } @else {
+          {{ d.contract.items.length }} أصناف
+        }
+      </div>
+      <div class="st-d-block-s">إجمالي الكمية: {{ d.contract.quantity }}</div>
     </div>
     <div class="st-d-block">
-      <div class="st-d-block-l">المخزن</div>
-      <div class="st-d-block-v">{{ d.warehouse?.name ?? '—' }}</div>
-      <div class="st-d-block-s">
-        المندوب: {{ d.representative?.name ?? '—' }}
-      </div>
+      <div class="st-d-block-l">المندوب</div>
+      @if (d.representative) {
+        <div class="st-d-block-v">{{ d.representative.fullName }}</div>
+        <div class="st-d-block-s">📱 {{ d.representative.phoneNumber }}</div>
+      } @else {
+        <div class="st-d-block-v" style="color:var(--txt3)">لا يوجد مندوب</div>
+      }
     </div>
     <div class="st-d-block">
       <div class="st-d-block-l">حالة العقد</div>
@@ -218,7 +226,40 @@
         <div class="st-d-progress-bar" [style.width.%]="d.summary.progressPercent"></div>
       </div>
     </div>
+    @if (d.contract.profitShareRate) {
+    <div class="st-d-sc">
+      <div class="st-d-sc-l">نسبة الربح الفعلية</div>
+      <div class="st-d-sc-v" style="color:var(--am)">{{ d.contract.profitShareRate | number:'1.1-2' }}%</div>
+    </div>
+    }
   </div>
+
+  <!-- Items table -->
+  @if (d.contract.items.length > 0) {
+  <div class="st-d-section">أصناف العقد ({{ d.contract.items.length }})</div>
+  <div class="tw" style="margin-bottom:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>المنتج</th>
+          <th>المخزن</th>
+          <th class="text-center">الكمية</th>
+          <th class="text-end">سعر الوحدة</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of d.contract.items; track $index) {
+        <tr>
+          <td class="fw-600">{{ item.productName }}</td>
+          <td style="color:var(--txt2)">{{ item.warehouseName ?? '—' }}</td>
+          <td class="text-center">{{ item.quantity }}</td>
+          <td class="text-end">{{ item.unitPurchasePrice | currencyAr }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
 
   <!-- Next installment + pay button -->
   @if (d.nextInstallment; as ni) {
@@ -244,6 +285,41 @@
       </div>
     </div>
     <button class="btn btn-gr" (click)="openPayment()">تسديد دفعة</button>
+  </div>
+  }
+
+  <!-- Payments received -->
+  @if (d.payments && d.payments.length > 0) {
+  <div class="st-d-section">الدفعات المسددة ({{ d.payments.length }})</div>
+  <div class="tw">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>المبلغ</th>
+          <th>تاريخ الدفع</th>
+          <th>طريقة الدفع</th>
+          @if (d.payments[0].treasuryName !== undefined) { <th>الخزينة</th> }
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (pay of d.payments; track pay.id; let i = $index) {
+        <tr>
+          <td style="color:var(--txt3)">{{ i + 1 }}</td>
+          <td style="color:var(--gr);font-weight:600">{{ pay.amount | currencyAr : true }}</td>
+          <td>{{ formatDate(pay.paymentDate) }}</td>
+          <td>{{ paymentMethodLabel(pay.paymentMethod) }}</td>
+          @if (pay.treasuryName !== undefined) {
+            <td>{{ pay.treasuryName ?? '—' }}</td>
+          }
+          <td class="st-notes" [class.st-notes-empty]="!pay.notes?.trim()" [title]="notesLabel(pay.notes)">
+            {{ notesLabel(pay.notes) }}
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
   </div>
   }
 
@@ -300,7 +376,7 @@
 
   @if (details(); as d) {
   <div class="st-pay-intro">
-    <span>العقد #{{ d.contract.id }} — {{ d.product?.name }}</span>
+    <span>العقد #{{ d.contract.id }} — {{ d.contract.items.length ? d.contract.items[0].productName : 'عقد مباشر' }}</span>
     <span class="st-pay-intro-sep">|</span>
     <span>المتبقي: <strong style="color:var(--re)">
         {{ d.summary.totalRemaining | currencyAr : true }}

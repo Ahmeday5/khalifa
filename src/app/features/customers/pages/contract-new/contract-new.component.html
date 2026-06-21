@@ -17,7 +17,7 @@
     <!-- ── Right: forms ── -->
     <div class="col-12 col-lg-8">
 
-      <!-- العميل -->
+      <!-- العميل والمندوب -->
       <div class="card">
         <div class="ct mb-2">بيانات العميل</div>
 
@@ -58,74 +58,109 @@
         </div>
       </div>
 
-      <!-- بيانات العقد -->
+      <!-- ── بنود البضاعة ── -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="ct" style="margin-bottom:0">
+            البضاعة
+            <span class="text-danger">*</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-bl"
+            (click)="addItem()"
+          >
+            + إضافة صنف
+          </button>
+        </div>
+
+        <div formArrayName="items" class="d-flex flex-column gap-2">
+          @for (grp of itemGroups; track $index; let i = $index) {
+            <div [formGroupName]="i" class="cn-item-row">
+
+              <div class="cn-item-badge">{{ i + 1 }}</div>
+
+              <!-- المنتج -->
+              <div class="cn-item-product">
+                <label class="form-label cn-item-label">
+                  المنتج <span class="text-danger">*</span>
+                </label>
+                <app-searchable-select
+                  formControlName="productId"
+                  placeholder="اختر المنتج"
+                  searchPlaceholder="ابحث باسم المنتج…"
+                  [options]="productOptions()"
+                />
+                @if (isItemInvalid(i, 'productId')) {
+                  <div class="form-text" style="color:var(--re);font-size:10px">
+                    اختر المنتج
+                  </div>
+                }
+              </div>
+
+              <!-- المخزن -->
+              <div class="cn-item-warehouse">
+                <label class="form-label cn-item-label">
+                  المخزن <span class="text-danger">*</span>
+                </label>
+                <app-searchable-select
+                  formControlName="warehouseId"
+                  placeholder="اختر المخزن"
+                  searchPlaceholder="ابحث باسم المخزن…"
+                  [options]="warehouseOptions()"
+                />
+                @if (isItemInvalid(i, 'warehouseId')) {
+                  <div class="form-text" style="color:var(--re);font-size:10px">
+                    اختر المخزن
+                  </div>
+                }
+              </div>
+
+              <!-- الكمية -->
+              <div class="cn-item-qty">
+                <label class="form-label cn-item-label">الكمية</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  formControlName="quantity"
+                  min="1"
+                  [class.is-invalid]="isItemInvalid(i, 'quantity')"
+                />
+              </div>
+
+              <!-- حذف -->
+              <button
+                type="button"
+                class="cn-item-remove"
+                [disabled]="itemsArray.length === 1"
+                (click)="removeItem(i)"
+                title="حذف الصنف"
+                aria-label="حذف الصنف"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- بيانات التقسيط -->
       <div class="card">
         <div class="ct mb-2">
-          بيانات البضاعة والعقد
+          بيانات التقسيط
         </div>
 
         <div class="row g-2">
 
-          <!-- المنتج -->
-          <div class="col-12 col-sm-6">
-            <label class="form-label">
-              المنتج
-              <span class="text-danger">*</span>
-            </label>
-
-            <app-searchable-select
-              formControlName="productId"
-              placeholder="اختر المنتج"
-              searchPlaceholder="ابحث باسم المنتج…"
-              [options]="productOptions()"
-            />
-
-            <app-form-error
-              [control]="form.controls.productId"
-              label="المنتج"
-            />
-          </div>
-
-          <!-- المخزن -->
-          <div class="col-12 col-sm-6">
-            <label class="form-label">
-              المخزن
-              <span class="text-danger">*</span>
-            </label>
-
-            <app-searchable-select
-              formControlName="warehouseId"
-              placeholder="اختر المخزن"
-              searchPlaceholder="ابحث باسم المخزن…"
-              [options]="warehouseOptions()"
-            />
-
-            <app-form-error
-              [control]="form.controls.warehouseId"
-              label="المخزن"
-            />
-          </div>
-
-          <!-- الكمية -->
-          <div class="col-12 col-sm-6">
-            <label class="form-label">
-              الكمية
-            </label>
-
-            <input
-              type="number"
-              formControlName="quantity"
-              class="form-control"
-              min="1"
-            />
-          </div>
-
           <!-- تاريخ البيع -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              تاريخ البيع
-            </label>
-
+            <label class="form-label">تاريخ البيع</label>
             <input
               type="date"
               formControlName="dateOfSale"
@@ -136,9 +171,8 @@
           <!-- سعر الكاش -->
           <div class="col-12 col-sm-6">
             <label class="form-label">
-              سعر البيع كاش
+              سعر البيع كاش (الإجمالي)
             </label>
-
             <input
               type="number"
               formControlName="cashPrice"
@@ -149,10 +183,7 @@
 
           <!-- المقدم -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              المقدم
-            </label>
-
+            <label class="form-label">المقدم</label>
             <input
               type="number"
               formControlName="downPayment"
@@ -163,10 +194,7 @@
 
           <!-- الربح -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              نسبة الربح %
-            </label>
-
+            <label class="form-label">نسبة الربح %</label>
             <input
               type="number"
               formControlName="profitRate"
@@ -179,28 +207,17 @@
 
           <!-- دورية الدفع -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              دورية الدفع
-            </label>
-
-            <select
-              formControlName="paymentFrequency"
-              class="form-select"
-            >
+            <label class="form-label">دورية الدفع</label>
+            <select formControlName="paymentFrequency" class="form-select">
               @for (f of frequencies; track f.value) {
-                <option [value]="f.value">
-                  {{ f.label }}
-                </option>
+                <option [value]="f.value">{{ f.label }}</option>
               }
             </select>
           </div>
 
           <!-- الأقساط -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              عدد الأقساط
-            </label>
-
+            <label class="form-label">عدد الأقساط</label>
             <input
               type="number"
               formControlName="installmentsCount"
@@ -211,10 +228,7 @@
 
           <!-- أول قسط -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">
-              تاريخ أول قسط
-            </label>
-
+            <label class="form-label">تاريخ أول قسط</label>
             <input
               type="date"
               formControlName="firstInstallmentDate"
@@ -226,22 +240,20 @@
           <div class="col-12 col-sm-6">
             <label class="form-label">
               الخزنة
+              <span class="text-danger">*</span>
             </label>
-
             <app-searchable-select
               formControlName="treasuryId"
               placeholder="اختر الخزنة"
               searchPlaceholder="ابحث باسم الخزنة…"
               [options]="treasuryOptions()"
             />
+            <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
           </div>
 
           <!-- ملاحظات -->
           <div class="col-12">
-            <label class="form-label">
-              ملاحظات
-            </label>
-
+            <label class="form-label">ملاحظات</label>
             <textarea
               formControlName="notes"
               class="form-control"
@@ -254,13 +266,11 @@
 
     </div>
 
-    <!-- Summary -->
+    <!-- ── Summary ── -->
     <div class="col-12 col-lg-4">
       <div class="card" style="position:sticky;top:0">
 
-        <div class="ct mb-2">
-          ملخص العقد المحسوب
-        </div>
+        <div class="ct mb-2">ملخص العقد المحسوب</div>
 
         @if (isEditMode()) {
           <div class="cr" style="border-bottom:1px dashed var(--bg3);margin-bottom:8px;padding-bottom:8px">
@@ -269,56 +279,42 @@
           </div>
         }
 
+        @if (summary().totalQty > 0) {
+          <div class="cr">
+            <span style="color:var(--txt3)">إجمالي الكمية</span>
+            <span>{{ summary().totalQty }} وحدة</span>
+          </div>
+        }
+
         <div class="cr">
           <span>سعر البيع كاش</span>
-          <span>
-            {{ summary().cashPrice | currencyAr }}
-          </span>
+          <span>{{ summary().cashPrice | currencyAr }}</span>
         </div>
 
         <div class="cr">
           <span>المقدم</span>
-          <span>
-            {{ summary().downPayment | currencyAr }}
-          </span>
+          <span>{{ summary().downPayment | currencyAr }}</span>
         </div>
 
         <div class="cr">
           <span>الإجمالي بعد المقدم</span>
-          <span>
-            {{ summary().afterDown | currencyAr }}
-          </span>
+          <span>{{ summary().afterDown | currencyAr }}</span>
         </div>
 
         <div class="cr">
-          <span>
-            مبلغ الربح
-            ({{ summary().profitRate }}%)
-          </span>
-
-          <span>
-            {{ summary().profitAmount | currencyAr }}
-          </span>
+          <span>مبلغ الربح ({{ summary().profitRate }}%)</span>
+          <span>{{ summary().profitAmount | currencyAr }}</span>
         </div>
 
         <div class="ct2">
           <span>إجمالي البيع بالأقساط</span>
-
-          <span>
-            {{ summary().totalAmount | currencyAr }}
-          </span>
+          <span>{{ summary().totalAmount | currencyAr }}</span>
         </div>
 
         <div class="ci">
-          <span>
-            القسط × {{ summary().count }}
-          </span>
-
-          <span>
-            {{ summary().installmentAmt | currencyAr }}
-          </span>
+          <span>القسط × {{ summary().count }}</span>
+          <span>{{ summary().installmentAmt | currencyAr }}</span>
         </div>
-
 
         <div class="d-flex gap-2 mt-3">
 
@@ -330,7 +326,6 @@
             @if (isSaving()) {
               <span class="spinner-border spinner-border-sm me-1"></span>
             }
-
             {{
               isSaving()
                 ? 'جاري الحفظ...'
@@ -340,13 +335,7 @@
             }}
           </button>
 
-          <button
-            type="button"
-            class="btn"
-            (click)="reset()"
-          >
-            مسح
-          </button>
+          <button type="button" class="btn" (click)="reset()">مسح</button>
 
         </div>
 
@@ -357,3 +346,78 @@
 </form>
 
 }
+
+<style>
+  .cn-item-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 1fr 80px 32px;
+    gap: 8px;
+    align-items: end;
+    padding: 10px 12px;
+    background: var(--bg2);
+    border-radius: 8px;
+    border: 1px solid var(--bg3);
+  }
+
+  .cn-item-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--bl);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+  }
+
+  .cn-item-product  { }
+  .cn-item-warehouse { }
+  .cn-item-qty      { }
+
+  .cn-item-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .cn-item-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--bg3);
+    border-radius: 6px;
+    color: var(--re);
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    padding: 0;
+    margin-top: 4px;
+  }
+
+  .cn-item-remove:hover:not(:disabled) {
+    background: var(--re);
+    color: #fff;
+    border-color: var(--re);
+  }
+
+  .cn-item-remove:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 640px) {
+    .cn-item-row {
+      grid-template-columns: 24px 1fr 32px;
+      grid-template-rows: auto auto auto;
+    }
+    .cn-item-product  { grid-column: 1 / 3; }
+    .cn-item-warehouse { grid-column: 1 / 3; }
+    .cn-item-qty      { grid-column: 1 / 2; }
+    .cn-item-remove   { grid-column: 2 / 3; }
+  }
+</style>

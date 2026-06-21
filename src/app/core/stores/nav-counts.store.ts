@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 
 import { DashboardService } from '../../features/dashboard/services/dashboard.service';
 import { CatalogService } from '../../features/catalog/services/catalog.service';
@@ -79,7 +79,7 @@ export class NavCountsStore {
         const event = this.cache.invalidations();
         if (!event.pattern) return;
         if (!event.pattern.includes(pattern)) return;
-        fn();
+        untracked(fn);
       });
     };
 

@@ -1,0 +1,131 @@
+<!-- ── Page header ─────────────────────────────────────────────────── -->
+<div class="pgh">
+  <div>
+    <div class="pgt">طلبيات المندوبين</div>
+    <div class="pgs">طلبات واستفسارات المندوبين المسجّلة في النظام</div>
+  </div>
+  <button
+    type="button"
+    class="btn btn-sm d-inline-flex align-items-center gap-1"
+    [disabled]="loading()"
+    (click)="refresh()"
+  >
+    @if (loading()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    }
+    <span>تحديث</span>
+  </button>
+</div>
+
+<!-- ── Hero bar ──────────────────────────────────────────────────────── -->
+<div class="rr-hero">
+  <div class="rr-hero-stat">
+    <div class="rr-hero-stat-label">إجمالي الطلبيات</div>
+    <div class="rr-hero-stat-val">{{ count() }}</div>
+  </div>
+  @if (hasFilters()) {
+    <div class="rr-hero-stat">
+      <div class="rr-hero-stat-label">نتائج البحث</div>
+      <div class="rr-hero-stat-val">{{ count() }}</div>
+    </div>
+  }
+</div>
+
+<!-- ── Toolbar ────────────────────────────────────────────────────────── -->
+<div class="rr-toolbar">
+  <div class="rr-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <input
+      type="text"
+      placeholder="بحث باسم المندوب…"
+      [value]="searchTerm()"
+      (input)="onSearch($any($event.target).value)"
+    />
+    @if (hasFilters()) {
+      <button type="button" class="rr-search-clear" aria-label="مسح البحث" (click)="clearSearch()">×</button>
+    }
+  </div>
+</div>
+
+<!-- ── Table card ─────────────────────────────────────────────────────── -->
+<div class="card rr-card">
+  <div class="tw">
+    <table class="table">
+      <thead>
+        <tr>
+          <th class="rr-col-id">#</th>
+          <th class="rr-col-rep">المندوب</th>
+          <th class="rr-col-desc">الطلب / الوصف</th>
+          <th class="rr-col-date">التاريخ</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          <tr>
+            <td colspan="4" class="rr-state-cell">
+              <span class="spinner-border spinner-border-sm me-2"></span>جارٍ التحميل...
+            </td>
+          </tr>
+        } @else if (rows().length === 0) {
+          <tr>
+            <td colspan="4" class="rr-empty-cell">
+              <div class="rr-empty-block">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="rr-empty-icon">
+                  <rect x="6" y="4" width="12" height="17" rx="2" />
+                  <rect x="9" y="2.5" width="6" height="3" rx="1" fill="currentColor" stroke="none" opacity=".4" />
+                  <path d="M9 11h6M9 14h6M9 17h4" />
+                </svg>
+                @if (hasFilters()) {
+                  <div class="rr-empty-title">لا توجد نتائج</div>
+                  <div class="rr-empty-sub">لم يُعثر على طلبيات تطابق "<strong>{{ searchTerm() }}</strong>"</div>
+                } @else {
+                  <div class="rr-empty-title">لا توجد طلبيات بعد</div>
+                  <div class="rr-empty-sub">ستظهر هنا طلبيات المندوبين عند إضافتها</div>
+                }
+              </div>
+            </td>
+          </tr>
+        } @else {
+          @for (row of rows(); track row.id; let i = $index) {
+            <tr>
+              <td class="rr-cell-id">{{ (pageIndex() - 1) * pageSize() + i + 1 }}</td>
+              <td class="rr-cell-rep">
+                <div class="rr-rep-wrap">
+                  <span class="rr-avatar">{{ row.representativeName.charAt(0).toUpperCase() }}</span>
+                  <div class="rr-rep-text">
+                    <span class="rr-rep-name">{{ row.representativeName }}</span>
+                    <span class="rr-rep-id">#{{ row.representativeId }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="rr-cell-desc">
+                <span [title]="row.description">{{ row.description }}</span>
+              </td>
+              <td class="rr-cell-date">
+                <span class="rr-date-primary">{{ formatDate(row.createdAt) }}</span>
+                <span class="rr-date-secondary">{{ formatTime(row.createdAt) }}</span>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > pageSize() && !loading()) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+</div>

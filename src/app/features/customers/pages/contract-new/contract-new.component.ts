@@ -8,7 +8,14 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { forkJoin, finalize, of, catchError } from 'rxjs';
 
@@ -32,6 +39,7 @@ import { RepsService } from '../../../reps/services/reps.service';
 
 import {
   ContractFormState,
+  ContractItemFormState,
   ContractPaymentFrequency,
   UpdateContractFormState,
 } from '../../../contracts/models/contract.model';
@@ -121,18 +129,16 @@ export class ContractNewComponent implements OnInit {
     value: ContractPaymentFrequency;
     label: string;
   }[] = [
-    { value: 'Monthly', label: 'شهري' },
     { value: 'Quarterly', label: 'ربع سنوي' },
     { value: 'SemiAnnual', label: 'نصف سنوي' },
+    { value: 'Annual', label: 'سنوي' },
   ];
 
   // ───────────────── form ─────────────────
   protected readonly form = this.fb.nonNullable.group({
     clientId: [null as number | null, [Validators.required]],
-    productId: [null as number | null, [Validators.required]],
-    warehouseId: [null as number | null, [Validators.required]],
 
-    quantity: [1, [Validators.required, Validators.min(1)]],
+    items: this.fb.array([this.createItemGroup()]),
 
     dateOfSale: [this.todayStr(), [Validators.required]],
 
@@ -146,18 +152,18 @@ export class ContractNewComponent implements OnInit {
     ],
 
     installmentsCount: [
-      12,
+      4,
       [Validators.required, Validators.min(1), Validators.max(120)],
     ],
 
     installmentAmount: [{ value: 0, disabled: true }, [Validators.required]],
 
     paymentFrequency: [
-      'Monthly' as ContractPaymentFrequency,
+      'Quarterly' as ContractPaymentFrequency,
       [Validators.required],
     ],
 
-    firstInstallmentDate: [this.nextMonthStr(), [Validators.required]],
+    firstInstallmentDate: [this.nextQuarterStr(), [Validators.required]],
 
     treasuryId: [null as number | null, [Validators.required]],
 
@@ -165,6 +171,14 @@ export class ContractNewComponent implements OnInit {
 
     notes: [''],
   });
+
+  get itemsArray(): FormArray {
+    return this.form.get('items') as FormArray;
+  }
+
+  get itemGroups(): FormGroup[] {
+    return this.itemsArray.controls as FormGroup[];
+  }
 
   // ───────────────── reactive values ─────────────────
   private readonly values = toSignal(this.form.valueChanges, {
@@ -175,17 +189,18 @@ export class ContractNewComponent implements OnInit {
   protected readonly summary = computed(() => {
     const v = this.values();
 
-    const cashPrice = Number(v.cashPrice ?? 0) * Number(v.quantity ?? 1);
+    const cashPrice  = Number(v.cashPrice ?? 0);
     const downPayment = Number(v.downPayment ?? 0);
-    const profitRate = Number(v.profitRate ?? 0);
-    const count = Math.max(1, Number(v.installmentsCount ?? 1));
+    const profitRate  = Number(v.profitRate ?? 0);
+    const count       = Math.max(1, Number(v.installmentsCount ?? 1));
+    const totalQty    = (v.items ?? []).reduce(
+      (sum, item) => sum + (Number((item as ContractItemFormState).quantity) || 0),
+      0,
+    );
 
-    const afterDown = Math.max(0, cashPrice - downPayment);
-
+    const afterDown    = Math.max(0, cashPrice - downPayment);
     const profitAmount = afterDown * (profitRate / 100);
-
-    const totalAmount = afterDown + profitAmount;
-
+    const totalAmount  = afterDown + profitAmount;
     const installmentAmt = totalAmount / count;
 
     return {
@@ -197,6 +212,7 @@ export class ContractNewComponent implements OnInit {
       totalAmount,
       installmentAmt,
       count,
+      totalQty,
     };
   });
 
@@ -253,25 +269,99 @@ export class ContractNewComponent implements OnInit {
   private prefillFromDetails(d: ContractDetails): void {
     this.purchasePrice.set(d.contract.purchasePrice);
     this.prefilling = true;
+
+    // Populate items from the contract's items array.
+    // Direct-contract items have productId === null and cannot be pre-filled.
+    const itemsArray = this.itemsArray;
+    itemsArray.clear({ emitEvent: false });
+    const fillable = (d.contract.items ?? []).filter(
+      (item) => item.productId !== null && item.warehouseId !== null,
+    );
+    if (fillable.length > 0) {
+      for (const item of fillable) {
+        itemsArray.push(
+          this.createItemGroup({
+            productId: item.productId!,
+            warehouseId: item.warehouseId!,
+            quantity: item.quantity,
+          }),
+          { emitEvent: false },
+        );
+      }
+    } else {
+      itemsArray.push(this.createItemGroup(), { emitEvent: false });
+    }
+
+    // Normalize legacy frequencies no longer supported by the create/update form.
+    // Monthly contracts that predate the quarterly-minimum policy default to Quarterly.
+    const validFreqs: ContractPaymentFrequency[] = ['Quarterly', 'SemiAnnual', 'Annual'];
+    const rawFreq = d.contract.paymentFrequency as ContractPaymentFrequency;
+    const paymentFrequency: ContractPaymentFrequency = validFreqs.includes(rawFreq)
+      ? rawFreq
+      : 'Quarterly';
+
     this.form.patchValue({
       clientId: d.client.id,
-      productId: d.product?.id ?? null,
-      warehouseId: d.warehouse?.id ?? null,
-      quantity: d.contract.quantity,
       dateOfSale: d.contract.dateOfSale.split('T')[0],
       cashPrice: d.contract.cashPrice,
       downPayment: d.contract.downPayment,
       profitRate: d.contract.profitRate,
       installmentsCount: d.contract.installmentsCount,
-      paymentFrequency: d.contract.paymentFrequency as ContractPaymentFrequency,
+      paymentFrequency,
       firstInstallmentDate: d.contract.firstInstallmentDate.split('T')[0],
       representativeId: d.representative?.id ?? null,
       notes: d.contract.notes ?? '',
     });
+
     this.prefilling = false;
     this.form
       .get('installmentAmount')
       ?.setValue(d.contract.installmentAmount, { emitEvent: false });
+  }
+
+  // ───────────────── items management ─────────────────
+
+  private createItemGroup(defaults?: {
+    productId?: number;
+    warehouseId?: number;
+    quantity?: number;
+  }): FormGroup {
+    return this.fb.group({
+      productId: [
+        defaults?.productId ?? (null as number | null),
+        [Validators.required],
+      ],
+      warehouseId: [
+        defaults?.warehouseId ?? (null as number | null),
+        [Validators.required],
+      ],
+      quantity: [
+        defaults?.quantity ?? 1,
+        [Validators.required, Validators.min(1)],
+      ],
+    });
+  }
+
+  protected addItem(): void {
+    this.itemsArray.push(this.createItemGroup());
+  }
+
+  protected removeItem(index: number): void {
+    if (this.itemsArray.length > 1) {
+      this.itemsArray.removeAt(index);
+    }
+  }
+
+  protected getItemControl(
+    groupIndex: number,
+    field: string,
+  ): AbstractControl | null {
+    return this.itemsArray.at(groupIndex)?.get(field) ?? null;
+  }
+
+  protected isItemInvalid(groupIndex: number, field: string): boolean {
+    const ctrl = this.getItemControl(groupIndex, field);
+    return !!ctrl && ctrl.invalid && (ctrl.dirty || ctrl.touched);
   }
 
   // ───────────────── calculations ─────────────────
@@ -280,12 +370,13 @@ export class ContractNewComponent implements OnInit {
       this.calculateInstallment();
     });
 
-    // The product picker now carries only `{id,name}` (lookup endpoint), so
-    // the selling price is pulled on demand from the cached product detail.
-    this.form.get('productId')?.valueChanges.subscribe((id) => {
+    // When the product in the FIRST item changes, auto-fill cashPrice once.
+    const firstProductCtrl = this.itemsArray.at(0)?.get('productId');
+    firstProductCtrl?.valueChanges.subscribe((id) => {
       if (this.prefilling) return;
       const productId = Number(id);
       if (!productId) return;
+      if (Number(this.form.get('cashPrice')?.value) > 0) return;
 
       this.productsService.getById(productId).subscribe({
         next: (product) =>
@@ -293,41 +384,30 @@ export class ContractNewComponent implements OnInit {
             { cashPrice: product.sellingPrice },
             { emitEvent: true },
           ),
-        error: () => {
-          /* leave the price for the operator to enter manually */
-        },
+        error: () => { /* operator enters price manually */ },
       });
     });
   }
 
   private calculateInstallment(): void {
-    const cashPrice = Number(this.form.get('cashPrice')?.value) || 0;
-
+    const cashPrice   = Number(this.form.get('cashPrice')?.value) || 0;
     const downPayment = Number(this.form.get('downPayment')?.value) || 0;
-
-    const profitRate = Number(this.form.get('profitRate')?.value) || 0;
-
-    const count = Number(this.form.get('installmentsCount')?.value) || 1;
+    const profitRate  = Number(this.form.get('profitRate')?.value) || 0;
+    const count       = Number(this.form.get('installmentsCount')?.value) || 1;
 
     const remaining = cashPrice - downPayment;
 
     if (remaining <= 0) {
-      this.form.get('installmentAmount')?.setValue(0, {
-        emitEvent: false,
-      });
-
+      this.form.get('installmentAmount')?.setValue(0, { emitEvent: false });
       return;
     }
 
     const totalWithProfit = remaining * (1 + profitRate / 100);
-
     const installmentAmount = totalWithProfit / count;
 
     this.form
       .get('installmentAmount')
-      ?.setValue(Number(installmentAmount.toFixed(2)), {
-        emitEvent: false,
-      });
+      ?.setValue(Number(installmentAmount.toFixed(2)), { emitEvent: false });
   }
 
   // ───────────────── submit ─────────────────
@@ -340,16 +420,26 @@ export class ContractNewComponent implements OnInit {
       return;
     }
 
+    const raw = this.form.getRawValue();
+    const validItems = (raw.items ?? []).filter(
+      (i) => i['productId'] && i['warehouseId'] && Number(i['quantity']) >= 1,
+    );
+    if (validItems.length === 0) {
+      this.toast.error('أضف منتجًا واحدًا على الأقل مع تحديد المخزن والكمية');
+      return;
+    }
+
     this.isSaving.set(true);
 
-    const raw = this.form.getRawValue();
     const id = this.editId();
 
-    const sharedFields = {
+    const sharedFields: ContractFormState = {
       clientId: Number(raw.clientId),
-      productId: Number(raw.productId),
-      warehouseId: Number(raw.warehouseId),
-      quantity: Number(raw.quantity),
+      items: validItems.map((i) => ({
+        productId: Number(i['productId']),
+        warehouseId: Number(i['warehouseId']),
+        quantity: Number(i['quantity']),
+      })),
       dateOfSale: new Date(raw.dateOfSale).toISOString(),
       cashPrice: Number(raw.cashPrice),
       downPayment: Number(raw.downPayment),
@@ -359,7 +449,9 @@ export class ContractNewComponent implements OnInit {
       paymentFrequency: raw.paymentFrequency as ContractPaymentFrequency,
       firstInstallmentDate: new Date(raw.firstInstallmentDate).toISOString(),
       treasuryId: Number(raw.treasuryId),
-      representativeId: raw.representativeId ? Number(raw.representativeId) : null,
+      representativeId: raw.representativeId
+        ? Number(raw.representativeId)
+        : null,
       notes: raw.notes?.trim() || '',
     };
 
@@ -380,10 +472,8 @@ export class ContractNewComponent implements OnInit {
       return;
     }
 
-    const payload: ContractFormState = sharedFields;
-
     this.contractsService
-      .create(payload)
+      .create(sharedFields)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: () => {
@@ -398,49 +488,65 @@ export class ContractNewComponent implements OnInit {
 
   /**
    * Builds a human-readable message pointing to the first invalid field,
-   * so the user knows what to fix without scrolling the form. The labels
-   * mirror what the corresponding form-error message would surface.
+   * so the user knows what to fix without scrolling the form.
    */
   private firstInvalidFieldMessage(): string | null {
-    const labels: Record<string, string> = {
+    const topLabels: Record<string, string> = {
       clientId: 'العميل',
-      productId: 'المنتج',
-      warehouseId: 'المخزن',
-      quantity: 'الكمية',
       dateOfSale: 'تاريخ البيع',
       cashPrice: 'السعر الكاش',
       downPayment: 'المقدم',
       profitRate: 'نسبة الربح',
       installmentsCount: 'عدد الأقساط',
-      paymentFrequency: 'طريقة التقسيط',
+      paymentFrequency: 'دورية الدفع',
       firstInstallmentDate: 'تاريخ أول قسط',
       treasuryId: 'الخزينة',
     };
-    for (const [key, label] of Object.entries(labels)) {
+    for (const [key, label] of Object.entries(topLabels)) {
       const control = this.form.get(key);
       if (control?.invalid) return `يرجى مراجعة الحقل: ${label}`;
+    }
+    for (let i = 0; i < this.itemsArray.length; i++) {
+      const grp = this.itemsArray.at(i);
+      if (grp.get('productId')?.invalid)
+        return `يرجى اختيار المنتج في الصنف رقم ${i + 1}`;
+      if (grp.get('warehouseId')?.invalid)
+        return `يرجى اختيار المخزن في الصنف رقم ${i + 1}`;
+      if (grp.get('quantity')?.invalid)
+        return `يرجى إدخال كمية صحيحة في الصنف رقم ${i + 1}`;
     }
     return null;
   }
 
   // ───────────────── helpers ─────────────────
   protected reset(): void {
-    this.form.reset({
-      quantity: 1,
-      cashPrice: 0,
-      downPayment: 0,
-      profitRate: 20,
-      installmentsCount: 12,
-      paymentFrequency: 'Monthly',
-      dateOfSale: this.todayStr(),
-      firstInstallmentDate: this.nextMonthStr(),
-      installmentAmount: 0,
-    });
+    const itemsArr = this.itemsArray;
+    itemsArr.clear({ emitEvent: false });
+    itemsArr.push(this.createItemGroup(), { emitEvent: false });
+
+    this.form.patchValue(
+      {
+        clientId: null,
+        cashPrice: 0,
+        downPayment: 0,
+        profitRate: 20,
+        installmentsCount: 4,
+        paymentFrequency: 'Quarterly',
+        dateOfSale: this.todayStr(),
+        firstInstallmentDate: this.nextQuarterStr(),
+        treasuryId: null,
+        representativeId: null,
+        notes: '',
+      },
+      { emitEvent: false },
+    );
+    this.form.get('installmentAmount')?.setValue(0, { emitEvent: false });
+    this.form.markAsUntouched();
+    this.form.markAsPristine();
   }
 
   protected isInvalid(field: string): boolean {
     const control = this.form.get(field);
-
     return !!control && control.invalid && control.touched;
   }
 
@@ -448,11 +554,9 @@ export class ContractNewComponent implements OnInit {
     return new Date().toISOString().split('T')[0];
   }
 
-  private nextMonthStr(): string {
+  private nextQuarterStr(): string {
     const date = new Date();
-
-    date.setMonth(date.getMonth() + 1);
-
+    date.setMonth(date.getMonth() + 3);
     return date.toISOString().split('T')[0];
   }
 }

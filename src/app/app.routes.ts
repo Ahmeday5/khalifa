@@ -163,14 +163,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'contracts',
-        canActivate: [permissionGuard(PERMISSIONS.clientsView)],
-        loadChildren: () =>
-          import('./features/contracts/contracts.routes').then(
-            (m) => m.contractsRoutes,
-          ),
-      },
-      {
         path: 'reps',
         canActivate: [permissionGuard(PERMISSIONS.userManagement)],
         loadChildren: () =>

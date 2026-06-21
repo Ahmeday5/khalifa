@@ -9,6 +9,7 @@ import {
 
 import { CustomersService } from '../../services/customers.service';
 import {
+  CreatedClient,
   DashboardClient,
   DashboardClientRating,
   DashboardClientStatus,
@@ -19,6 +20,7 @@ import {
 } from '../../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
+import { DateArPipe } from '../../../../shared/pipes/date-ar.pipe';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { HttpCacheService } from '../../../../core/services/http-cache.service';
@@ -26,6 +28,7 @@ import { onInvalidate } from '../../../../core/utils/auto-refresh.util';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { ClientFormModalComponent } from '../../components/client-form-modal/client-form-modal.component';
 import { DirectContractModalComponent } from '../../components/direct-contract-modal/direct-contract-modal.component';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PERMISSIONS } from '../../../../core/constants/permissions.const';
 import { PrintService } from '../../../../core/services/print.service';
 import { map } from 'rxjs/operators';
@@ -42,9 +45,11 @@ const SEARCH_DEBOUNCE_MS = 300;
     BadgeComponent,
     PaginationComponent,
     CurrencyArPipe,
+    DateArPipe,
     HasPermissionDirective,
     ClientFormModalComponent,
     DirectContractModalComponent,
+    ModalComponent,
   ],
   templateUrl: './customers-list.component.html',
   styleUrl: './customers-list.component.scss',
@@ -74,6 +79,11 @@ export class CustomersListComponent {
   // ── server pagination meta ──
   protected readonly count = signal(0);
   protected readonly totalPages = signal(0);
+
+  // ── view client modal ──
+  protected readonly showViewClient = signal(false);
+  protected readonly viewClientData = signal<CreatedClient | null>(null);
+  protected readonly loadingViewClient = signal(false);
 
   // ── modal ──
   protected readonly showForm = signal(false);
@@ -125,9 +135,16 @@ export class CustomersListComponent {
     force = false,
   ): void {
     this.loading.set(true);
+    const query = {
+      search: trigger.search,
+      clientCode: trigger.search,
+      onlyOverdue: trigger.onlyOverdue,
+      pageIndex: trigger.pageIndex,
+      pageSize: trigger.pageSize,
+    };
     const stream$ = force
-      ? this.service.refreshDashboard(trigger)
-      : this.service.listDashboard(trigger);
+      ? this.service.refreshDashboard(query)
+      : this.service.listDashboard(query);
 
     stream$.subscribe({
       next: (res) => {
@@ -166,7 +183,7 @@ export class CustomersListComponent {
 
     fetchAllPages<DashboardClient>((pageIndex, pageSize) =>
       this.service
-        .refreshDashboard({ search, onlyOverdue, pageIndex, pageSize })
+        .refreshDashboard({ search, clientCode: search, onlyOverdue, pageIndex, pageSize })
         .pipe(map((r) => r.clients)),
     ).subscribe({
       next: (rows) => {
@@ -231,6 +248,12 @@ export class CustomersListComponent {
     if (this.pageIndex() !== 1) this.pageIndex.set(1);
   }
 
+  protected clearAllFilters(): void {
+    this.searchTerm.set('');
+    this.onlyOverdue.set(false);
+    this.pageIndex.set(1);
+  }
+
   protected onPageChange(page: number): void {
     this.pageIndex.set(page);
   }
@@ -238,6 +261,60 @@ export class CustomersListComponent {
   protected onPageSizeChange(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(1);
+  }
+
+  // ─────────── view client ───────────
+
+  protected openViewClient(id: number): void {
+    this.showViewClient.set(true);
+    this.viewClientData.set(null);
+    this.loadingViewClient.set(true);
+    this.service.getClient(id).subscribe({
+      next: (c) => {
+        this.viewClientData.set(c);
+        this.loadingViewClient.set(false);
+      },
+      error: () => {
+        this.loadingViewClient.set(false);
+        this.toast.error('تعذّر تحميل بيانات العميل');
+      },
+    });
+  }
+
+  protected closeViewClient(): void {
+    this.showViewClient.set(false);
+  }
+
+  protected printClientCard(): void {
+    const c = this.viewClientData();
+    if (!c) return;
+
+    const fields: Array<{ label: string; value: string }> = [
+      { label: '#',                  value: String(c.id) },
+      { label: 'الاسم الكامل',       value: c.fullName },
+      { label: 'الهاتف',             value: c.phoneNumber },
+      { label: 'واتساب',             value: c.whatsappNumber },
+      { label: 'البريد الإلكتروني',  value: c.email || '—' },
+      { label: 'الرقم القومي',       value: c.nationalId || '—' },
+      { label: 'العنوان',            value: c.address || '—' },
+    ];
+    if (c.clientCode)  fields.push({ label: 'كود العميل',     value: c.clientCode });
+    if (c.region)      fields.push({ label: 'المنطقة / الحي', value: c.region });
+    if (c.occupation)  fields.push({ label: 'المهنة',          value: c.occupation });
+    if (c.building)    fields.push({ label: 'المبنى',          value: c.building });
+    if (c.floor)       fields.push({ label: 'الدور',           value: c.floor });
+    if (c.department)  fields.push({ label: 'الشقة / القسم',   value: c.department });
+
+    this.printer.print<{ label: string; value: string }>({
+      title: `بيانات العميل — ${c.fullName}`,
+      subtitle: c.clientCode ? `كود: ${c.clientCode}` : undefined,
+      orientation: 'landscape',
+      columns: [
+        { key: 'label', header: 'البيان',  align: 'start', bold: true, width: '180px' },
+        { key: 'value', header: 'القيمة',  align: 'start' },
+      ],
+      rows: fields,
+    });
   }
 
   // ─────────── modal ───────────

@@ -23,7 +23,6 @@ import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import { LookupItem } from '../../../../core/models/lookup.model';
-
 import { ContractsService } from '../../../contracts/services/contracts.service';
 import { CustomersService } from '../../services/customers.service';
 import { TreasuryService } from '../../../treasury/services/treasury.service';
@@ -79,9 +78,9 @@ export class DirectContractModalComponent {
 
   // ── payment frequency options ──
   protected readonly frequencies: { value: ContractPaymentFrequency; label: string }[] = [
-    { value: 'Monthly', label: 'شهري' },
     { value: 'Quarterly', label: 'ربع سنوي' },
     { value: 'SemiAnnual', label: 'نصف سنوي' },
+    { value: 'Annual', label: 'سنوي' },
   ];
 
   // ── derived options ──
@@ -113,7 +112,7 @@ export class DirectContractModalComponent {
     profitRate: [20, [Validators.required, Validators.min(0), Validators.max(100)]],
     installmentsCount: [12, [Validators.required, Validators.min(1), Validators.max(120)]],
     installmentAmount: [{ value: 0, disabled: true }, [Validators.required]],
-    paymentFrequency: ['Monthly' as ContractPaymentFrequency, [Validators.required]],
+    paymentFrequency: ['Quarterly' as ContractPaymentFrequency, [Validators.required]],
     firstInstallmentDate: [this.nextMonthStr(), [Validators.required]],
     treasuryId: this.fb.control<number | null>(null, [Validators.required]),
     representativeId: this.fb.control<number | null>(null),
@@ -271,7 +270,7 @@ export class DirectContractModalComponent {
       profitRate: 20,
       installmentsCount: 12,
       installmentAmount: 0,
-      paymentFrequency: 'Monthly',
+      paymentFrequency: 'Quarterly',
       firstInstallmentDate: this.nextMonthStr(),
       treasuryId: null,
       representativeId: null,

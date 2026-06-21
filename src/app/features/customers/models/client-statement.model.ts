@@ -1,14 +1,22 @@
 import { PagedResponse } from '../../../core/models/api-response.model';
 
+// ─── Contracts list (GET /dashboard/clients/{id}/contracts) ──────────────────
+
+/** Single item in the contract list rows. */
+export interface ClientContractListItem {
+  productId: number | null;
+  productName: string;
+  quantity: number;
+}
+
 /**
  * Wire shape of a single contract row returned by
  * `GET /dashboard/clients/{id}/contracts?PageIndex=&PageSize=`.
  */
 export interface ClientContractRow {
   id: number;
-  /** `null` for direct contracts that are not linked to an inventory product. */
-  productId: number | null;
-  productName: string;
+  items: ClientContractListItem[];
+  /** Total quantity across all items. */
   quantity: number;
   dateOfSale: string;
   purchasePrice: number;
@@ -34,31 +42,29 @@ export interface ClientContractsQuery {
   pageSize?: number;
 }
 
-/**
- * Wire shape of `GET /dashboard/contracts/{id}/details`.
- */
-export interface ContractDetails {
-  contract: ContractDetailsContract;
-  client: ContractDetailsClient;
-  /** `null` for direct contracts that are not linked to a catalog product. */
-  product: ContractDetailsProduct | null;
-  warehouse: ContractDetailsWarehouse | null;
-  representative: ContractDetailsRepresentative | null;
-  summary: ContractDetailsSummary;
-  nextInstallment: ContractNextInstallment | null;
-  installments: ContractInstallmentRow[];
+// ─── Contract details (GET /dashboard/contracts/{id}/details) ────────────────
+
+/** Single item inside the contract details contract object. */
+export interface ContractDetailItemRow {
+  productId: number | null;
+  productName: string;
+  warehouseId: number | null;
+  warehouseName: string | null;
+  quantity: number;
+  unitPurchasePrice: number;
 }
 
 export interface ContractDetailsContract {
   id: number;
-  /** Free-text product name for direct contracts (no catalog product). Null for regular contracts. */
-  productName: string | null;
+  items: ContractDetailItemRow[];
+  /** Total quantity across all items. */
   quantity: number;
   dateOfSale: string;
   purchasePrice: number;
   cashPrice: number;
   downPayment: number;
   profitRate: number;
+  profitShareRate: number;
   installmentsCount: number;
   installmentAmount: number;
   paymentFrequency: string;
@@ -76,19 +82,10 @@ export interface ContractDetailsClient {
   address: string;
 }
 
-export interface ContractDetailsProduct {
-  id: number;
-  name: string;
-}
-
-export interface ContractDetailsWarehouse {
-  id: number;
-  name: string;
-}
-
 export interface ContractDetailsRepresentative {
   id: number;
-  name: string;
+  fullName: string;
+  phoneNumber: string;
 }
 
 export interface ContractDetailsSummary {
@@ -106,6 +103,33 @@ export interface ContractNextInstallment {
   amount: number;
   dueDate: string;
 }
+
+/** Single payment transaction returned inside `GET /dashboard/contracts/{id}/details`. */
+export interface ContractPaymentRecord {
+  id: number;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes: string | null;
+  treasuryName?: string | null;
+  createdAt?: string | null;
+}
+
+/**
+ * Full contract details shape from `GET /dashboard/contracts/{id}/details`.
+ * Items (products + warehouses) are nested inside `contract.items`.
+ */
+export interface ContractDetails {
+  contract: ContractDetailsContract;
+  client: ContractDetailsClient;
+  representative: ContractDetailsRepresentative | null;
+  summary: ContractDetailsSummary;
+  nextInstallment: ContractNextInstallment | null;
+  installments: ContractInstallmentRow[];
+  payments?: ContractPaymentRecord[];
+}
+
+// ─── Installments ─────────────────────────────────────────────────────────────
 
 export type ContractInstallmentStatus =
   | 'Paid'
@@ -125,6 +149,8 @@ export interface ContractInstallmentRow {
   isOverdue: boolean;
   notes: string | null;
 }
+
+// ─── Payment ──────────────────────────────────────────────────────────────────
 
 /** POST /installments/pay */
 export interface PayInstallmentPayload {

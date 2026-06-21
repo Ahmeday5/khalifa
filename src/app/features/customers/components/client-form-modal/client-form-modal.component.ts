@@ -19,6 +19,7 @@ import {
   CreateClientPayload,
   CreatedClient,
   DashboardClient,
+  UpdateClientPayload,
 } from '../../models/dashboard-client.model';
 
 /** Egyptian mobile: 010 / 011 / 012 / 015 + 8 digits. */
@@ -62,14 +63,20 @@ export class ClientFormModalComponent {
 
   // ── form ──
   protected readonly form = this.fb.nonNullable.group({
-    fullName: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.email]],
-    // Optional — but must be a valid 14-digit id when provided.
-    nationalId: ['', [Validators.pattern(EG_NATIONAL_ID)]],
-    address: ['', [Validators.required, Validators.minLength(2)]],
-    phoneNumber: ['', [Validators.required, Validators.pattern(EG_PHONE)]],
-    whatsappNumber: ['', [Validators.required, Validators.pattern(EG_PHONE)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    fullName:      ['', [Validators.required, Validators.minLength(3)]],
+    email:         ['', [Validators.email]],
+    nationalId:    ['', [Validators.pattern(EG_NATIONAL_ID)]],
+    address:       ['', [Validators.required, Validators.minLength(2)]],
+    phoneNumber:   ['', [Validators.required, Validators.pattern(EG_PHONE)]],
+    whatsappNumber:['', [Validators.required, Validators.pattern(EG_PHONE)]],
+    password:      ['', [Validators.required, Validators.minLength(6)]],
+    // ── extended profile ──
+    clientCode:    [''],
+    region:        [''],
+    occupation:    [''],
+    building:      [''],
+    floor:         [''],
+    department:    [''],
   });
 
   constructor() {
@@ -184,6 +191,12 @@ export class ClientFormModalComponent {
       phoneNumber: '',
       whatsappNumber: '',
       password: '',
+      clientCode: '',
+      region: '',
+      occupation: '',
+      building: '',
+      floor: '',
+      department: '',
     });
     this.applyWhatsappSync(true);
   }
@@ -205,6 +218,12 @@ export class ClientFormModalComponent {
       phoneNumber: row.phoneNumber,
       whatsappNumber: '',
       password: '',
+      clientCode: '',
+      region: '',
+      occupation: '',
+      building: '',
+      floor: '',
+      department: '',
     });
 
     this.loadingDetail.set(true);
@@ -212,12 +231,18 @@ export class ClientFormModalComponent {
       next: (full) => {
         this.loadingDetail.set(false);
         this.form.patchValue({
-          fullName: full.fullName,
-          email: full.email ?? '',
-          nationalId: full.nationalId ?? '',
-          address: full.address,
-          phoneNumber: full.phoneNumber,
-          whatsappNumber: full.whatsappNumber ?? '',
+          fullName:      full.fullName,
+          email:         full.email ?? '',
+          nationalId:    full.nationalId ?? '',
+          address:       full.address,
+          phoneNumber:   full.phoneNumber,
+          whatsappNumber:full.whatsappNumber ?? '',
+          clientCode:    full.clientCode ?? '',
+          region:        full.region ?? '',
+          occupation:    full.occupation ?? '',
+          building:      full.building ?? '',
+          floor:         full.floor ?? '',
+          department:    full.department ?? '',
         });
         const synced =
           !!full.whatsappNumber && full.whatsappNumber === full.phoneNumber;
@@ -260,27 +285,43 @@ export class ClientFormModalComponent {
 
   private toCreatePayload(): CreateClientPayload {
     const raw = this.form.getRawValue();
-    return {
-      fullName: raw.fullName.trim(),
-      email: raw.email.trim(),
-      nationalId: raw.nationalId.trim(),
-      address: raw.address.trim(),
-      phoneNumber: raw.phoneNumber.trim(),
+    const payload: CreateClientPayload = {
+      fullName:       raw.fullName.trim(),
+      email:          raw.email.trim(),
+      nationalId:     raw.nationalId.trim(),
+      address:        raw.address.trim(),
+      phoneNumber:    raw.phoneNumber.trim(),
       whatsappNumber: this.resolvedWhatsapp(),
-      password: raw.password,
+      password:       raw.password,
     };
+    this.applyExtended(payload, raw);
+    return payload;
   }
 
-  private toUpdatePayload() {
+  private toUpdatePayload(): UpdateClientPayload {
     const raw = this.form.getRawValue();
-    return {
-      fullName: raw.fullName.trim(),
-      email: raw.email.trim(),
-      nationalId: raw.nationalId.trim(),
-      address: raw.address.trim(),
-      phoneNumber: raw.phoneNumber.trim(),
+    const payload: UpdateClientPayload = {
+      fullName:       raw.fullName.trim(),
+      email:          raw.email.trim(),
+      nationalId:     raw.nationalId.trim(),
+      address:        raw.address.trim(),
+      phoneNumber:    raw.phoneNumber.trim(),
       whatsappNumber: this.resolvedWhatsapp(),
     };
+    this.applyExtended(payload, raw);
+    return payload;
+  }
+
+  private applyExtended(
+    target: CreateClientPayload | UpdateClientPayload,
+    raw: ReturnType<typeof this.form.getRawValue>,
+  ): void {
+    target.clientCode  = raw.clientCode.trim();
+    target.region      = raw.region.trim();
+    target.occupation  = raw.occupation.trim();
+    target.building    = raw.building.trim();
+    target.floor       = raw.floor.trim();
+    target.department  = raw.department.trim();
   }
 
   private resolvedWhatsapp(): string {

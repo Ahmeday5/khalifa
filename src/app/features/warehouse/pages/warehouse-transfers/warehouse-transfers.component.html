@@ -1,0 +1,196 @@
+<!-- ── Header ── -->
+<div class="pgh">
+  <div>
+    <div class="pgt">تحويلات المخزون</div>
+    <div class="pgs">سجل نقل الأصناف بين المخازن</div>
+  </div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="btn btn-sm" routerLink="/warehouse">
+      ← المخازن
+    </button>
+    <button
+      class="btn btn-sm d-inline-flex align-items-center gap-1"
+      [disabled]="loading()"
+      (click)="refresh()"
+    >
+      @if (loading()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>تحديث</span>
+    </button>
+    <button
+      *appHasPermission="PERMS.suppliersFullAccess"
+      class="btn btn-sm btn-bl"
+      (click)="openCreate()"
+    >
+      + تحويل جديد
+    </button>
+  </div>
+</div>
+
+
+<!-- ── Filters ── -->
+<div class="card" style="margin-bottom:0">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+
+    <div style="flex:1;min-width:160px">
+      <label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">
+        من مخزن
+      </label>
+      <select
+        class="form-select form-select-sm"
+        [value]="fromWarehouseId()"
+        (change)="onFromWarehouseChange($any($event.target).value)"
+      >
+        <option value="0">— الكل —</option>
+        @for (w of warehouseLookup(); track w.id) {
+          <option [value]="w.id">{{ w.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div style="flex:1;min-width:160px">
+      <label style="font-size:11px;color:var(--txt3);display:block;margin-bottom:4px">
+        إلى مخزن
+      </label>
+      <select
+        class="form-select form-select-sm"
+        [value]="toWarehouseId()"
+        (change)="onToWarehouseChange($any($event.target).value)"
+      >
+        <option value="0">— الكل —</option>
+        @for (w of warehouseLookup(); track w.id) {
+          <option [value]="w.id">{{ w.name }}</option>
+        }
+      </select>
+    </div>
+
+    @if (hasFilters) {
+      <button class="btn btn-sm" style="margin-top:auto" (click)="clearFilters()">
+        مسح الفلاتر
+      </button>
+    }
+
+  </div>
+</div>
+
+
+<!-- ── Transfers Table ── -->
+<div class="card">
+
+  <div class="tw" style="margin-bottom:0">
+    <table>
+      <thead>
+        <tr>
+          <th class="tf-w-id">#</th>
+          <th class="tf-w-wh">المخزن المصدر</th>
+          <th class="tf-w-wh">المخزن الوجهة</th>
+          <th class="tf-w-date">تاريخ التحويل</th>
+          <th class="tf-w-user">بواسطة</th>
+          <th class="tf-w-notes">ملاحظات</th>
+          <th class="tf-w-date">تاريخ الإنشاء</th>
+          <th class="tf-w-actions text-center">التفاصيل</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of transfers(); track t.id) {
+          <tr>
+            <td class="tf-id">#{{ t.id }}</td>
+            <td>
+              <span class="tf-wh-badge tf-from">{{ t.fromWarehouse.name }}</span>
+            </td>
+            <td>
+              <span class="tf-wh-badge tf-to">{{ t.toWarehouse.name }}</span>
+            </td>
+            <td dir="ltr" style="font-size:11px;white-space:nowrap">
+              {{ t.transferDate | dateAr }}
+            </td>
+            <td>
+              <span class="tf-user">{{ t.createdBy }}</span>
+            </td>
+            <td>
+              @if (t.notes) {
+                <span class="tf-notes-cell" [title]="t.notes">{{ t.notes }}</span>
+              } @else {
+                <span style="color:var(--txt3)">—</span>
+              }
+            </td>
+            <td dir="ltr" style="font-size:11px;white-space:nowrap;color:var(--txt3)">
+              {{ t.createdAt | dateAr }}
+            </td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-blue"
+                title="عرض تفاصيل التحويل"
+                aria-label="عرض تفاصيل التحويل"
+                (click)="openView(t.id)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="tf-empty">
+              @if (loading()) {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>جاري تحميل التحويلات...</span>
+              } @else if (hasFilters) {
+                <div class="tf-empty-block">
+                  <div>لا توجد تحويلات مطابقة للفلاتر المحددة</div>
+                  <button class="btn btn-sm mt-2" (click)="clearFilters()">مسح الفلاتر</button>
+                </div>
+              } @else {
+                <div class="tf-empty-block">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.4"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                  </svg>
+                  <div class="tf-empty-title">لا توجد تحويلات مسجلة بعد</div>
+                  <div class="tf-empty-sub">استخدم "+ تحويل جديد" لبدء نقل الأصناف بين المخازن.</div>
+                  <button
+                    *appHasPermission="PERMS.suppliersFullAccess"
+                    class="btn btn-sm btn-bl mt-2"
+                    (click)="openCreate()"
+                  >
+                    + تحويل جديد
+                  </button>
+                </div>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+    <app-pagination
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"
+      [count]="count()"
+      [totalPages]="totalPages()"
+      [disabled]="loading()"
+      (pageChange)="onPageChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
+  }
+
+</div>
+
+
+<!-- ── Transfer Modal (create / view) ── -->
+<app-warehouse-transfer-modal
+  [open]="modalOpen()"
+  [mode]="modalMode()"
+  [viewTransferId]="viewTransferId()"
+  (closed)="closeModal()"
+  (created)="onTransferCreated($event)"
+/>

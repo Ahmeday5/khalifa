@@ -3,11 +3,16 @@ import { Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import {
   CreateWarehousePayload,
+  CreateWarehouseTransferPayload,
+  CreateWarehouseTransferResponse,
   UpdateWarehousePayload,
   Warehouse,
   WarehouseInventoryItem,
   WarehouseInventoryQuery,
   WarehouseSummary,
+  WarehouseTransferDetail,
+  WarehouseTransferListItem,
+  WarehouseTransfersQuery,
 } from '../models/warehouse.model';
 import { ApiService } from '../../../core/services/api.service';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.const';
@@ -146,5 +151,70 @@ export class WarehouseService {
       PageSize: query.pageSize ?? 10,
       search: query.search ?? '',
     };
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  Live API — /dashboard/warehouses/transfers
+  // ─────────────────────────────────────────────────────────────────
+
+  /** POST: initiate a stock transfer between two warehouses. */
+  createTransfer(
+    payload: CreateWarehouseTransferPayload,
+  ): Observable<CreateWarehouseTransferResponse> {
+    return this.api.post<CreateWarehouseTransferResponse>(
+      API_ENDPOINTS.warehouses.transfers,
+      payload,
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([WAREHOUSE_CACHE_KEY, 'transfer']),
+        ),
+      },
+    );
+  }
+
+  /** Paginated list of transfers with optional warehouse filters. */
+  listTransfers(
+    query: WarehouseTransfersQuery = {},
+  ): Observable<PagedResponse<WarehouseTransferListItem>> {
+    return this.api.get<PagedResponse<WarehouseTransferListItem>>(
+      API_ENDPOINTS.warehouses.transfers,
+      {
+        params: this.toTransfersParams(query),
+        context: withCache({ ttlMs: 2 * 60 * 1000 }),
+      },
+    );
+  }
+
+  /** Force-bypass-cache version of listTransfers. */
+  refreshTransfers(
+    query: WarehouseTransfersQuery = {},
+  ): Observable<PagedResponse<WarehouseTransferListItem>> {
+    return this.api.get<PagedResponse<WarehouseTransferListItem>>(
+      API_ENDPOINTS.warehouses.transfers,
+      {
+        params: this.toTransfersParams(query),
+        context: withCacheBypass(withCache({ ttlMs: 2 * 60 * 1000 })),
+      },
+    );
+  }
+
+  /** Full transfer detail — includes the items list. */
+  getTransfer(id: number): Observable<WarehouseTransferDetail> {
+    return this.api.get<WarehouseTransferDetail>(
+      API_ENDPOINTS.warehouses.transferById(id),
+      { context: withCache({ ttlMs: 5 * 60 * 1000 }) },
+    );
+  }
+
+  private toTransfersParams(
+    query: WarehouseTransfersQuery,
+  ): Record<string, unknown> {
+    const params: Record<string, unknown> = {
+      PageIndex: query.pageIndex ?? 1,
+      PageSize: query.pageSize ?? 10,
+    };
+    if (query.fromWarehouseId) params['fromWarehouseId'] = query.fromWarehouseId;
+    if (query.toWarehouseId) params['toWarehouseId'] = query.toWarehouseId;
+    return params;
   }
 }

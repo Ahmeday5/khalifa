@@ -68,6 +68,10 @@ export const API_ENDPOINTS = {
     inventory: 'dashboard/warehouses/inventory',
     /** Lightweight `{id,name}` list for pickers (role-scoped server-side). */
     lookup: 'dashboard/warehouses/lookup',
+    /** POST: create a warehouse-to-warehouse stock transfer. GET: paginated transfer history. */
+    transfers: 'dashboard/warehouses/transfers',
+    /** GET: full detail of one transfer (includes items). */
+    transferById: (id: number) => `dashboard/warehouses/transfers/${id}`,
   },
   products: {
     base: 'dashboard/products',
@@ -148,6 +152,8 @@ export const API_ENDPOINTS = {
       `dashboard/representatives/${id}/commission-payout`,
     /** Admin: paginated history of commission payouts. */
     commissionPayouts: 'dashboard/representatives/commission-payouts',
+    /** Admin: paginated list of requests submitted by representatives. */
+    requests: 'dashboard/representative-requests',
   },
   contracts: {
     base: 'dashboard/contracts',

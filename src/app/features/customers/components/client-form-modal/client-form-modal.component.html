@@ -1,15 +1,19 @@
 <app-modal
   [open]="open()"
   [title]="isEdit() ? 'تعديل بيانات العميل' : 'إضافة عميل'"
-  size="lg"
+  size="xl"
   [closeOnBackdrop]="!submitting()"
   [closeOnEsc]="!submitting()"
   (closed)="close()"
 >
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+
+    <!-- ─── البيانات الأساسية ─── -->
+    <div class="cf-section-title">البيانات الأساسية</div>
     <div class="row g-3">
+
       <div class="col-12 col-md-6">
-        <label class="form-label">الاسم الكامل</label>
+        <label class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
         <input
           type="text"
           class="form-control"
@@ -52,7 +56,7 @@
       </div>
 
       <div class="col-12 col-md-6">
-        <label class="form-label">رقم الهاتف</label>
+        <label class="form-label">رقم الهاتف <span class="text-danger">*</span></label>
         <div class="input-group">
           <input
             type="tel"
@@ -70,7 +74,9 @@
             (click)="pickContact()"
             title="اختر من جهات الاتصال"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -82,7 +88,7 @@
       </div>
 
       <div class="col-12 col-md-6">
-        <label class="form-label">رقم الواتساب</label>
+        <label class="form-label">رقم الواتساب <span class="text-danger">*</span></label>
         <input
           type="tel"
           class="form-control"
@@ -105,7 +111,7 @@
 
       @if (!isEdit()) {
         <div class="col-12 col-md-6">
-          <label class="form-label">كلمة المرور</label>
+          <label class="form-label">كلمة المرور <span class="text-danger">*</span></label>
           <app-password-input
             formControlName="password"
             placeholder="••••••••"
@@ -116,7 +122,7 @@
       }
 
       <div class="col-12">
-        <label class="form-label">العنوان</label>
+        <label class="form-label">العنوان <span class="text-danger">*</span></label>
         <input
           type="text"
           class="form-control"
@@ -127,6 +133,82 @@
         />
         <app-form-error [control]="form.controls.address" label="العنوان" />
       </div>
+
+    </div>
+
+    <!-- ─── البيانات التفصيلية ─── -->
+    <div class="cf-section-title mt-4">بيانات تفصيلية إضافية</div>
+    <div class="row g-3">
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">
+          كود العميل / الباركود
+        </label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="clientCode"
+          autocomplete="off"
+          placeholder="مثال: CLI-0001"
+          dir="ltr"
+        />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">المنطقة / الحي</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="region"
+          autocomplete="off"
+          placeholder="مثال: المعادي"
+        />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">المهنة</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="occupation"
+          autocomplete="off"
+          placeholder="مثال: مهندس"
+        />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">المبنى / العمارة</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="building"
+          autocomplete="off"
+          placeholder="مثال: عمارة النيل"
+        />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">الدور / الطابق</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="floor"
+          autocomplete="off"
+          placeholder="مثال: الدور الثالث"
+        />
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">الشقة / القسم</label>
+        <input
+          type="text"
+          class="form-control"
+          formControlName="department"
+          autocomplete="off"
+          placeholder="مثال: شقة 12"
+        />
+      </div>
+
     </div>
 
     @if (serverError(); as msg) {
@@ -134,6 +216,7 @@
         {{ msg }}
       </div>
     }
+
   </form>
 
   <ng-container modal-footer>
@@ -160,4 +243,18 @@
       }}</span>
     </button>
   </ng-container>
+
 </app-modal>
+
+<style>
+  .cf-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--txt3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--bg3);
+    margin-bottom: 12px;
+  }
+</style>
