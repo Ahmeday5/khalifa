@@ -52,6 +52,12 @@ export class CommissionPayoutModalComponent {
   readonly representativeId = input<number | null>(null);
   readonly representativeName = input<string>('');
   readonly outstanding = input<number>(0);
+  /** عمولة نسبة الربح (التحصيل) — للعرض فقط. */
+  readonly accumulatedCommission = input<number>(0);
+  /** عمولة المنتج — للعرض فقط. */
+  readonly accumulatedProductCommission = input<number>(0);
+  /** المجموع الكلي المستحق — للعرض فقط. */
+  readonly totalAccumulatedCommission = input<number>(0);
 
   readonly closed = output<void>();
   readonly paid = output<CommissionPayoutResult>();

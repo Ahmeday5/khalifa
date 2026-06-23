@@ -52,8 +52,12 @@ export interface Representative {
   treasury: RepresentativeTreasury;
   /** Outstanding commission — optional, populated in list when available. */
   outstandingCommission?: number;
-  /** Accumulated commission total — optional, populated in list when available. */
+  /** عمولة نسبة الربح (التحصيل) — optional, populated in list when available. */
   accumulatedCommission?: number;
+  /** عمولة المنتجات — optional, populated in list when available. */
+  accumulatedProductCommission?: number;
+  /** المجموع الكلي للعمولة — optional, populated in list when available. */
+  totalAccumulatedCommission?: number;
   /** Paid commission total — optional, populated in list when available. */
   paidCommission?: number;
 }
@@ -91,7 +95,10 @@ export type UpdateRepresentativePayload = CreateRepresentativePayload;
  * `lastActivityDate` is `null` when the representative has had no movement
  * yet.
  *
- *   accumulatedCommission = paidCommission + outstandingCommission
+ *   accumulatedCommission         = from profit-rate (collection commission)
+ *   accumulatedProductCommission  = from per-product commission definitions
+ *   totalAccumulatedCommission    = accumulatedCommission + accumulatedProductCommission
+ *   outstandingCommission         = totalAccumulatedCommission - paidCommission
  */
 export interface RepresentativeSubTreasury {
   representativeId: number;
@@ -103,7 +110,12 @@ export interface RepresentativeSubTreasury {
   totalSales: number;
   totalCost: number;
   totalProfit: number;
+  /** عمولة نسبة الربح (التحصيل). */
   accumulatedCommission: number;
+  /** عمولة عمولة المنتج (من تعريف المنتجات). */
+  accumulatedProductCommission: number;
+  /** المجموع الكلي للعمولة المستحقة. */
+  totalAccumulatedCommission: number;
   paidCommission: number;
   outstandingCommission: number;
 }

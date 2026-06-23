@@ -136,6 +136,7 @@
           <th class="vc-w-party-name">الجهة</th>
           <th class="vc-w-ref">المرجع</th>
           <th class="vc-w-notes">ملاحظات</th>
+          <th class="text-center">إجراء</th>
         </tr>
       </thead>
       <tbody>
@@ -171,10 +172,24 @@
               />
             </td>
             <td class="vc-notes" [title]="v.notes ?? ''">{{ cleanNotes(v.notes) }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-sm btn-re d-inline-flex align-items-center gap-1"
+                [disabled]="deletingId() === v.id"
+                (click)="confirmDelete(v)"
+                title="حذف السند"
+              >
+                @if (deletingId() === v.id) {
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                }
+                <span>حذف</span>
+              </button>
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="9" class="vc-empty">
+            <td colspan="10" class="vc-empty">
               @if (loading()) {
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <span>جاري تحميل السندات...</span>

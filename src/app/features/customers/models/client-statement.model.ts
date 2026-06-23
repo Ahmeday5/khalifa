@@ -73,6 +73,8 @@ export interface ContractDetailsContract {
   notes: string | null;
   createdAt: string;
   representativeCommission: number;
+  /** الخزينة المربوطة بالعقد — مطلوبة لسند دفع المقدم وعرض السيلكت. */
+  treasuryId: number | null;
 }
 
 export interface ContractDetailsClient {
@@ -106,13 +108,11 @@ export interface ContractNextInstallment {
 
 /** Single payment transaction returned inside `GET /dashboard/contracts/{id}/details`. */
 export interface ContractPaymentRecord {
-  id: number;
+  voucherNumber: string;
+  date: string;
   amount: number;
-  paymentDate: string;
-  paymentMethod: string;
+  kind: string;
   notes: string | null;
-  treasuryName?: string | null;
-  createdAt?: string | null;
 }
 
 /**

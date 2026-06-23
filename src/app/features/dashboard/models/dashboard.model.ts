@@ -85,3 +85,17 @@ export interface HomeSummaryDto {
   };
 }
 
+//------------------expenses--------------------------
+export interface ExpensesSummaryDto {
+  totalAmount: number;
+  count: number;
+  todayAmount: number;
+  thisMonthAmount: number;
+  byCategory: ExpenseCategoryDto[];
+}
+
+export interface ExpenseCategoryDto {
+  category: string;
+  amount: number;
+  count: number;
+}

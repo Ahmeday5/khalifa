@@ -65,6 +65,23 @@ export class VouchersService {
     );
   }
 
+  /**
+   * DELETE /dashboard/vouchers/{id}
+   *
+   * Permanently removes a voucher. Invalidates the vouchers list and
+   * the treasury scope so balances re-fetch immediately.
+   */
+  delete(id: number): Observable<{ message: string }> {
+    return this.api.delete<{ message: string }>(
+      API_ENDPOINTS.dashboard.voucherById(id),
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([...VOUCHERS_CACHE_KEYS]),
+        ),
+      },
+    );
+  }
+
   private toParams(query: VouchersQuery): Record<string, unknown> {
     return {
       PageIndex: query.pageIndex ?? 1,

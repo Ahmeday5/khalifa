@@ -150,4 +150,29 @@ export class ContractsService {
       context: withCacheBypass(withCache({ ttlMs: CONTRACT_DETAILS_TTL_MS })),
     });
   }
+
+  /**
+   * POST /dashboard/contracts/{id}/return
+   *
+   * Returns / cancels a contract. The backend rejects this when any
+   * installment payment has already been recorded — surface the
+   * `message` from the 400 response verbatim.
+   */
+  returnContract(id: number): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>(
+      API_ENDPOINTS.contracts.return(id),
+      {},
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([
+            CONTRACTS_CACHE_KEY,
+            'client',
+            'warehous',
+            'treasur',
+            'financial-separation',
+          ]),
+        ),
+      },
+    );
+  }
 }

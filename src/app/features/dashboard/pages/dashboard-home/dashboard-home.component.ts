@@ -12,6 +12,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import {
   ClientRating,
   DueInstallmentDto,
+  ExpensesSummaryDto,
   HomeSummaryDto,
   ProfitMonthDto,
   TopClientDto,
@@ -48,6 +49,12 @@ export class DashboardHomeComponent implements OnInit {
 
   /** Exposed so the template can gate write actions with `*appHasPermission`. */
   protected readonly PERMS = PERMISSIONS;
+
+  // ── expense ──
+  protected readonly expenses = signal<ExpensesSummaryDto | null>(null);
+  protected readonly expensesLoading = signal(false);
+  protected readonly fromDate = signal('2025-01-01');
+  protected readonly toDate = signal('2030-01-01');
 
   // ── live home widgets ──
   protected readonly profitMonths = signal<ProfitMonthDto[]>([]);
@@ -146,10 +153,8 @@ export class DashboardHomeComponent implements OnInit {
     if (!months.length) return [];
     const { min, range } = this.profitRange();
     const innerW = this.CHART_VB_W - this.CHART_PAD_X * 2;
-    const innerH =
-      this.CHART_VB_H - this.CHART_PAD_TOP - this.CHART_PAD_BOTTOM;
-    const stepX =
-      months.length === 1 ? 0 : innerW / (months.length - 1);
+    const innerH = this.CHART_VB_H - this.CHART_PAD_TOP - this.CHART_PAD_BOTTOM;
+    const stepX = months.length === 1 ? 0 : innerW / (months.length - 1);
 
     return months.map((m, i) => {
       const x = this.CHART_PAD_X + stepX * i;
@@ -232,6 +237,7 @@ export class DashboardHomeComponent implements OnInit {
     this.loadFinancial(false);
     this.loadHomeWidgets(false);
     this.loadSummary(false);
+    this.loadExpenses(false);
   }
 
   private loadSummary(force: boolean): void {
@@ -327,5 +333,39 @@ export class DashboardHomeComponent implements OnInit {
     if (s.includes('قريب')) return 'warn';
     if (s.includes('منتظم')) return 'ok';
     return 'info';
+  }
+
+  //////////////////////expenses/////////////////////////
+  loadExpenses(force: boolean): void {
+    this.expensesLoading.set(true);
+
+    const stream$ = force
+      ? this.dashService.refreshExpenses(this.fromDate(), this.toDate())
+      : this.dashService.expenses(this.fromDate(), this.toDate());
+
+    stream$.subscribe({
+      next: (res) => {
+        this.expenses.set(res);
+        this.expensesLoading.set(false);
+      },
+      error: () => {
+        this.expensesLoading.set(false);
+      },
+    });
+  }
+
+  protected readonly topExpenseCategory = computed(() => {
+    const data = this.expenses();
+    if (!data?.byCategory?.length) return null;
+
+    return [...data.byCategory].sort((a, b) => b.amount - a.amount)[0];
+  });
+
+  protected expensePercent(amount: number): number {
+    const total = this.expenses()?.totalAmount ?? 0;
+
+    if (!total) return 0;
+
+    return (amount / total) * 100;
   }
 }

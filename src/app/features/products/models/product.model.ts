@@ -1,4 +1,18 @@
 /**
+ * نوع العمولة المربوطة بالمنتج:
+ *   - None        : لا عمولة (الافتراضي)
+ *   - Percentage  : نسبة مئوية من سعر البيع
+ *   - FixedAmount : مبلغ ثابت لكل وحدة مباعة
+ */
+export type CommissionType = 'None' | 'Percentage' | 'FixedAmount';
+
+export const COMMISSION_TYPE_LABELS: Record<CommissionType, string> = {
+  None: 'بدون عمولة',
+  Percentage: 'نسبة مئوية %',
+  FixedAmount: 'مبلغ ثابت ج.م',
+};
+
+/**
  * Product entity exactly as returned by `GET /dashboard/products/{id}`
  * (and the `data[]` array in the paginated `/dashboard/products` listing).
  *
@@ -25,6 +39,10 @@ export interface Product {
   /** Server-resolved display name of the category (may be `null`). */
   categoryName: string | null;
   createdAt: string;
+  /** نوع عمولة المنتج — None إذا لم يُعيَّن. */
+  commissionType: CommissionType;
+  /** قيمة العمولة: نسبة (0–100) أو مبلغ ثابت، حسب commissionType. */
+  commissionValue: number;
 }
 
 /**
@@ -34,6 +52,7 @@ export interface Product {
  *   - `image` is the picked File (or null = keep the existing image on edit
  *     / send no image on create).
  *   - `categoryId` is null when the user didn't pick one.
+ *   - `commissionValue` is only relevant when commissionType ≠ None.
  */
 export interface ProductFormInput {
   name: string;
@@ -43,4 +62,6 @@ export interface ProductFormInput {
   isActive: boolean;
   categoryId: number | null;
   image: File | null;
+  commissionType: CommissionType;
+  commissionValue: number;
 }

@@ -50,9 +50,11 @@
   color: var(--txt);
   min-width: 160px;
 
-  &:focus { outline: none; border-color: var(--bl); }
+  &:focus {
+    outline: none;
+    border-color: var(--bl);
+  }
 }
-
 
 /* ── Hero summary card ── */
 .pl-hero {
@@ -68,7 +70,10 @@
   gap: 12px;
 }
 
-.pl-hero-main { flex: 1 1 auto; min-width: 240px; }
+.pl-hero-main {
+  flex: 1 1 auto;
+  min-width: 240px;
+}
 
 .pl-hero-label {
   font-size: 11px;
@@ -96,9 +101,12 @@
   font-size: 16px;
   font-weight: 700;
 }
-.pl-hero-stat-pos { color: #b8e986; }
-.pl-hero-stat-neg { color: #ff9d9d; }
-
+.pl-hero-stat-pos {
+  color: #b8e986;
+}
+.pl-hero-stat-neg {
+  color: #ff9d9d;
+}
 
 /* ── Card grid ── */
 .pl-grid {
@@ -107,11 +115,16 @@
   gap: 12px;
   margin-bottom: 12px;
 
-  @media (max-width: 1199px) { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 767px)  { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 480px)  { grid-template-columns: 1fr; }
+  @media (max-width: 1199px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 }
-
 
 /* ── Product card ── */
 .pl-card {
@@ -121,7 +134,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -131,10 +147,11 @@
 
   &.pl-card-inactive {
     opacity: 0.78;
-    .pl-card-media-fallback { color: var(--txt3); }
+    .pl-card-media-fallback {
+      color: var(--txt3);
+    }
   }
 }
-
 
 /* ── Media area ── */
 .pl-card-media {
@@ -205,7 +222,6 @@
   white-space: nowrap;
 }
 
-
 /* ── Body ── */
 .pl-card-body {
   padding: 12px;
@@ -236,7 +252,9 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: calc(11px * 1.4 * 2); /* reserve space so card heights stay aligned */
+  min-height: calc(
+    11px * 1.4 * 2
+  ); /* reserve space so card heights stay aligned */
 }
 
 .pl-card-prices {
@@ -284,14 +302,12 @@
   }
 }
 
-
 /* ── Actions ── */
 .pl-card-actions {
   display: flex;
   gap: 6px;
   padding: 0 12px 12px;
 }
-
 
 /* ── Empty state ── */
 .pl-empty {
@@ -307,7 +323,9 @@
   color: var(--txt2);
   font-size: 12px;
 
-  .pl-empty-icon { color: var(--txt3); }
+  .pl-empty-icon {
+    color: var(--txt3);
+  }
   .pl-empty-title {
     font-size: 14px;
     font-weight: 700;
@@ -318,4 +336,26 @@
     color: var(--txt3);
     text-align: center;
   }
+}
+
+.pl-card-commission {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+}
+
+.pl-card-commission-val {
+  font-weight: 700;
+}
+
+.commission-percentage {
+  color: #0d6efd;
+}
+
+.commission-fixed {
+  color: #198754;
 }

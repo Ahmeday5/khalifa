@@ -35,6 +35,16 @@
         >دفع</button>
       }
     }
+    @if (canReturn()) {
+      <button
+        type="button"
+        class="btn btn-sm btn-re"
+        title="إرجاع الفاتورة — متاح فقط قبل تسجيل أي دفعة"
+        (click)="openReturn()"
+      >
+        إرجاع الفاتورة
+      </button>
+    }
     <button
       type="button"
       class="btn btn-sm"
@@ -240,6 +250,13 @@
     [invoice]="invoice()"
     (closed)="closePayment()"
     (paid)="onPaid($event)"
+  />
+
+  <app-return-invoice-modal
+    [open]="returnOpen()"
+    [invoice]="invoice()"
+    (closed)="closeReturn()"
+    (returned)="onInvoiceReturned()"
   />
   }
 }

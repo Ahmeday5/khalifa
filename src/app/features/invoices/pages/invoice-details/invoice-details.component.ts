@@ -19,6 +19,7 @@ import {
 } from '../../models/invoice.model';
 import { ConfirmInvoiceModalComponent } from '../../components/confirm-invoice-modal/confirm-invoice-modal.component';
 import { PayInvoiceModalComponent } from '../../components/pay-invoice-modal/pay-invoice-modal.component';
+import { ReturnInvoiceModalComponent } from '../../components/return-invoice-modal/return-invoice-modal.component';
 
 /**
  * Standalone invoice details / preview page.
@@ -40,6 +41,7 @@ import { PayInvoiceModalComponent } from '../../components/pay-invoice-modal/pay
     CurrencyArPipe,
     ConfirmInvoiceModalComponent,
     PayInvoiceModalComponent,
+    ReturnInvoiceModalComponent,
   ],
   templateUrl: './invoice-details.component.html',
   styleUrl: './invoice-details.component.scss',
@@ -60,6 +62,9 @@ export class InvoiceDetailsComponent implements OnInit {
 
   // ── payment modal ──
   protected readonly paymentOpen = signal(false);
+
+  // ── return modal ──
+  protected readonly returnOpen = signal(false);
 
   // ── derived ──
   protected readonly status = computed<PurchaseInvoiceStatusView | null>(() => {
@@ -83,6 +88,13 @@ export class InvoiceDetailsComponent implements OnInit {
       inv.status !== 'Draft' &&
       inv.status !== 'Cancelled'
     );
+  });
+
+  /** إرجاع الفاتورة متاح فقط قبل تسجيل أي دفعة وقبل إلغائها. */
+  protected readonly canReturn = computed(() => {
+    const inv = this.invoice();
+    if (!inv) return false;
+    return inv.status !== 'Cancelled' && (inv.paidAmount ?? 0) === 0;
   });
 
   ngOnInit(): void {
@@ -147,6 +159,22 @@ export class InvoiceDetailsComponent implements OnInit {
   protected onPaid(updated: PurchaseInvoice): void {
     this.paymentOpen.set(false);
     this.invoice.set(updated);
+  }
+
+  // ─────────── return ───────────
+
+  protected openReturn(): void {
+    if (!this.canReturn()) return;
+    this.returnOpen.set(true);
+  }
+
+  protected closeReturn(): void {
+    this.returnOpen.set(false);
+  }
+
+  protected onInvoiceReturned(): void {
+    this.returnOpen.set(false);
+    this.router.navigate(['/invoices/list']);
   }
 
   // ─────────── print ───────────

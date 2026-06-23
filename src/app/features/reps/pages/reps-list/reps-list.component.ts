@@ -171,9 +171,11 @@ export class RepsListComponent implements OnInit {
           const sub = (res.subs ?? []).find(s => s.representativeId === rep.id);
           return {
             ...rep,
-            outstandingCommission: sub ? sub.outstandingCommission : 0,
-            accumulatedCommission: sub ? sub.accumulatedCommission : 0,
-            paidCommission: sub ? sub.paidCommission : 0,
+            outstandingCommission: sub?.outstandingCommission ?? 0,
+            accumulatedCommission: sub?.accumulatedCommission ?? 0,
+            accumulatedProductCommission: sub?.accumulatedProductCommission ?? 0,
+            totalAccumulatedCommission: sub?.totalAccumulatedCommission ?? 0,
+            paidCommission: sub?.paidCommission ?? 0,
           };
         });
         this.reps.set(mapped);
@@ -219,6 +221,8 @@ export class RepsListComponent implements OnInit {
             ...rep,
             outstandingCommission: sub?.outstandingCommission ?? 0,
             accumulatedCommission: sub?.accumulatedCommission ?? 0,
+            accumulatedProductCommission: sub?.accumulatedProductCommission ?? 0,
+            totalAccumulatedCommission: sub?.totalAccumulatedCommission ?? 0,
             paidCommission: sub?.paidCommission ?? 0,
           };
         });

@@ -101,11 +101,17 @@ export const API_ENDPOINTS = {
     /** POST: record a (partial or full) payment against a non-Draft invoice. */
     payments: (id: number) =>
       `dashboard/supplier-purchase-invoices/${id}/payments`,
+    /** POST: return / cancel a purchase invoice (only when no payments have been recorded). */
+    return: (id: number) =>
+      `dashboard/supplier-purchase-invoices/${id}/return`,
   },
   dashboard: {
     summary: 'dashboard/summary',
     homeSummary: 'dashboard/home-summary',
     vouchers: 'dashboard/vouchers',
+    expenses: 'dashboard/expenses',
+    /** DELETE: permanently remove a single voucher by id. */
+    voucherById: (id: number) => `dashboard/vouchers/${id}`,
   },
   charts: {
     profitsLast6Months: 'dashboard/charts/profits-last-6-months',
@@ -161,5 +167,7 @@ export const API_ENDPOINTS = {
     details: (id: number) => `dashboard/contracts/${id}/details`,
     /** POST: create a direct installment contract (free-text product, no warehouse). */
     direct: 'dashboard/contracts/direct',
+    /** POST: return / cancel a contract (only when no installments have been paid). */
+    return: (id: number) => `dashboard/contracts/${id}/return`,
   },
 } as const;

@@ -86,6 +86,119 @@
   }
 </section>
 
+<section class="exp-card">
+
+  <div class="exp-head">
+    <div>
+      <div class="exp-title">
+        تحليل المصروفات
+      </div>
+
+      <div class="exp-sub">
+        حسب الفئات خلال الفترة المحددة
+      </div>
+    </div>
+
+    <div class="exp-filter">
+      <input type="date" [value]="fromDate()" #from />
+      <input type="date" [value]="toDate()" #to />
+      <button class="btn btn-sm btn-bl" (click)="fromDate.set(from.value);toDate.set(to.value);loadExpenses(true)">
+        تحديث
+      </button>
+    </div>
+  </div>
+
+  @if (expenses(); as e) {
+
+  <div class="exp-kpis">
+
+    <div class="exp-kpi">
+      <span>إجمالي المصروفات</span>
+      <strong>
+        {{ e.totalAmount | currencyAr:true }}
+      </strong>
+    </div>
+
+    <div class="exp-kpi">
+      <span>هذا الشهر</span>
+      <strong>
+        {{ e.thisMonthAmount | currencyAr:true }}
+      </strong>
+    </div>
+
+    <div class="exp-kpi">
+      <span>اليوم</span>
+      <strong>
+        {{ e.todayAmount | currencyAr:true }}
+      </strong>
+    </div>
+
+    <div class="exp-kpi">
+      <span>عدد العمليات</span>
+      <strong>
+        {{ e.count }}
+      </strong>
+    </div>
+
+  </div>
+
+  @if (topExpenseCategory(); as top) {
+
+  <div class="exp-hero">
+
+    <div class="exp-hero-icon">
+      💸
+    </div>
+
+    <div>
+      <div class="exp-hero-label">
+        أكبر بند مصروفات
+      </div>
+
+      <div class="exp-hero-name">
+        {{ top.category }}
+      </div>
+    </div>
+
+    <div class="exp-hero-value">
+      {{ top.amount | currencyAr:true }}
+    </div>
+
+  </div>
+
+  }
+
+  <div class="exp-list">
+    @for (cat of e.byCategory; track cat.category) {
+    <div class="exp-row">
+      <div class="exp-row-head">
+        <span>
+          {{ cat.category }}
+        </span>
+        <span>
+          {{ expensePercent(cat.amount) | number:'1.0-0' }}%
+        </span>
+      </div>
+
+      <div class="exp-progress">
+        <div class="exp-progress-fill" [style.width.%]="expensePercent(cat.amount)">
+        </div>
+      </div>
+
+      <div class="exp-row-foot">
+        <span>
+          {{ cat.count }} عملية
+        </span>
+        <strong>
+          {{ cat.amount | currencyAr }}
+        </strong>
+      </div>
+    </div>
+    }
+  </div>
+  }
+</section>
+
 <!-- ── الفصل المالي (Financial Separation) ── -->
 <section class="fs-block">
   <header class="fs-block-head">

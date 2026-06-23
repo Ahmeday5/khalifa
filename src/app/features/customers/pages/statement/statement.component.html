@@ -295,24 +295,20 @@
     <table class="table">
       <thead>
         <tr>
-          <th>#</th>
+          <th>رقم السند</th>
+          <th>النوع</th>
           <th>المبلغ</th>
-          <th>تاريخ الدفع</th>
-          <th>طريقة الدفع</th>
-          @if (d.payments[0].treasuryName !== undefined) { <th>الخزينة</th> }
+          <th>التاريخ</th>
           <th>ملاحظات</th>
         </tr>
       </thead>
       <tbody>
-        @for (pay of d.payments; track pay.id; let i = $index) {
+        @for (pay of d.payments; track pay.voucherNumber; let i = $index) {
         <tr>
-          <td style="color:var(--txt3)">{{ i + 1 }}</td>
+          <td style="color:var(--txt3);font-size:11px">{{ pay.voucherNumber }}</td>
+          <td>{{ pay.kind }}</td>
           <td style="color:var(--gr);font-weight:600">{{ pay.amount | currencyAr : true }}</td>
-          <td>{{ formatDate(pay.paymentDate) }}</td>
-          <td>{{ paymentMethodLabel(pay.paymentMethod) }}</td>
-          @if (pay.treasuryName !== undefined) {
-            <td>{{ pay.treasuryName ?? '—' }}</td>
-          }
+          <td>{{ formatDate(pay.date) }}</td>
           <td class="st-notes" [class.st-notes-empty]="!pay.notes?.trim()" [title]="notesLabel(pay.notes)">
             {{ notesLabel(pay.notes) }}
           </td>
@@ -367,8 +363,29 @@
 
   <ng-container modal-footer>
     <button class="btn" (click)="closeDetails()">إغلاق</button>
+    @if (details(); as d) {
+      @if (d.contract.status === 'Active') {
+        <button
+          type="button"
+          class="btn btn-re"
+          [disabled]="d.summary.paidInstallmentsCount > 0"
+          (click)="openReturnContract()"
+          title="إرجاع العقد — متاح فقط قبل تسجيل أي دفعة"
+        >
+          إرجاع العقد
+        </button>
+      }
+    }
   </ng-container>
 </app-modal>
+
+<!-- ────────────────────── Return contract modal ────────────────────── -->
+<app-return-contract-modal
+  [open]="returnContractOpen()"
+  [details]="details()"
+  (closed)="returnContractOpen.set(false)"
+  (returned)="onContractReturned()"
+/>
 
 <!-- ─────────────────────────── Payment modal ─────────────────────────── -->
 <app-modal [open]="payOpen()" size="md" title="تسديد دفعة" [closeOnBackdrop]="!paySubmitting()"

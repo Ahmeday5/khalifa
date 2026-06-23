@@ -135,4 +135,23 @@ export class InvoicesService {
       },
     );
   }
+
+  /**
+   * POST /dashboard/supplier-purchase-invoices/{id}/return
+   *
+   * Returns / cancels a purchase invoice. The backend rejects this when
+   * any payment has already been recorded against the invoice — surface
+   * the `message` from the 400 response verbatim.
+   */
+  returnInvoice(id: number): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>(
+      API_ENDPOINTS.purchaseInvoices.return(id),
+      {},
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([INVOICES_CACHE_KEY, TREASURY_CACHE_KEY, 'warehous']),
+        ),
+      },
+    );
+  }
 }

@@ -18,7 +18,12 @@ import {
 } from '../../../../shared/models/form-mode.model';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { ToastService } from '../../../../core/services/toast.service';
-import { Product, ProductFormInput } from '../../models/product.model';
+import {
+  CommissionType,
+  COMMISSION_TYPE_LABELS,
+  Product,
+  ProductFormInput,
+} from '../../models/product.model';
 import { ProductsService } from '../../services/products.service';
 import {
   buildImageUrl,
@@ -27,11 +32,18 @@ import {
 } from '../../utils/product-image.util';
 import { Category } from '../../../categories/models/category.model';
 import { CategoriesService } from '../../../categories/services/categories.service';
+import { DecimalPipe } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-product-form-modal',
   standalone: true,
-  imports: [ReactiveFormsModule, ModalComponent, FormErrorComponent],
+  imports: [
+    ReactiveFormsModule,
+    ModalComponent,
+    FormErrorComponent,
+    DecimalPipe,
+  ],
   templateUrl: './product-form-modal.component.html',
   styleUrl: './product-form-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +84,16 @@ export class ProductFormModalComponent {
 
   protected readonly imageAccept = PRODUCT_IMAGE_ACCEPT;
 
+  /** Commission type options for the radio group — rendered in template. */
+  protected readonly commissionTypeOptions: {
+    value: CommissionType;
+    label: string;
+  }[] = [
+    { value: 'None', label: COMMISSION_TYPE_LABELS['None'] },
+    { value: 'Percentage', label: COMMISSION_TYPE_LABELS['Percentage'] },
+    { value: 'FixedAmount', label: COMMISSION_TYPE_LABELS['FixedAmount'] },
+  ];
+
   // ── derived ──
   protected readonly isView = computed(() => this.mode() === 'view');
   protected readonly isCreate = computed(() => this.mode() === 'create');
@@ -81,8 +103,28 @@ export class ProductFormModalComponent {
   );
 
   /**
+   * Show the commission value input only when the selected type needs one.
+   * Also drives the conditional Validators.min(0.01) on commissionValue.
+   */
+  protected readonly needsCommissionValue = computed(
+    () => this.form.controls.commissionType.value !== 'None',
+  );
+
+  /** Placeholder / suffix label for the commission value input. */
+  protected readonly commissionValueSuffix = computed<string>(() => {
+    switch (this.form.controls.commissionType.value as CommissionType) {
+      case 'Percentage':
+        return '%';
+      case 'FixedAmount':
+        return 'ج.م';
+      default:
+        return '';
+    }
+  });
+
+  /**
    * Image to render in the preview slot. Order of preference:
-   *   1. Newly-picked file (object URL) — what the user sees mid-edit
+   *   1. Newly-picked file (data URL) — what the user sees mid-edit
    *   2. Existing product image (edit/view modes) — converted to absolute URL
    *   3. null → render the empty placeholder
    */
@@ -98,15 +140,21 @@ export class ProductFormModalComponent {
     description: ['', [Validators.required, Validators.minLength(2)]],
     purchasePrice: [0, [Validators.required, Validators.min(0)]],
     sellingPrice: [0, [Validators.required, Validators.min(0)]],
-    isActive: [true, [Validators.required]],
+    isActive: [true],
     categoryId: this.fb.nonNullable.control<number | null>(null),
+    commissionType: this.fb.nonNullable.control<CommissionType>('None'),
+    commissionValue: [0, [Validators.required, Validators.min(0)]],
   });
 
   constructor() {
+    // Keep commissionValue validators in sync with the selected type.
+    this.form.controls.commissionType.valueChanges.subscribe(() => {
+      this.syncCommissionValueValidators();
+    });
+
     effect(
       () => {
         if (!this.open()) {
-          // Modal closed — release any object URL we held.
           this.releasePreview();
           return;
         }
@@ -137,6 +185,7 @@ export class ProductFormModalComponent {
 
     const raw = this.form.getRawValue();
     const isCreate = this.isCreate();
+    const commissionType = raw.commissionType as CommissionType;
 
     const payload: ProductFormInput = {
       name: raw.name,
@@ -146,6 +195,9 @@ export class ProductFormModalComponent {
       isActive: raw.isActive,
       categoryId: raw.categoryId ? Number(raw.categoryId) : null,
       image: this.pickedImage(),
+      commissionType,
+      commissionValue:
+        commissionType === 'None' ? 0 : Number(raw.commissionValue) || 0,
     };
 
     this.serverError.set(null);
@@ -188,7 +240,6 @@ export class ProductFormModalComponent {
     const validation = validateProductImage(file);
     if (!validation.ok) {
       this.imageError.set(validation.error);
-      // Reset the input so picking the same bad file again still fires change.
       input.value = '';
       return;
     }
@@ -199,14 +250,10 @@ export class ProductFormModalComponent {
 
     const reader = new FileReader();
     reader.onload = () => {
-      // Guard against late-arriving reads after the modal closed
-      // or the user cleared / replaced the picked file.
       if (this.pickedImage() !== file) return;
       this.previewDataUrl.set(reader.result as string);
     };
     reader.readAsDataURL(file);
-
-    // Allow re-picking the same file later (`change` only fires on new value).
     input.value = '';
   }
 
@@ -236,16 +283,62 @@ export class ProductFormModalComponent {
         sellingPrice: p.sellingPrice,
         isActive: p.isActive,
         categoryId: p.categoryId ?? null,
+        commissionType: (p.commissionType as CommissionType) ?? 'None',
+        commissionValue: p.commissionValue ?? 0,
       });
-      return;
+    } else {
+      this.form.reset({
+        name: '',
+        description: '',
+        purchasePrice: 0,
+        sellingPrice: 0,
+        isActive: true,
+        categoryId: null,
+        commissionType: 'None',
+        commissionValue: 0,
+      });
     }
-    this.form.reset({
-      name: '',
-      description: '',
-      purchasePrice: 0,
-      sellingPrice: 0,
-      isActive: true,
-      categoryId: null,
+    this.syncCommissionValueValidators();
+  }
+
+  /**
+   * Applies Validators.min(0.01) on commissionValue only when a type that
+   * needs a value is selected. Removes the validator (allows 0) for None.
+   */
+  protected readonly profitMargin = computed(() => {
+    const purchase = Number(this.form.controls.purchasePrice.value);
+
+    const selling = Number(this.form.controls.sellingPrice.value);
+
+    if (!purchase || purchase <= 0) return 0;
+
+    return ((selling - purchase) / purchase) * 100;
+  });
+
+  private syncCommissionValueValidators(): void {
+    const ctrl = this.form.controls.commissionValue;
+
+    const type = this.form.controls.commissionType.value;
+
+    switch (type) {
+      case 'Percentage':
+        ctrl.setValidators([
+          Validators.required,
+          Validators.min(0.01),
+          Validators.max(100),
+        ]);
+        break;
+
+      case 'FixedAmount':
+        ctrl.setValidators([Validators.required, Validators.min(0.01)]);
+        break;
+
+      default:
+        ctrl.setValidators([Validators.required, Validators.min(0)]);
+    }
+
+    ctrl.updateValueAndValidity({
+      emitEvent: false,
     });
   }
 

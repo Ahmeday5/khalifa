@@ -37,7 +37,9 @@ import { ModalComponent } from '../../../../shared/components/modal/modal.compon
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 import { DateArPipe } from '../../../../shared/pipes/date-ar.pipe';
 import { ApiError } from '../../../../core/models/api-response.model';
+import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
 import { ToastService } from '../../../../core/services/toast.service';
+import { DialogService } from '../../../../core/services/dialog.service';
 import { HttpCacheService } from '../../../../core/services/http-cache.service';
 import { onInvalidate } from '../../../../core/utils/auto-refresh.util';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
@@ -72,10 +74,13 @@ const REFETCH_DEBOUNCE_MS = 200;
 export class VouchersListComponent {
   private readonly svc = inject(VouchersService);
   private readonly toast = inject(ToastService);
+  private readonly dialog = inject(DialogService);
   private readonly cache = inject(HttpCacheService);
   private readonly printer = inject(PrintService);
 
   protected readonly isPrinting = signal(false);
+  /** Tracks which voucher row is being deleted, for inline spinner. */
+  protected readonly deletingId = signal<number | null>(null);
 
   // ── data ──
   protected readonly vouchers = signal<VoucherDto[]>([]);
@@ -320,6 +325,36 @@ export class VouchersListComponent {
 
   protected closeDetail(): void {
     this.detailOpen.set(false);
+  }
+
+  // ─────────── delete voucher ───────────
+
+  protected async confirmDelete(v: VoucherDto): Promise<void> {
+    const ok = await this.dialog.confirm({
+      title: 'حذف السند',
+      message: `هل أنت متأكد من حذف السند "${v.voucherNumber}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
+      confirmText: 'حذف',
+      cancelText: 'إلغاء',
+      type: 'danger',
+    });
+    if (!ok) return;
+
+    this.deletingId.set(v.id);
+    this.svc.delete(v.id).subscribe({
+      next: () => {
+        this.deletingId.set(null);
+        this.toast.success('تم حذف السند بنجاح');
+        if (this.vouchers().length === 1 && this.pageIndex() > 1) {
+          this.pageIndex.update((p) => p - 1);
+        } else {
+          this.refresh();
+        }
+      },
+      error: (err: ApiError) => {
+        this.deletingId.set(null);
+        this.toast.error(apiErrorToMessage(err, 'تعذّر حذف السند'));
+      },
+    });
   }
 
   // ─────────── view helpers ───────────

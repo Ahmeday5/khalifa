@@ -6,9 +6,26 @@
   [closeOnEsc]="!submitting()"
   (closed)="closed.emit()"
 >
+  <!-- Commission breakdown banner -->
   <div class="alert alert-info py-2 mb-3" style="font-size:12px">
-    العمولة المستحقة للمندوب:
-    <strong>{{ outstanding() | currencyAr: true }}</strong>
+    <div class="d-flex justify-content-between flex-wrap gap-2">
+      <div>
+        عمولة الربح (التحصيل):
+        <strong>{{ accumulatedCommission() | currencyAr: true }}</strong>
+      </div>
+      <div>
+        عمولة المنتجات:
+        <strong>{{ accumulatedProductCommission() | currencyAr: true }}</strong>
+      </div>
+      <div>
+        الإجمالي المستحق:
+        <strong>{{ totalAccumulatedCommission() | currencyAr: true }}</strong>
+      </div>
+      <div>
+        المتبقي للصرف:
+        <strong class="text-danger">{{ outstanding() | currencyAr: true }}</strong>
+      </div>
+    </div>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>

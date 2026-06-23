@@ -45,6 +45,7 @@ import { onInvalidate } from '../../../../core/utils/auto-refresh.util';
 import { todayIsoDate } from '../../../../shared/utils/date-iso.util';
 import { PrintService } from '../../../../core/services/print.service';
 import { fetchAllPages } from '../../../../core/utils/api-list.util';
+import { ReturnContractModalComponent } from '../../../contracts/components/return-contract-modal/return-contract-modal.component';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -71,6 +72,7 @@ interface PaymentForm {
     PaginationComponent,
     CurrencyArPipe,
     SearchableSelectComponent,
+    ReturnContractModalComponent,
   ],
   templateUrl: './statement.component.html',
   styleUrl: './statement.component.scss',
@@ -117,6 +119,9 @@ export class StatementComponent {
   protected readonly detailsLoading = signal(false);
   protected readonly details = signal<ContractDetails | null>(null);
   private readonly activeContractId = signal<number | null>(null);
+
+  // ── return-contract modal ─────────────────────────────────────────
+  protected readonly returnContractOpen = signal(false);
 
   // ── payment modal ──────────────────────────────────────────────────
   protected readonly payOpen = signal(false);
@@ -340,6 +345,21 @@ export class StatementComponent {
     this.detailsOpen.set(false);
     this.activeContractId.set(null);
     this.details.set(null);
+  }
+
+  protected openReturnContract(): void {
+    this.returnContractOpen.set(true);
+  }
+
+  protected onContractReturned(): void {
+    this.returnContractOpen.set(false);
+    this.detailsOpen.set(false);
+    this.activeContractId.set(null);
+    this.details.set(null);
+    const clientId = this.selectedClientId();
+    if (clientId !== null) {
+      this.fetchContracts(clientId, this.pageIndex(), this.pageSize(), true);
+    }
   }
 
   private reloadDetails(id: number): void {

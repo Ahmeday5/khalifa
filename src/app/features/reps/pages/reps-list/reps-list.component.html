@@ -148,7 +148,14 @@
               </div>
               <div class="rep-treasury-name">{{ rep.treasury.name }}</div>
               <div style="font-size: 10px; margin-top: 4px; color: var(--txt3)">
-                العمولة المتبقية: 
+                ع. الربح:
+                <span style="font-weight: 600">{{ (rep.accumulatedCommission ?? 0) | currencyAr: true }}</span>
+                &nbsp;|&nbsp;
+                ع. منتج:
+                <span style="font-weight: 600">{{ (rep.accumulatedProductCommission ?? 0) | currencyAr: true }}</span>
+              </div>
+              <div style="font-size: 10px; margin-top: 2px; color: var(--txt3)">
+                المتبقي للصرف:
                 <span [style.color]="rep.outstandingCommission ? 'var(--re)' : 'inherit'" style="font-weight: 700">
                   {{ (rep.outstandingCommission ?? 0) | currencyAr: true }}
                 </span>
@@ -281,6 +288,9 @@
   [representativeId]="payoutRep()?.id ?? null"
   [representativeName]="payoutRep()?.fullName ?? ''"
   [outstanding]="payoutRep()?.outstandingCommission ?? 0"
+  [accumulatedCommission]="payoutRep()?.accumulatedCommission ?? 0"
+  [accumulatedProductCommission]="payoutRep()?.accumulatedProductCommission ?? 0"
+  [totalAccumulatedCommission]="payoutRep()?.totalAccumulatedCommission ?? 0"
   (closed)="payoutOpen.set(false)"
   (paid)="onCommissionPaid()"
 />

@@ -118,12 +118,10 @@ export class ProductsService {
    * Serializes the form input into the exact multipart shape the API
    * expects (PascalCase field names, numbers/booleans as strings).
    *
-   * `Image` is appended only when the user actually picked a file —
-   * appending an empty string would let ASP.NET model-bind it as a
-   * blank file and overwrite the existing image on edit.
-   *
-   * `CategoryId` is appended only when set; sending an empty string
-   * for an int field is a 400 from the model binder.
+   * `Image` is appended only when the user actually picked a file.
+   * `CategoryId` is appended only when set (sending empty string for
+   * an int field is a 400 from the ASP.NET model binder).
+   * `CommissionValue` is sent as 0 when commissionType is None.
    */
   private buildFormData(input: ProductFormInput): FormData {
     const fd = new FormData();
@@ -138,6 +136,11 @@ export class ProductsService {
     if (input.image) {
       fd.append('Image', input.image, input.image.name);
     }
+    fd.append('CommissionType', input.commissionType);
+    fd.append(
+      'CommissionValue',
+      input.commissionType === 'None' ? '0' : String(input.commissionValue),
+    );
     return fd;
   }
 }

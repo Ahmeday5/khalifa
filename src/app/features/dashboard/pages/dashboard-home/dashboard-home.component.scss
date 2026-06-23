@@ -469,8 +469,14 @@
   border-radius: var(--rl);
 }
 
-.hs-up   { color: var(--gr); font-weight: 600; }
-.hs-down { color: var(--re); font-weight: 600; }
+.hs-up {
+  color: var(--gr);
+  font-weight: 600;
+}
+.hs-down {
+  color: var(--re);
+  font-weight: 600;
+}
 
 .hs-grid {
   display: grid;
@@ -478,9 +484,15 @@
   gap: 10px;
   margin-bottom: 0;
 
-  @media (max-width: 1200px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  @media (max-width: 900px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 600px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .hs-tile {
@@ -491,7 +503,10 @@
   padding: 12px 14px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s, border-color .15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
 
   &:hover {
     transform: translateY(-2px);
@@ -508,12 +523,24 @@
     background: var(--brd);
   }
 
-  &--blue::before   { background: var(--bl); }
-  &--green::before  { background: var(--gr); }
-  &--teal::before   { background: var(--te); }
-  &--purple::before { background: #7c3aed; }
-  &--orange::before { background: var(--am, #ea580c); }
-  &--red::before    { background: var(--re); }
+  &--blue::before {
+    background: var(--bl);
+  }
+  &--green::before {
+    background: var(--gr);
+  }
+  &--teal::before {
+    background: var(--te);
+  }
+  &--purple::before {
+    background: #7c3aed;
+  }
+  &--orange::before {
+    background: var(--am, #ea580c);
+  }
+  &--red::before {
+    background: var(--re);
+  }
 }
 
 .hs-tile-label {
@@ -539,4 +566,159 @@
   font-size: 10.5px;
   color: var(--txt3);
   font-weight: 500;
+}
+
+.exp-card {
+  background: var(--bg2);
+  border: 1px solid var(--brd2);
+  border-radius: var(--rl);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.exp-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.exp-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.exp-sub {
+  font-size: 11px;
+  color: var(--txt3);
+}
+
+.exp-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.exp-filter input {
+  border: 1px solid var(--brd2);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.exp-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.exp-kpi {
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.exp-kpi span {
+  display: block;
+  font-size: 11px;
+  color: var(--txt3);
+}
+
+.exp-kpi strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.exp-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: white;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.exp-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.exp-hero-label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.exp-hero-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.exp-hero-value {
+  margin-inline-start: auto;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.exp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exp-row {
+  background: var(--bg);
+  border: 1px solid var(--brd2);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.exp-row-head,
+.exp-row-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exp-row-head {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.exp-row-foot {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--txt3);
+}
+
+.exp-progress {
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.exp-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #8b5cf6);
+}
+
+@media (max-width: 768px) {
+  .exp-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

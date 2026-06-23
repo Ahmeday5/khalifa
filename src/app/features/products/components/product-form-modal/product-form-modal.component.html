@@ -1,17 +1,6 @@
-<app-modal
-  [open]="open()"
-  [title]="title()"
-  size="lg"
-  [closeOnBackdrop]="!submitting()"
-  [closeOnEsc]="!submitting()"
-  (closed)="close()"
->
-  <form
-    [formGroup]="form"
-    (ngSubmit)="onSubmit()"
-    novalidate
-    autocomplete="off"
-  >
+<app-modal [open]="open()" [title]="title()" size="lg" [closeOnBackdrop]="!submitting()" [closeOnEsc]="!submitting()"
+  (closed)="close()">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
     <div class="row g-3">
       <!-- ── Image picker / preview ── -->
       <div class="col-12 col-md-4">
@@ -19,48 +8,39 @@
 
         <div class="pf-image">
           @if (previewSrc(); as src) {
-            <img [src]="src" alt="معاينة الصورة" class="pf-image-img" />
+          <img [src]="src" alt="معاينة الصورة" class="pf-image-img" />
           } @else {
-            <div class="pf-image-placeholder">
-              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="9" r="1.5" />
-                <path d="M21 15l-5-5L5 21" />
-              </svg>
-              <span>بدون صورة</span>
-            </div>
+          <div class="pf-image-placeholder">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="9" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+            </svg>
+            <span>بدون صورة</span>
+          </div>
           }
         </div>
 
         @if (!isView()) {
-          <input
-            #fileInput
-            type="file"
-            [accept]="imageAccept"
-            (change)="onFilePicked($event)"
-            class="pf-image-file"
-          />
-          <div class="pf-image-actions">
-            <button
-              type="button"
-              class="btn btn-sm btn-bl pf-pick"
-              (click)="fileInput.click()"
-            >
-              {{ pickedImage() || product()?.imageUrl ? 'تغيير الصورة' : 'اختيار صورة' }}
-            </button>
+        <input #fileInput type="file" [accept]="imageAccept" (change)="onFilePicked($event)" class="pf-image-file" />
+        <div class="pf-image-actions">
+          <button type="button" class="btn btn-sm btn-bl pf-pick" (click)="fileInput.click()">
+            {{ pickedImage() || product()?.imageUrl ? 'تغيير الصورة' : 'اختيار صورة' }}
+          </button>
 
-            @if (pickedImage()) {
-              <button type="button" class="btn btn-sm" (click)="clearPickedImage()">
-                إلغاء الاختيار
-              </button>
-            }
-          </div>
-
-          @if (imageError(); as err) {
-            <div class="pf-image-err">{{ err }}</div>
-          } @else {
-            <div class="pf-image-hint">PNG / JPG / WebP / GIF — حد أقصى 5MB</div>
+          @if (pickedImage()) {
+          <button type="button" class="btn btn-sm" (click)="clearPickedImage()">
+            إلغاء الاختيار
+          </button>
           }
+        </div>
+
+        @if (imageError(); as err) {
+        <div class="pf-image-err">{{ err }}</div>
+        } @else {
+        <div class="pf-image-hint">PNG / JPG / WebP / GIF — حد أقصى 5MB</div>
+        }
         }
       </div>
 
@@ -69,44 +49,23 @@
         <div class="row g-3">
           <div class="col-12">
             <label class="form-label">اسم المنتج</label>
-            <input
-              type="text"
-              class="form-control"
-              formControlName="name"
-              autocomplete="off"
-              placeholder="مثال: Samsung S25"
-              [class.is-invalid]="isInvalid('name')"
-            />
+            <input type="text" class="form-control" formControlName="name" autocomplete="off"
+              placeholder="مثال: Samsung S25" [class.is-invalid]="isInvalid('name')" />
             <app-form-error [control]="form.controls.name" label="اسم المنتج" />
           </div>
 
           <div class="col-12">
             <label class="form-label">الوصف</label>
-            <textarea
-              class="form-control"
-              formControlName="description"
-              autocomplete="off"
-              rows="3"
-              placeholder="وصف تفصيلي للمنتج"
-              [class.is-invalid]="isInvalid('description')"
-            ></textarea>
+            <textarea class="form-control" formControlName="description" autocomplete="off" rows="3"
+              placeholder="وصف تفصيلي للمنتج" [class.is-invalid]="isInvalid('description')"></textarea>
             <app-form-error [control]="form.controls.description" label="الوصف" />
           </div>
 
           <div class="col-12 col-sm-6">
             <label class="form-label">سعر الشراء</label>
             <div class="input-group">
-              <input
-                type="number"
-                class="form-control"
-                formControlName="purchasePrice"
-                min="0"
-                step="0.01"
-                inputmode="decimal"
-                placeholder="0"
-                dir="ltr"
-                [class.is-invalid]="isInvalid('purchasePrice')"
-              />
+              <input type="number" class="form-control" formControlName="purchasePrice" min="0" step="0.01"
+                inputmode="decimal" placeholder="0" dir="ltr" [class.is-invalid]="isInvalid('purchasePrice')" />
               <span class="input-group-text">ج.م</span>
             </div>
             <app-form-error [control]="form.controls.purchasePrice" label="سعر الشراء" />
@@ -115,17 +74,8 @@
           <div class="col-12 col-sm-6">
             <label class="form-label">سعر البيع</label>
             <div class="input-group">
-              <input
-                type="number"
-                class="form-control"
-                formControlName="sellingPrice"
-                min="0"
-                step="0.01"
-                inputmode="decimal"
-                placeholder="0"
-                dir="ltr"
-                [class.is-invalid]="isInvalid('sellingPrice')"
-              />
+              <input type="number" class="form-control" formControlName="sellingPrice" min="0" step="0.01"
+                inputmode="decimal" placeholder="0" dir="ltr" [class.is-invalid]="isInvalid('sellingPrice')" />
               <span class="input-group-text">ج.م</span>
             </div>
             <app-form-error [control]="form.controls.sellingPrice" label="سعر البيع" />
@@ -133,32 +83,65 @@
 
           <div class="col-12 col-sm-6">
             <label class="form-label">الفئة</label>
-            <select
-              class="form-select"
-              formControlName="categoryId"
-              [class.is-invalid]="isInvalid('categoryId')"
-            >
+            <select class="form-select" formControlName="categoryId" [class.is-invalid]="isInvalid('categoryId')">
               <option [ngValue]="null">— بدون فئة —</option>
               @for (c of categories(); track c.id) {
-                <option [ngValue]="c.id">{{ c.name }}</option>
+              <option [ngValue]="c.id">{{ c.name }}</option>
               }
             </select>
             @if (loadingCategories()) {
-              <div class="pf-image-hint d-inline-flex align-items-center gap-1 mt-1">
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>جاري تحميل الفئات...</span>
-              </div>
+            <div class="pf-image-hint d-inline-flex align-items-center gap-1 mt-1">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span>جاري تحميل الفئات...</span>
+            </div>
             }
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">نوع العمولة</label>
+
+            <div class="d-flex flex-wrap gap-3">
+              @for (option of commissionTypeOptions; track option.value) {
+              <div class="form-check">
+                <input class="form-check-input" type="radio" formControlName="commissionType"
+                  [id]="'commission-' + option.value" [value]="option.value" />
+
+                <label class="form-check-label" [for]="'commission-' + option.value">
+                  {{ option.label }}
+                </label>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <label class="form-label">قيمة العمولة</label>
+
+            <div class="input-group">
+              <input type="number" class="form-control" formControlName="commissionValue" min="0" step="0.01" />
+
+              <span class="input-group-text">
+                {{ commissionValueSuffix() }}
+              </span>
+            </div>
+
+            <app-form-error [control]="form.controls.commissionValue" label="قيمة العمولة" />
+          </div>
+          
+
+          <div class="col-12">
+            <div class="alert alert-light border">
+              نسبة الربح:
+
+              <strong>
+                {{ profitMargin() | number:'1.0-2' }}%
+              </strong>
+            </div>
           </div>
 
           <div class="col-12 col-sm-6 d-flex align-items-end">
             <div class="form-check form-switch w-100">
-              <input
-                id="product-active"
-                type="checkbox"
-                class="form-check-input"
-                formControlName="isActive"
-              />
+              <input id="product-active" type="checkbox" class="form-check-input" formControlName="isActive" />
               <label class="form-check-label" for="product-active">
                 منتج فعّال (متاح للبيع)
               </label>
@@ -169,34 +152,25 @@
     </div>
 
     @if (serverError(); as msg) {
-      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
-        {{ msg }}
-      </div>
+    <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+      {{ msg }}
+    </div>
     }
   </form>
 
   <ng-container modal-footer>
-    <button
-      type="button"
-      class="btn"
-      [disabled]="submitting()"
-      (click)="close()"
-    >
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
       {{ isView() ? 'إغلاق' : 'إلغاء' }}
     </button>
 
     @if (submitLabel(); as label) {
-      <button
-        type="button"
-        class="btn btn-bl d-inline-flex align-items-center gap-2"
-        [disabled]="submitting() || form.invalid || !!imageError()"
-        (click)="onSubmit()"
-      >
-        @if (submitting()) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        }
-        <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
-      </button>
+    <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || form.invalid || !!imageError()" (click)="onSubmit()">
+      @if (submitting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : label }}</span>
+    </button>
     }
   </ng-container>
 </app-modal>

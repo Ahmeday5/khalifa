@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   DueInstallmentDto,
+  ExpensesSummaryDto,
   HomeSummaryDto,
   ProfitMonthDto,
   TopClientDto,
@@ -80,5 +81,23 @@ export class DashboardService {
     return this.api.get<HomeSummaryDto>(API_ENDPOINTS.dashboard.homeSummary, {
       context: withCacheBypass(withCache({ ttlMs: HOME_WIDGET_TTL_MS })),
     });
+  }
+
+  expenses(from: string, to: string) {
+    return this.api.get<ExpensesSummaryDto>(
+      `${API_ENDPOINTS.dashboard.expenses}?from=${from}&to=${to}`,
+      {
+        context: withCache({ ttlMs: HOME_WIDGET_TTL_MS }),
+      },
+    );
+  }
+
+  refreshExpenses(from: string, to: string) {
+    return this.api.get<ExpensesSummaryDto>(
+      `${API_ENDPOINTS.dashboard.expenses}?from=${from}&to=${to}`,
+      {
+        context: withCacheBypass(withCache({ ttlMs: HOME_WIDGET_TTL_MS })),
+      },
+    );
   }
 }

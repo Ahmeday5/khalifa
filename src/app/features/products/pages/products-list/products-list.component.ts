@@ -51,33 +51,33 @@ const DEFAULT_PAGE_SIZE = 12;
   styleUrl: './products-list.component.scss',
 })
 export class ProductsListComponent implements OnInit {
-  private readonly service           = inject(ProductsService);
+  private readonly service = inject(ProductsService);
   private readonly categoriesService = inject(CategoriesService);
-  private readonly dialog            = inject(DialogService);
-  private readonly toast             = inject(ToastService);
-  private readonly cache             = inject(HttpCacheService);
+  private readonly dialog = inject(DialogService);
+  private readonly toast = inject(ToastService);
+  private readonly cache = inject(HttpCacheService);
 
   /** Exposed so the template can gate write actions with `*appHasPermission`. */
   protected readonly PERMS = PERMISSIONS;
 
   // ── data ──
-  protected readonly products   = signal<Product[]>([]);
+  protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
-  protected readonly loading    = signal(false);
+  protected readonly loading = signal(false);
 
   // ── filters ──
-  protected readonly searchTerm     = signal('');
+  protected readonly searchTerm = signal('');
   protected readonly categoryFilter = signal<number | ''>('');
-  protected readonly pageIndex      = signal(1);
-  protected readonly pageSize       = signal(DEFAULT_PAGE_SIZE);
+  protected readonly pageIndex = signal(1);
+  protected readonly pageSize = signal(DEFAULT_PAGE_SIZE);
 
   // ── pagination meta from server ──
-  protected readonly count      = signal(0);
+  protected readonly count = signal(0);
   protected readonly totalPages = signal(0);
 
   // ── modal state ──
-  protected readonly modalOpen    = signal(false);
-  protected readonly modalMode    = signal<FormMode>('create');
+  protected readonly modalOpen = signal(false);
+  protected readonly modalMode = signal<FormMode>('create');
   protected readonly modalProduct = signal<Product | null>(null);
 
   protected readonly deletingId = signal<number | null>(null);
@@ -286,6 +286,19 @@ export class ProductsListComponent implements OnInit {
     const cost = product.purchasePrice ?? 0;
     if (cost <= 0) return 0;
     return Math.round((this.profitOf(product) / cost) * 100);
+  }
+
+  protected commissionLabel(product: Product): string {
+    switch (product.commissionType) {
+      case 'Percentage':
+        return `${product.commissionValue ?? 0}%`;
+
+      case 'FixedAmount':
+        return `${product.commissionValue ?? 0} ج.م`;
+
+      default:
+        return 'بدون عمولة';
+    }
   }
 
   protected onImageError(event: Event): void {

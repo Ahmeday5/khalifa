@@ -1,0 +1,97 @@
+<app-modal
+  [open]="open()"
+  title="إرجاع العقد"
+  size="md"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="closed.emit()"
+>
+  @if (details(); as d) {
+    <!-- Warning banner -->
+    <div class="alert alert-warning d-flex gap-2 align-items-start mb-3">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+           style="flex-shrink:0;margin-top:2px" aria-hidden="true">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <div>
+        <div style="font-weight:700;margin-bottom:4px">تحذير — هذا الإجراء لا يمكن التراجع عنه</div>
+        <div style="font-size:13px">
+          سيتم إلغاء العقد وإعادة المخزون والمبالغ إلى أوضاعها السابقة.
+          <strong>لا يمكن إرجاع عقد تم سداد أي قسط منه.</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contract summary -->
+    <div class="card p-3 mb-3" style="background:var(--bg2,#f8f9fa)">
+      <div class="row g-2" style="font-size:13px">
+        <div class="col-6">
+          <span style="color:var(--txt3)">العميل:</span>
+          <strong class="ms-1">{{ d.client.fullName }}</strong>
+        </div>
+        <div class="col-6">
+          <span style="color:var(--txt3)">رقم العقد:</span>
+          <strong class="ms-1">#{{ d.contract.id }}</strong>
+        </div>
+        <div class="col-6">
+          <span style="color:var(--txt3)">سعر الكاش:</span>
+          <strong class="ms-1">{{ d.contract.cashPrice | currencyAr: true }}</strong>
+        </div>
+        <div class="col-6">
+          <span style="color:var(--txt3)">الحالة:</span>
+          <strong class="ms-1">{{ d.contract.status }}</strong>
+        </div>
+        <div class="col-6">
+          <span style="color:var(--txt3)">الأقساط المسددة:</span>
+          <strong class="ms-1">{{ d.summary.paidInstallmentsCount }} / {{ d.summary.totalInstallmentsCount }}</strong>
+        </div>
+        <div class="col-6">
+          <span style="color:var(--txt3)">المدفوع:</span>
+          <strong class="ms-1" [style.color]="d.summary.totalPaid > 0 ? 'var(--re,#dc3545)' : 'inherit'">
+            {{ d.summary.totalPaid | currencyAr: true }}
+          </strong>
+        </div>
+      </div>
+
+      @if (d.summary.paidInstallmentsCount > 0 || d.summary.totalPaid > 0) {
+        <div class="alert alert-danger mb-0 mt-2 py-2" style="font-size:12px">
+          تم تسجيل مدفوعات على هذا العقد — لن يتمكن الخادم من إتمام الإرجاع.
+        </div>
+      }
+    </div>
+
+    <p style="font-size:13px;color:var(--txt2)">
+      هل أنت متأكد من رغبتك في إرجاع هذا العقد؟
+    </p>
+  } @else {
+    <div class="text-center py-4">
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      <span class="ms-2">جاري التحميل...</span>
+    </div>
+  }
+
+  <ng-container modal-footer>
+    <button
+      type="button"
+      class="btn"
+      [disabled]="submitting()"
+      (click)="closed.emit()"
+    >
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-re d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || !details()"
+      (click)="confirm()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الإرجاع...' : 'تأكيد الإرجاع' }}</span>
+    </button>
+  </ng-container>
+</app-modal>
