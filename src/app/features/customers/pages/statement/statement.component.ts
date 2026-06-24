@@ -46,6 +46,11 @@ import { todayIsoDate } from '../../../../shared/utils/date-iso.util';
 import { PrintService } from '../../../../core/services/print.service';
 import { fetchAllPages } from '../../../../core/utils/api-list.util';
 import { ReturnContractModalComponent } from '../../../contracts/components/return-contract-modal/return-contract-modal.component';
+import {
+  ContractSlipsPrintService,
+  ContractSlipData,
+  InstallmentSlipRow,
+} from '../../../../core/services/contract-slips-print.service';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -85,8 +90,12 @@ export class StatementComponent {
   private readonly toast = inject(ToastService);
   private readonly cache = inject(HttpCacheService);
   private readonly printer = inject(PrintService);
+  private readonly slipsPrint = inject(ContractSlipsPrintService);
 
   protected readonly isPrinting = signal(false);
+
+  /** ID of the row currently loading its details for slip printing. */
+  protected readonly printLoadingId = signal<number | null>(null);
 
   // ── client picker ──────────────────────────────────────────────────
   protected readonly clients = signal<DashboardClient[]>([]);
@@ -122,6 +131,9 @@ export class StatementComponent {
 
   // ── return-contract modal ─────────────────────────────────────────
   protected readonly returnContractOpen = signal(false);
+
+  /** Tracks which row is loading its details for the inline return action. */
+  protected readonly returnLoadingId = signal<number | null>(null);
 
   // ── payment modal ──────────────────────────────────────────────────
   protected readonly payOpen = signal(false);
@@ -349,6 +361,82 @@ export class StatementComponent {
 
   protected openReturnContract(): void {
     this.returnContractOpen.set(true);
+  }
+
+  /**
+   * Fetches full contract details (including exact installment schedule) then
+   * prints one landscape A5 slip per installment — same design as the
+   * post-save print, so the user can reprint at any time.
+   */
+  protected printSlipsForRow(row: ClientContractRow): void {
+    if (this.printLoadingId() === row.id) return;
+    this.printLoadingId.set(row.id);
+
+    this.contractsService.refreshDetails(row.id).subscribe({
+      next: (d) => {
+        this.printLoadingId.set(null);
+
+        const schedule: InstallmentSlipRow[] = d.installments.map((inst) => ({
+          sequence: inst.sequence,
+          dueDate:  inst.dueDate,
+          amount:   inst.dueAmount,
+        }));
+
+        const cashPrice    = d.contract.cashPrice;
+        const downPayment  = d.contract.downPayment;
+        const profitRate   = d.contract.profitRate;
+        const afterDown    = Math.max(0, cashPrice - downPayment);
+        const totalAmount  = afterDown * (1 + profitRate / 100);
+
+        const slipData: ContractSlipData = {
+          contractId:           d.contract.id,
+          dateOfSale:           d.contract.dateOfSale,
+          clientName:           d.client.fullName,
+          clientPhone:          d.client.phoneNumber,
+          clientAddress:        d.client.address ?? null,
+          clientRegion:         null,
+          clientOccupation:     null,
+          repName:              d.representative?.fullName  ?? null,
+          repPhone:             d.representative?.phoneNumber ?? null,
+          productLines:         d.contract.items.map((i) => ({
+            name:     i.productName,
+            quantity: i.quantity,
+          })),
+          totalAmount:          Math.round(totalAmount),
+          downPayment:          downPayment,
+          installmentAmount:    d.contract.installmentAmount,
+          installmentsCount:    d.contract.installmentsCount,
+          firstInstallmentDate: d.contract.firstInstallmentDate,
+          paymentFrequency:     d.contract.paymentFrequency,
+          notes:                d.contract.notes ?? null,
+        };
+
+        this.slipsPrint.printSlipsWithSchedule(slipData, schedule);
+      },
+      error: (err: ApiError) => {
+        this.printLoadingId.set(null);
+        this.toast.error(apiErrorToMessage(err, 'تعذّر تحميل تفاصيل العقد للطباعة'));
+      },
+    });
+  }
+
+  /** Opens the return modal directly from a table row, loading details on demand. */
+  protected openReturnFromRow(row: ClientContractRow): void {
+    this.returnLoadingId.set(row.id);
+    this.activeContractId.set(row.id);
+    this.details.set(null);
+    this.contractsService.refreshDetails(row.id).subscribe({
+      next: (d) => {
+        this.details.set(d);
+        this.returnLoadingId.set(null);
+        this.returnContractOpen.set(true);
+      },
+      error: (err: ApiError) => {
+        this.returnLoadingId.set(null);
+        this.activeContractId.set(null);
+        this.toast.error(apiErrorToMessage(err, 'تعذّر تحميل تفاصيل العقد'));
+      },
+    });
   }
 
   protected onContractReturned(): void {

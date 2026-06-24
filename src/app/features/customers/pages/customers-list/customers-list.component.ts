@@ -345,13 +345,10 @@ export class CustomersListComponent {
     this.showDirectContract.set(true);
   }
 
-  protected closeDirectContract(): void {
-    this.showDirectContract.set(false);
-  }
-
   protected onDirectContractCreated(): void {
+    // Called when the modal emits (closed) — either after printing or skipping.
+    // Close the modal and refresh the list so the new contract's client is visible.
     this.showDirectContract.set(false);
-    // Jump to page 1 so the new contract's client is visible
     if (this.pageIndex() !== 1) this.pageIndex.set(1);
     else this.refresh();
   }

@@ -239,8 +239,7 @@
 
 <app-client-form-modal [open]="showForm()" [client]="editTarget()" (closed)="closeForm()" (saved)="onSaved()" />
 
-<app-direct-contract-modal [open]="showDirectContract()" (closed)="closeDirectContract()"
-  (created)="onDirectContractCreated()" />
+<app-direct-contract-modal [open]="showDirectContract()" (closed)="onDirectContractCreated()" />
 
 <app-modal [open]="showViewClient()" title="بيانات العميل" size="lg" (closed)="closeViewClient()">
   @if (loadingViewClient()) {

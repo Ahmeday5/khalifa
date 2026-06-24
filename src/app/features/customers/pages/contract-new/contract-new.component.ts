@@ -29,6 +29,10 @@ import {
 } from '../../../../shared/components/searchable-select/searchable-select.component';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { apiErrorToMessage } from '../../../../core/utils/api-error.util';
+import {
+  ContractSlipsPrintService,
+  ContractSlipData,
+} from '../../../../core/services/contract-slips-print.service';
 
 import { ContractsService } from '../../../contracts/services/contracts.service';
 import { CustomersService } from '../../services/customers.service';
@@ -36,6 +40,7 @@ import { ProductsService } from '../../../products/services/products.service';
 import { WarehouseService } from '../../../warehouse/services/warehouse.service';
 import { TreasuryService } from '../../../treasury/services/treasury.service';
 import { RepsService } from '../../../reps/services/reps.service';
+import { Representative } from '../../../reps/models/rep.model';
 
 import {
   ContractFormState,
@@ -77,6 +82,7 @@ export class ContractNewComponent implements OnInit {
   private readonly repsService = inject(RepsService);
 
   private readonly toast = inject(ToastService);
+  private readonly slipsPrint = inject(ContractSlipsPrintService);
 
   // ───────────────── edit mode ─────────────────
   protected readonly editId = signal<number | null>(null);
@@ -89,13 +95,15 @@ export class ContractNewComponent implements OnInit {
   // ───────────────── UI state ─────────────────
   protected readonly loading = signal(true);
   protected readonly isSaving = signal(false);
+  /** Holds print data after a successful save so the user can trigger printing. */
+  protected readonly pendingPrintData = signal<ContractSlipData | null>(null);
 
   // ───────────────── lookup data ─────────────────
   protected readonly clients = signal<DashboardClient[]>([]);
   protected readonly products = signal<LookupItem[]>([]);
   protected readonly warehouses = signal<LookupItem[]>([]);
   protected readonly treasuries = signal<LookupItem[]>([]);
-  protected readonly representatives = signal<LookupItem[]>([]);
+  protected readonly representatives = signal<Representative[]>([]);
 
   /** Client list shaped for the searchable select (name + phone search). */
   protected readonly clientOptions = computed<SearchableSelectOption[]>(() =>
@@ -116,8 +124,8 @@ export class ContractNewComponent implements OnInit {
   protected readonly treasuryOptions = computed<SearchableSelectOption[]>(() =>
     this.toOptions(this.treasuries()),
   );
-  protected readonly representativeOptions = computed<SearchableSelectOption[]>(
-    () => this.toOptions(this.representatives()),
+  protected readonly representativeOptions = computed<SearchableSelectOption[]>(() =>
+    this.representatives().map((r) => ({ value: r.id, label: r.fullName, hint: r.phoneNumber })),
   );
 
   private toOptions(items: LookupItem[]): SearchableSelectOption[] {
@@ -242,8 +250,8 @@ export class ContractNewComponent implements OnInit {
         .lookup()
         .pipe(catchError(() => of([] as LookupItem[]))),
       reps: this.repsService
-        .lookup()
-        .pipe(catchError(() => of([] as LookupItem[]))),
+        .list()
+        .pipe(catchError(() => of({ data: [] as Representative[], pageIndex: 1, pageSize: 100, count: 0, totalPages: 0 }))),
       details: id
         ? this.contractsService
             .getDetails(id)
@@ -257,7 +265,7 @@ export class ContractNewComponent implements OnInit {
           this.products.set(res.products);
           this.warehouses.set(res.warehouses);
           this.treasuries.set(res.treasuries);
-          this.representatives.set(res.reps);
+          this.representatives.set(res.reps?.data ?? []);
           if (res.details) this.prefillFromDetails(res.details);
         },
         error: () => {
@@ -476,9 +484,10 @@ export class ContractNewComponent implements OnInit {
       .create(sharedFields)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
-        next: () => {
+        next: (created) => {
           this.toast.success('تم إنشاء العقد بنجاح');
-          this.router.navigate(['/customers/customer-list']);
+          const printData = this.buildPrintData(raw, created.id, sharedFields.items);
+          this.pendingPrintData.set(printData);
         },
         error: (err: ApiError) => {
           this.toast.error(apiErrorToMessage(err, 'فشل في إنشاء العقد'));
@@ -516,6 +525,62 @@ export class ContractNewComponent implements OnInit {
         return `يرجى إدخال كمية صحيحة في الصنف رقم ${i + 1}`;
     }
     return null;
+  }
+
+  // ───────────────── print & navigate ─────────────────
+
+  protected printAndNavigate(): void {
+    const data = this.pendingPrintData();
+    if (data) this.slipsPrint.printSlips(data);
+    this.pendingPrintData.set(null);
+    this.router.navigate(['/customers/customer-list']);
+  }
+
+  protected skipPrintAndNavigate(): void {
+    this.pendingPrintData.set(null);
+    this.router.navigate(['/customers/customer-list']);
+  }
+
+  private buildPrintData(
+    raw: ReturnType<typeof this.form.getRawValue>,
+    contractId: number,
+    items: ContractItemFormState[],
+  ): ContractSlipData {
+    const selectedClient = this.clients().find((c) => c.id === Number(raw.clientId));
+    const selectedRep    = this.representatives().find((r) => r.id === Number(raw.representativeId)) ?? null;
+
+    const productLines = items
+      .filter((i) => i.productId)
+      .map((i) => ({
+        name:     this.products().find((p) => p.id === i.productId)?.name ?? 'منتج',
+        quantity: Number(i.quantity),
+      }));
+
+    const cashPrice         = Number(raw.cashPrice);
+    const downPayment       = Number(raw.downPayment);
+    const profitRate        = Number(raw.profitRate);
+    const count             = Number(raw.installmentsCount);
+    const afterDown         = Math.max(0, cashPrice - downPayment);
+    const totalAmount       = afterDown * (1 + profitRate / 100);
+    const installmentAmount = Number(raw.installmentAmount);
+
+    return {
+      contractId,
+      dateOfSale:           raw.dateOfSale,
+      clientName:           selectedClient?.fullName   ?? '',
+      clientPhone:          selectedClient?.phoneNumber ?? '',
+      clientAddress:        selectedClient?.address     ?? null,
+      repName:              selectedRep?.fullName         ?? null,
+      repPhone:             selectedRep?.phoneNumber      ?? null,
+      productLines:         productLines.length ? productLines : [{ name: 'منتج', quantity: 1 }],
+      totalAmount:          Math.round(totalAmount),
+      downPayment,
+      installmentAmount,
+      installmentsCount:    count,
+      firstInstallmentDate: raw.firstInstallmentDate,
+      paymentFrequency:     raw.paymentFrequency,
+      notes:                raw.notes ?? null,
+    };
   }
 
   // ───────────────── helpers ─────────────────

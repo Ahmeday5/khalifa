@@ -25,6 +25,7 @@ import { SuppliersService } from '../../../suppliers/services/suppliers.service'
 import { LookupItem } from '../../../../core/models/lookup.model';
 import { ConfirmInvoiceModalComponent } from '../../components/confirm-invoice-modal/confirm-invoice-modal.component';
 import { PayInvoiceModalComponent } from '../../components/pay-invoice-modal/pay-invoice-modal.component';
+import { ReturnInvoiceModalComponent } from '../../components/return-invoice-modal/return-invoice-modal.component';
 import { AuthService } from '../../../../core/services/auth.service';
 import { PERMISSIONS } from '../../../../core/constants/permissions.const';
 import { PrintService } from '../../../../core/services/print.service';
@@ -46,7 +47,7 @@ const STATUS_OPTIONS: ReadonlyArray<{
   selector: 'app-invoices-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyArPipe, ConfirmInvoiceModalComponent, PayInvoiceModalComponent],
+  imports: [CurrencyArPipe, ConfirmInvoiceModalComponent, PayInvoiceModalComponent, ReturnInvoiceModalComponent],
   templateUrl: './invoices-list.component.html',
   styleUrl: './invoices-list.component.scss',
 })
@@ -103,6 +104,10 @@ export class InvoicesListComponent implements OnInit {
   // ── payment modal ──
   protected readonly paymentOpen   = signal(false);
   protected readonly paymentTarget = signal<PurchaseInvoiceListItem | null>(null);
+
+  // ── return modal ──
+  protected readonly returnOpen   = signal(false);
+  protected readonly returnTarget = signal<PurchaseInvoiceListItem | null>(null);
 
   // ── derived ──
   protected readonly statusOptions = STATUS_OPTIONS;
@@ -330,6 +335,27 @@ export class InvoicesListComponent implements OnInit {
     this.fetchSummary();
   }
 
+  // ─────────── return modal ───────────
+
+  protected openReturn(inv: PurchaseInvoiceListItem): void {
+    this.returnTarget.set(inv);
+    this.returnOpen.set(true);
+  }
+
+  protected closeReturn(): void {
+    this.returnOpen.set(false);
+  }
+
+  protected onInvoiceReturned(): void {
+    this.returnOpen.set(false);
+    this.invoices.update((list) =>
+      list.map((i) =>
+        i.id === this.returnTarget()?.id ? { ...i, status: 'Cancelled' as PurchaseInvoiceStatus } : i,
+      ),
+    );
+    this.fetchSummary();
+  }
+
   // ─────────── view helpers ───────────
 
   protected statusView(status: PurchaseInvoiceStatus): PurchaseInvoiceStatusView {
@@ -350,6 +376,11 @@ export class InvoicesListComponent implements OnInit {
       inv.status !== 'Draft' &&
       inv.status !== 'Cancelled'
     );
+  }
+
+  /** True when the invoice can be returned: not already cancelled, no payments made. */
+  protected isReturnable(inv: PurchaseInvoiceListItem): boolean {
+    return inv.status !== 'Cancelled' && (inv.paidAmount ?? 0) === 0;
   }
 
   protected formatDate(iso: string): string {

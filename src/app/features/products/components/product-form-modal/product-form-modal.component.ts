@@ -103,26 +103,6 @@ export class ProductFormModalComponent {
   );
 
   /**
-   * Show the commission value input only when the selected type needs one.
-   * Also drives the conditional Validators.min(0.01) on commissionValue.
-   */
-  protected readonly needsCommissionValue = computed(
-    () => this.form.controls.commissionType.value !== 'None',
-  );
-
-  /** Placeholder / suffix label for the commission value input. */
-  protected readonly commissionValueSuffix = computed<string>(() => {
-    switch (this.form.controls.commissionType.value as CommissionType) {
-      case 'Percentage':
-        return '%';
-      case 'FixedAmount':
-        return 'ج.م';
-      default:
-        return '';
-    }
-  });
-
-  /**
    * Image to render in the preview slot. Order of preference:
    *   1. Newly-picked file (data URL) — what the user sees mid-edit
    *   2. Existing product image (edit/view modes) — converted to absolute URL
@@ -144,6 +124,37 @@ export class ProductFormModalComponent {
     categoryId: this.fb.nonNullable.control<number | null>(null),
     commissionType: this.fb.nonNullable.control<CommissionType>('None'),
     commissionValue: [0, [Validators.required, Validators.min(0)]],
+  });
+
+  /** Reactive snapshot of the whole form — drives all computed derivations. */
+  private readonly formValues = toSignal(this.form.valueChanges, {
+    initialValue: this.form.getRawValue(),
+  });
+
+  /** Reactive signal tracking the selected commission type — must be after `form`. */
+  private readonly commissionTypeValue = toSignal(
+    this.form.controls.commissionType.valueChanges,
+    { initialValue: this.form.controls.commissionType.value },
+  );
+
+  /**
+   * Show the commission value input only when the selected type needs one.
+   * Also drives the conditional Validators.min(0.01) on commissionValue.
+   */
+  protected readonly needsCommissionValue = computed(
+    () => this.commissionTypeValue() !== 'None',
+  );
+
+  /** Placeholder / suffix label for the commission value input. */
+  protected readonly commissionValueSuffix = computed<string>(() => {
+    switch (this.commissionTypeValue() as CommissionType) {
+      case 'Percentage':
+        return '%';
+      case 'FixedAmount':
+        return 'ج.م';
+      default:
+        return '';
+    }
   });
 
   constructor() {
@@ -306,12 +317,10 @@ export class ProductFormModalComponent {
    * needs a value is selected. Removes the validator (allows 0) for None.
    */
   protected readonly profitMargin = computed(() => {
-    const purchase = Number(this.form.controls.purchasePrice.value);
-
-    const selling = Number(this.form.controls.sellingPrice.value);
-
+    const v = this.formValues();
+    const purchase = Number(v.purchasePrice ?? 0);
+    const selling  = Number(v.sellingPrice  ?? 0);
     if (!purchase || purchase <= 0) return 0;
-
     return ((selling - purchase) / purchase) * 100;
   });
 

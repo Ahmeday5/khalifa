@@ -18,7 +18,6 @@ import {
   buildCreateContractPayload,
   CreateDirectContractPayload,
   CreatedDirectContract,
-  buildDirectContractPayload,
   UpdateContractFormState,
   buildUpdateContractPayload,
 } from '../models/contract.model';
@@ -74,7 +73,7 @@ export class ContractsService {
   ): Observable<CreatedDirectContract> {
     return this.api.post<CreatedDirectContract>(
       API_ENDPOINTS.contracts.direct,
-      buildDirectContractPayload(payload),
+      payload,
       {
         context: withInlineHandling(
           withCacheInvalidate([

@@ -1,3 +1,45 @@
+<!-- ══════════ Print confirmation overlay ══════════ -->
+@if (pendingPrintData(); as printData) {
+  <div class="cn-print-overlay">
+    <div class="cn-print-card">
+      <div class="cn-print-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect x="6" y="14" width="12" height="8"/>
+        </svg>
+      </div>
+      <h2 class="cn-print-title">تم حفظ العقد بنجاح!</h2>
+      <p class="cn-print-sub">
+        تم إنشاء العقد لـ <strong>{{ printData.clientName }}</strong>
+        بـ <strong>{{ printData.installmentsCount }}</strong> قسط.
+        <br>هل تريد طباعة إيصالات الأقساط الآن؟
+      </p>
+      <div class="cn-print-note">
+        سيتم فتح <strong>{{ printData.installmentsCount }} ورقة</strong>
+        لطباعتها — كل ورقة تحتوي على بيانات قسط واحد.
+      </div>
+      <div class="cn-print-actions">
+        <button class="btn btn-bl cn-print-btn-main" (click)="printAndNavigate()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          طباعة الإيصالات ({{ printData.installmentsCount }} ورقة)
+        </button>
+        <button class="btn cn-print-btn-skip" (click)="skipPrintAndNavigate()">
+          تخطي الطباعة
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
 @if (loading()) {
   <div class="loader-container">
     <app-loader></app-loader>
@@ -348,6 +390,91 @@
 }
 
 <style>
+  /* ── Print overlay ── */
+  .cn-print-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+  }
+
+  .cn-print-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 28px 24px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+
+  .cn-print-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #e8f0fe;
+    color: #1a2e52;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .cn-print-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0d1b3e;
+    margin-bottom: 10px;
+  }
+
+  .cn-print-sub {
+    font-size: .92rem;
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .cn-print-note {
+    background: #f4f7fb;
+    border: 1px dashed #b8c8e0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: .82rem;
+    color: #5a6480;
+    margin-bottom: 20px;
+  }
+
+  .cn-print-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cn-print-btn-main {
+    font-size: .95rem;
+    font-weight: 700;
+    padding: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .cn-print-btn-skip {
+    font-size: .88rem;
+    color: #888;
+    background: transparent;
+    border: 1px solid #ddd;
+  }
+  .cn-print-btn-skip:hover {
+    background: #f5f5f5;
+  }
+
   .cn-item-row {
     display: grid;
     grid-template-columns: 24px 1fr 1fr 80px 32px;

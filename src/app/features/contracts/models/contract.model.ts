@@ -196,16 +196,28 @@ export function buildUpdateContractPayload(
 //  Live API: POST /dashboard/contracts/direct
 // ─────────────────────────────────────────────────────────────────
 
+/** One free-text product line in a direct contract. */
+export interface DirectContractItemPayload {
+  productName: string;
+  quantity: number;
+  unitPurchasePrice: number;
+}
+
+/** Form-level item (string ids before validation). */
+export interface DirectContractItemFormState {
+  productName: string;
+  quantity: number;
+  unitPurchasePrice: number;
+}
+
 /**
  * Payload for `POST /dashboard/contracts/direct`.
- * Free-text product name — no warehouse / inventory link.
+ * Supports multiple free-text product lines — no warehouse / inventory link.
  */
 export interface CreateDirectContractPayload {
   clientId: number;
-  productName: string;
-  quantity: number;
+  items: DirectContractItemPayload[];
   dateOfSale: string;
-  purchasePrice: number;
   cashPrice: number;
   downPayment: number;
   profitRate: number;
@@ -222,10 +234,8 @@ export interface CreateDirectContractPayload {
 export interface CreatedDirectContract {
   id: number;
   clientId: number;
-  productName: string;
-  quantity: number;
+  items: DirectContractItemPayload[];
   dateOfSale: string;
-  purchasePrice: number;
   cashPrice: number;
   downPayment: number;
   profitRate: number;
@@ -237,37 +247,4 @@ export interface CreatedDirectContract {
   representativeId: number | null;
   representativeCommission: number;
   notes: string | null;
-}
-
-/**
- * Build a `POST /dashboard/contracts/direct` body.
- * Strips `representativeId` when null/zero; trims/drops empty notes.
- */
-export function buildDirectContractPayload(
-  form: CreateDirectContractPayload,
-): CreateDirectContractPayload {
-  const payload: CreateDirectContractPayload = {
-    clientId: form.clientId,
-    productName: form.productName.trim(),
-    quantity: form.quantity,
-    dateOfSale: form.dateOfSale,
-    purchasePrice: form.purchasePrice,
-    cashPrice: form.cashPrice,
-    downPayment: form.downPayment,
-    profitRate: form.profitRate,
-    installmentsCount: form.installmentsCount,
-    installmentAmount: form.installmentAmount,
-    paymentFrequency: form.paymentFrequency,
-    firstInstallmentDate: form.firstInstallmentDate,
-    treasuryId: form.treasuryId,
-  };
-
-  if (form.representativeId && form.representativeId > 0) {
-    payload.representativeId = form.representativeId;
-  }
-
-  const trimmedNotes = form.notes?.trim();
-  if (trimmedNotes) payload.notes = trimmedNotes;
-
-  return payload;
 }
