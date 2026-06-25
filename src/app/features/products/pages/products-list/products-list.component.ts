@@ -271,7 +271,7 @@ export class ProductsListComponent implements OnInit {
   }
 
   protected profitOf(product: Product): number {
-    return (product.sellingPrice ?? 0) - (product.purchasePrice ?? 0);
+    return (product.quarterlySellingPrice ?? 0) - (product.purchasePrice ?? 0);
   }
 
   /**
@@ -280,9 +280,6 @@ export class ProductsListComponent implements OnInit {
    * the server returned 0 to avoid showing a stale percentage.
    */
   protected marginPctOf(product: Product): number {
-    if (product.profitRatePercent) {
-      return Math.round(product.profitRatePercent);
-    }
     const cost = product.purchasePrice ?? 0;
     if (cost <= 0) return 0;
     return Math.round((this.profitOf(product) / cost) * 100);

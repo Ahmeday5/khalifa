@@ -118,8 +118,16 @@
           <div class="pl-card-price-val">{{ p.purchasePrice | currencyAr: true }}</div>
         </div>
         <div>
-          <div class="pl-card-price-label">سعر البيع</div>
-          <div class="pl-card-price-val pl-card-price-sell">{{ p.sellingPrice | currencyAr: true }}</div>
+          <div class="pl-card-price-label">ربع سنوي</div>
+          <div class="pl-card-price-val pl-card-price-sell">{{ p.quarterlySellingPrice | currencyAr: true }}</div>
+        </div>
+        <div>
+          <div class="pl-card-price-label">نصف سنوي</div>
+          <div class="pl-card-price-val pl-card-price-sell">{{ p.semiAnnualSellingPrice | currencyAr: true }}</div>
+        </div>
+        <div>
+          <div class="pl-card-price-label">سنوي</div>
+          <div class="pl-card-price-val pl-card-price-sell">{{ p.annualSellingPrice | currencyAr: true }}</div>
         </div>
       </div>
 

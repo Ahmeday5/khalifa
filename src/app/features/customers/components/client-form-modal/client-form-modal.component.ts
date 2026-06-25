@@ -11,7 +11,6 @@ import {
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormErrorComponent } from '../../../../shared/components/form-error/form-error.component';
-import { PasswordInputComponent } from '../../../../shared/components/password-input/password-input.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { CustomersService } from '../../services/customers.service';
@@ -35,7 +34,6 @@ const EG_NATIONAL_ID = /^[0-9]{14}$/;
     ReactiveFormsModule,
     ModalComponent,
     FormErrorComponent,
-    PasswordInputComponent,
   ],
   templateUrl: './client-form-modal.component.html',
 })
@@ -63,20 +61,18 @@ export class ClientFormModalComponent {
 
   // ── form ──
   protected readonly form = this.fb.nonNullable.group({
-    fullName:      ['', [Validators.required, Validators.minLength(3)]],
-    email:         ['', [Validators.email]],
-    nationalId:    ['', [Validators.pattern(EG_NATIONAL_ID)]],
-    address:       ['', [Validators.required, Validators.minLength(2)]],
-    phoneNumber:   ['', [Validators.required, Validators.pattern(EG_PHONE)]],
-    whatsappNumber:['', [Validators.required, Validators.pattern(EG_PHONE)]],
-    password:      ['', [Validators.required, Validators.minLength(6)]],
+    fullName:       ['', [Validators.required, Validators.minLength(3)]],
+    nationalId:     ['', [Validators.pattern(EG_NATIONAL_ID)]],
+    address:        ['', [Validators.required, Validators.minLength(2)]],
+    phoneNumber:    ['', [Validators.required, Validators.pattern(EG_PHONE)]],
+    whatsappNumber: ['', [Validators.required, Validators.pattern(EG_PHONE)]],
     // ── extended profile ──
-    clientCode:    [''],
-    region:        [''],
-    occupation:    [''],
-    building:      [''],
-    floor:         [''],
-    department:    [''],
+    clientCode:     [''],
+    region:         [''],
+    occupation:     [''],
+    building:       [''],
+    floor:          [''],
+    department:     [''],
   });
 
   constructor() {
@@ -178,19 +174,16 @@ export class ClientFormModalComponent {
 
   // ─────────────── internals ───────────────
 
-  /** Create mode — blank form, password required, whatsapp synced to phone. */
+  /** Create mode — blank form, whatsapp synced to phone. */
   private enterCreateMode(): void {
     this.loadingDetail.set(false);
     this.sameAsPhone.set(true);
-    this.setPasswordRequired(true);
     this.form.reset({
       fullName: '',
-      email: '',
       nationalId: '',
       address: '',
       phoneNumber: '',
       whatsappNumber: '',
-      password: '',
       clientCode: '',
       region: '',
       occupation: '',
@@ -203,21 +196,17 @@ export class ClientFormModalComponent {
 
   /**
    * Edit mode — pre-fills with what the list row already carries, then pulls
-   * the full record (email / nationalId / whatsapp) from the server. Password
-   * is not edited here, so its control is dropped from validation.
+   * the full record (nationalId / whatsapp / extended) from the server.
    */
   private enterEditMode(row: DashboardClient): void {
-    this.setPasswordRequired(false);
     this.sameAsPhone.set(false);
     this.form.controls.whatsappNumber.enable({ emitEvent: false });
     this.form.reset({
       fullName: row.fullName,
-      email: '',
       nationalId: '',
       address: row.address,
       phoneNumber: row.phoneNumber,
       whatsappNumber: '',
-      password: '',
       clientCode: '',
       region: '',
       occupation: '',
@@ -231,18 +220,17 @@ export class ClientFormModalComponent {
       next: (full) => {
         this.loadingDetail.set(false);
         this.form.patchValue({
-          fullName:      full.fullName,
-          email:         full.email ?? '',
-          nationalId:    full.nationalId ?? '',
-          address:       full.address,
-          phoneNumber:   full.phoneNumber,
-          whatsappNumber:full.whatsappNumber ?? '',
-          clientCode:    full.clientCode ?? '',
-          region:        full.region ?? '',
-          occupation:    full.occupation ?? '',
-          building:      full.building ?? '',
-          floor:         full.floor ?? '',
-          department:    full.department ?? '',
+          fullName:       full.fullName,
+          nationalId:     full.nationalId ?? '',
+          address:        full.address,
+          phoneNumber:    full.phoneNumber,
+          whatsappNumber: full.whatsappNumber ?? '',
+          clientCode:     full.clientCode ?? '',
+          region:         full.region ?? '',
+          occupation:     full.occupation ?? '',
+          building:       full.building ?? '',
+          floor:          full.floor ?? '',
+          department:     full.department ?? '',
         });
         const synced =
           !!full.whatsappNumber && full.whatsappNumber === full.phoneNumber;
@@ -250,23 +238,9 @@ export class ClientFormModalComponent {
         this.applyWhatsappSync(synced);
       },
       error: () => {
-        // Degrade gracefully: keep the row-level pre-fill and let the user
-        // complete the missing fields manually.
         this.loadingDetail.set(false);
       },
     });
-  }
-
-  private setPasswordRequired(required: boolean): void {
-    const pwd = this.form.controls.password;
-    if (required) {
-      pwd.enable({ emitEvent: false });
-      pwd.setValidators([Validators.required, Validators.minLength(6)]);
-    } else {
-      pwd.clearValidators();
-      pwd.disable({ emitEvent: false });
-    }
-    pwd.updateValueAndValidity({ emitEvent: false });
   }
 
   /**
@@ -287,12 +261,10 @@ export class ClientFormModalComponent {
     const raw = this.form.getRawValue();
     const payload: CreateClientPayload = {
       fullName:       raw.fullName.trim(),
-      email:          raw.email.trim(),
       nationalId:     raw.nationalId.trim(),
       address:        raw.address.trim(),
       phoneNumber:    raw.phoneNumber.trim(),
       whatsappNumber: this.resolvedWhatsapp(),
-      password:       raw.password,
     };
     this.applyExtended(payload, raw);
     return payload;
@@ -302,7 +274,6 @@ export class ClientFormModalComponent {
     const raw = this.form.getRawValue();
     const payload: UpdateClientPayload = {
       fullName:       raw.fullName.trim(),
-      email:          raw.email.trim(),
       nationalId:     raw.nationalId.trim(),
       address:        raw.address.trim(),
       phoneNumber:    raw.phoneNumber.trim(),

@@ -49,6 +49,7 @@ import {
   UpdateContractFormState,
 } from '../../../contracts/models/contract.model';
 import { ContractDetails } from '../../models/client-statement.model';
+import { Product } from '../../../products/models/product.model';
 
 import { DashboardClient } from '../../models/dashboard-client.model';
 import { LookupItem } from '../../../../core/models/lookup.model';
@@ -378,7 +379,8 @@ export class ContractNewComponent implements OnInit {
       this.calculateInstallment();
     });
 
-    // When the product in the FIRST item changes, auto-fill cashPrice once.
+    // When the product in the FIRST item changes, auto-fill cashPrice once
+    // using the price that matches the selected paymentFrequency.
     const firstProductCtrl = this.itemsArray.at(0)?.get('productId');
     firstProductCtrl?.valueChanges.subscribe((id) => {
       if (this.prefilling) return;
@@ -387,11 +389,11 @@ export class ContractNewComponent implements OnInit {
       if (Number(this.form.get('cashPrice')?.value) > 0) return;
 
       this.productsService.getById(productId).subscribe({
-        next: (product) =>
-          this.form.patchValue(
-            { cashPrice: product.sellingPrice },
-            { emitEvent: true },
-          ),
+        next: (product) => {
+          const freq = this.form.get('paymentFrequency')?.value as ContractPaymentFrequency;
+          const price = this.priceForFrequency(product, freq);
+          this.form.patchValue({ cashPrice: price }, { emitEvent: true });
+        },
         error: () => { /* operator enters price manually */ },
       });
     });
@@ -613,6 +615,15 @@ export class ContractNewComponent implements OnInit {
   protected isInvalid(field: string): boolean {
     const control = this.form.get(field);
     return !!control && control.invalid && control.touched;
+  }
+
+  /** Returns the selling price matching the chosen payment frequency. */
+  private priceForFrequency(product: Product, freq: ContractPaymentFrequency): number {
+    switch (freq) {
+      case 'SemiAnnual': return product.semiAnnualSellingPrice;
+      case 'Annual':     return product.annualSellingPrice;
+      default:           return product.quarterlySellingPrice;
+    }
   }
 
   private todayStr(): string {

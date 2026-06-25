@@ -73,15 +73,13 @@ export interface DashboardClientsResponse {
   clients: PagedResponse<DashboardClient>;
 }
 
-/** POST /dashboard/clients body. The backend creates the linked AppUser. */
+/** POST /dashboard/clients body. */
 export interface CreateClientPayload {
   fullName: string;
-  email: string;
   nationalId: string;
   address: string;
   phoneNumber: string;
   whatsappNumber: string;
-  password: string;
   // ── extended profile ──
   clientCode?: string;
   region?: string;
@@ -91,14 +89,9 @@ export interface CreateClientPayload {
   department?: string;
 }
 
-/**
- * PUT /dashboard/clients/{id} body. Same shape as the create payload but
- * without `password` (credentials are not edited here). `nationalId` may be
- * an empty string — it is optional.
- */
+/** PUT /dashboard/clients/{id} body. */
 export interface UpdateClientPayload {
   fullName: string;
-  email: string;
   nationalId: string;
   address: string;
   phoneNumber: string;
@@ -120,7 +113,6 @@ export interface UpdateClientPayload {
 export interface CreatedClient {
   id: number;
   fullName: string;
-  email: string;
   nationalId: string | null;
   address: string;
   phoneNumber: string;

@@ -116,13 +116,15 @@ export class ProductFormModalComponent {
 
   // ── form ──
   protected readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    description: ['', [Validators.required, Validators.minLength(2)]],
-    purchasePrice: [0, [Validators.required, Validators.min(0)]],
-    sellingPrice: [0, [Validators.required, Validators.min(0)]],
-    isActive: [true],
-    categoryId: this.fb.nonNullable.control<number | null>(null),
-    commissionType: this.fb.nonNullable.control<CommissionType>('None'),
+    name:                   ['', [Validators.required, Validators.minLength(2)]],
+    description:            ['', [Validators.required, Validators.minLength(2)]],
+    purchasePrice:          [0, [Validators.required, Validators.min(0)]],
+    quarterlySellingPrice:  [0, [Validators.required, Validators.min(0)]],
+    semiAnnualSellingPrice: [0, [Validators.required, Validators.min(0)]],
+    annualSellingPrice:     [0, [Validators.required, Validators.min(0)]],
+    isActive:        [true],
+    categoryId:      this.fb.nonNullable.control<number | null>(null),
+    commissionType:  this.fb.nonNullable.control<CommissionType>('None'),
     commissionValue: [0, [Validators.required, Validators.min(0)]],
   });
 
@@ -199,16 +201,17 @@ export class ProductFormModalComponent {
     const commissionType = raw.commissionType as CommissionType;
 
     const payload: ProductFormInput = {
-      name: raw.name,
-      description: raw.description,
-      purchasePrice: Number(raw.purchasePrice) || 0,
-      sellingPrice: Number(raw.sellingPrice) || 0,
-      isActive: raw.isActive,
-      categoryId: raw.categoryId ? Number(raw.categoryId) : null,
-      image: this.pickedImage(),
+      name:                   raw.name,
+      description:            raw.description,
+      purchasePrice:          Number(raw.purchasePrice) || 0,
+      quarterlySellingPrice:  Number(raw.quarterlySellingPrice) || 0,
+      semiAnnualSellingPrice: Number(raw.semiAnnualSellingPrice) || 0,
+      annualSellingPrice:     Number(raw.annualSellingPrice) || 0,
+      isActive:        raw.isActive,
+      categoryId:      raw.categoryId ? Number(raw.categoryId) : null,
+      image:           this.pickedImage(),
       commissionType,
-      commissionValue:
-        commissionType === 'None' ? 0 : Number(raw.commissionValue) || 0,
+      commissionValue: commissionType === 'None' ? 0 : Number(raw.commissionValue) || 0,
     };
 
     this.serverError.set(null);
@@ -288,24 +291,28 @@ export class ProductFormModalComponent {
     const p = this.product();
     if (p && !this.isCreate()) {
       this.form.reset({
-        name: p.name,
-        description: p.description,
-        purchasePrice: p.purchasePrice,
-        sellingPrice: p.sellingPrice,
-        isActive: p.isActive,
-        categoryId: p.categoryId ?? null,
-        commissionType: (p.commissionType as CommissionType) ?? 'None',
+        name:                   p.name,
+        description:            p.description,
+        purchasePrice:          p.purchasePrice,
+        quarterlySellingPrice:  p.quarterlySellingPrice,
+        semiAnnualSellingPrice: p.semiAnnualSellingPrice,
+        annualSellingPrice:     p.annualSellingPrice,
+        isActive:        p.isActive,
+        categoryId:      p.categoryId ?? null,
+        commissionType:  (p.commissionType as CommissionType) ?? 'None',
         commissionValue: p.commissionValue ?? 0,
       });
     } else {
       this.form.reset({
-        name: '',
-        description: '',
-        purchasePrice: 0,
-        sellingPrice: 0,
-        isActive: true,
-        categoryId: null,
-        commissionType: 'None',
+        name:                   '',
+        description:            '',
+        purchasePrice:          0,
+        quarterlySellingPrice:  0,
+        semiAnnualSellingPrice: 0,
+        annualSellingPrice:     0,
+        isActive:        true,
+        categoryId:      null,
+        commissionType:  'None',
         commissionValue: 0,
       });
     }
@@ -316,12 +323,18 @@ export class ProductFormModalComponent {
    * Applies Validators.min(0.01) on commissionValue only when a type that
    * needs a value is selected. Removes the validator (allows 0) for None.
    */
-  protected readonly profitMargin = computed(() => {
-    const v = this.formValues();
+  /** هامش الربح لكل دورية دفع — يُعرض بجانب كل سعر بيع في الـ template. */
+  protected readonly profitMargins = computed(() => {
+    const v        = this.formValues();
     const purchase = Number(v.purchasePrice ?? 0);
-    const selling  = Number(v.sellingPrice  ?? 0);
-    if (!purchase || purchase <= 0) return 0;
-    return ((selling - purchase) / purchase) * 100;
+    if (!purchase || purchase <= 0) return { quarterly: 0, semiAnnual: 0, annual: 0 };
+    const calc = (selling: number) =>
+      ((Number(selling ?? 0) - purchase) / purchase) * 100;
+    return {
+      quarterly:  calc(v.quarterlySellingPrice  ?? 0),
+      semiAnnual: calc(v.semiAnnualSellingPrice ?? 0),
+      annual:     calc(v.annualSellingPrice     ?? 0),
+    };
   });
 
   private syncCommissionValueValidators(): void {

@@ -128,7 +128,9 @@ export class ProductsService {
     fd.append('Name', input.name.trim());
     fd.append('Description', input.description.trim());
     fd.append('PurchasePrice', String(input.purchasePrice));
-    fd.append('SellingPrice', String(input.sellingPrice));
+    fd.append('QuarterlySellingPrice', String(input.quarterlySellingPrice));
+    fd.append('SemiAnnualSellingPrice', String(input.semiAnnualSellingPrice));
+    fd.append('AnnualSellingPrice', String(input.annualSellingPrice));
     fd.append('IsActive', String(input.isActive));
     if (input.categoryId !== null && input.categoryId !== undefined) {
       fd.append('CategoryId', String(input.categoryId));

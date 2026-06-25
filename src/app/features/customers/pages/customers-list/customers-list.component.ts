@@ -294,7 +294,7 @@ export class CustomersListComponent {
       { label: 'الاسم الكامل',       value: c.fullName },
       { label: 'الهاتف',             value: c.phoneNumber },
       { label: 'واتساب',             value: c.whatsappNumber },
-      { label: 'البريد الإلكتروني',  value: c.email || '—' },
+
       { label: 'الرقم القومي',       value: c.nationalId || '—' },
       { label: 'العنوان',            value: c.address || '—' },
     ];

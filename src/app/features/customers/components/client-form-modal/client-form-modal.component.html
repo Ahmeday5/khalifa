@@ -42,20 +42,6 @@
       </div>
 
       <div class="col-12 col-md-6">
-        <label class="form-label">البريد الإلكتروني</label>
-        <input
-          type="email"
-          class="form-control"
-          formControlName="email"
-          autocomplete="off"
-          placeholder="client@example.com"
-          dir="ltr"
-          [class.is-invalid]="isInvalid('email')"
-        />
-        <app-form-error [control]="form.controls.email" label="البريد الإلكتروني" />
-      </div>
-
-      <div class="col-12 col-md-6">
         <label class="form-label">رقم الهاتف <span class="text-danger">*</span></label>
         <div class="input-group">
           <input
@@ -108,18 +94,6 @@
         </label>
         <app-form-error [control]="form.controls.whatsappNumber" label="رقم الواتساب" />
       </div>
-
-      @if (!isEdit()) {
-        <div class="col-12 col-md-6">
-          <label class="form-label">كلمة المرور <span class="text-danger">*</span></label>
-          <app-password-input
-            formControlName="password"
-            placeholder="••••••••"
-            autocomplete="new-password"
-          />
-          <app-form-error [control]="form.controls.password" label="كلمة المرور" />
-        </div>
-      }
 
       <div class="col-12">
         <label class="form-label">العنوان <span class="text-danger">*</span></label>

@@ -29,9 +29,12 @@ export interface Product {
   name: string;
   description: string;
   purchasePrice: number;
-  sellingPrice: number;
-  /** Server-computed: ((selling − purchase) / purchase) × 100. */
-  profitRatePercent: number;
+  /** سعر البيع بالتقسيط ربع سنوي. */
+  quarterlySellingPrice: number;
+  /** سعر البيع بالتقسيط نصف سنوي. */
+  semiAnnualSellingPrice: number;
+  /** سعر البيع بالتقسيط سنوي. */
+  annualSellingPrice: number;
   imageUrl: string | null;
   isActive: boolean;
   /** Optional — products without a category come back as `null`. */
@@ -58,7 +61,9 @@ export interface ProductFormInput {
   name: string;
   description: string;
   purchasePrice: number;
-  sellingPrice: number;
+  quarterlySellingPrice: number;
+  semiAnnualSellingPrice: number;
+  annualSellingPrice: number;
   isActive: boolean;
   categoryId: number | null;
   image: File | null;

@@ -62,7 +62,7 @@
           </div>
 
           <div class="col-12 col-sm-6">
-            <label class="form-label">سعر الشراء</label>
+            <label class="form-label">سعر الشراء <span class="text-danger">*</span></label>
             <div class="input-group">
               <input type="number" class="form-control" formControlName="purchasePrice" min="0" step="0.01"
                 inputmode="decimal" placeholder="0" dir="ltr" [class.is-invalid]="isInvalid('purchasePrice')" />
@@ -71,14 +71,54 @@
             <app-form-error [control]="form.controls.purchasePrice" label="سعر الشراء" />
           </div>
 
-          <div class="col-12 col-sm-6">
-            <label class="form-label">سعر البيع</label>
-            <div class="input-group">
-              <input type="number" class="form-control" formControlName="sellingPrice" min="0" step="0.01"
-                inputmode="decimal" placeholder="0" dir="ltr" [class.is-invalid]="isInvalid('sellingPrice')" />
-              <span class="input-group-text">ج.م</span>
+          <!-- ── أسعار البيع حسب دورية الدفع ── -->
+          <div class="col-12">
+            <div class="pf-prices-title">أسعار البيع بالتقسيط</div>
+            <div class="row g-2">
+
+              <div class="col-12 col-sm-4">
+                <label class="form-label">ربع سنوي <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" class="form-control" formControlName="quarterlySellingPrice"
+                    min="0" step="0.01" inputmode="decimal" placeholder="0" dir="ltr"
+                    [class.is-invalid]="isInvalid('quarterlySellingPrice')" />
+                  <span class="input-group-text">ج.م</span>
+                </div>
+                <app-form-error [control]="form.controls.quarterlySellingPrice" label="سعر الربع سنوي" />
+                @if (profitMargins().quarterly !== 0) {
+                  <small class="text-muted">هامش: {{ profitMargins().quarterly | number:'1.0-1' }}%</small>
+                }
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <label class="form-label">نصف سنوي <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" class="form-control" formControlName="semiAnnualSellingPrice"
+                    min="0" step="0.01" inputmode="decimal" placeholder="0" dir="ltr"
+                    [class.is-invalid]="isInvalid('semiAnnualSellingPrice')" />
+                  <span class="input-group-text">ج.م</span>
+                </div>
+                <app-form-error [control]="form.controls.semiAnnualSellingPrice" label="سعر النصف سنوي" />
+                @if (profitMargins().semiAnnual !== 0) {
+                  <small class="text-muted">هامش: {{ profitMargins().semiAnnual | number:'1.0-1' }}%</small>
+                }
+              </div>
+
+              <div class="col-12 col-sm-4">
+                <label class="form-label">سنوي <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" class="form-control" formControlName="annualSellingPrice"
+                    min="0" step="0.01" inputmode="decimal" placeholder="0" dir="ltr"
+                    [class.is-invalid]="isInvalid('annualSellingPrice')" />
+                  <span class="input-group-text">ج.م</span>
+                </div>
+                <app-form-error [control]="form.controls.annualSellingPrice" label="سعر السنوي" />
+                @if (profitMargins().annual !== 0) {
+                  <small class="text-muted">هامش: {{ profitMargins().annual | number:'1.0-1' }}%</small>
+                }
+              </div>
+
             </div>
-            <app-form-error [control]="form.controls.sellingPrice" label="سعر البيع" />
           </div>
 
           <div class="col-12 col-sm-6">
@@ -135,12 +175,10 @@
           
 
           <div class="col-12">
-            <div class="alert alert-light border">
-              نسبة الربح:
-
-              <strong>
-                {{ profitMargin() | number:'1.0-2' }}%
-              </strong>
+            <div class="alert alert-light border d-flex flex-wrap gap-3">
+              <span>ربع سنوي: <strong>{{ profitMargins().quarterly | number:'1.0-1' }}%</strong></span>
+              <span>نصف سنوي: <strong>{{ profitMargins().semiAnnual | number:'1.0-1' }}%</strong></span>
+              <span>سنوي: <strong>{{ profitMargins().annual | number:'1.0-1' }}%</strong></span>
             </div>
           </div>
 

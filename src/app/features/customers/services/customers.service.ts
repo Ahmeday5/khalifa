@@ -102,13 +102,11 @@ export class CustomersService {
 
   private normalizeCreate(payload: CreateClientPayload): CreateClientPayload {
     const base: CreateClientPayload = {
-      fullName: payload.fullName.trim(),
-      email: payload.email.trim(),
-      nationalId: payload.nationalId.trim(),
-      address: payload.address.trim(),
-      phoneNumber: payload.phoneNumber.trim(),
+      fullName:       payload.fullName.trim(),
+      nationalId:     payload.nationalId.trim(),
+      address:        payload.address.trim(),
+      phoneNumber:    payload.phoneNumber.trim(),
       whatsappNumber: payload.whatsappNumber.trim(),
-      password: payload.password,
     };
     if (payload.clientCode?.trim())  base.clientCode  = payload.clientCode.trim();
     if (payload.region?.trim())      base.region      = payload.region.trim();
@@ -149,11 +147,10 @@ export class CustomersService {
 
   private normalizeUpdate(payload: UpdateClientPayload): UpdateClientPayload {
     const base: UpdateClientPayload = {
-      fullName: payload.fullName.trim(),
-      email: payload.email.trim(),
-      nationalId: payload.nationalId.trim(),
-      address: payload.address.trim(),
-      phoneNumber: payload.phoneNumber.trim(),
+      fullName:       payload.fullName.trim(),
+      nationalId:     payload.nationalId.trim(),
+      address:        payload.address.trim(),
+      phoneNumber:    payload.phoneNumber.trim(),
       whatsappNumber: payload.whatsappNumber.trim(),
     };
     if (payload.clientCode !== undefined) base.clientCode  = payload.clientCode.trim();
