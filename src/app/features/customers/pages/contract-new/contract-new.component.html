@@ -329,7 +329,12 @@
         }
 
         <div class="cr">
-          <span>سعر البيع كاش</span>
+          <span>سعر الوحدة كاش</span>
+          <span>{{ summary().unitPrice | currencyAr }}</span>
+        </div>
+
+        <div class="cr">
+          <span>إجمالي سعر البيع كاش</span>
           <span>{{ summary().cashPrice | currencyAr }}</span>
         </div>
 

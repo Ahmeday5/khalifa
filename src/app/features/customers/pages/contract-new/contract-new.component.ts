@@ -198,7 +198,7 @@ export class ContractNewComponent implements OnInit {
   protected readonly summary = computed(() => {
     const v = this.values();
 
-    const cashPrice  = Number(v.cashPrice ?? 0);
+    const unitPrice   = Number(v.cashPrice ?? 0);
     const downPayment = Number(v.downPayment ?? 0);
     const profitRate  = Number(v.profitRate ?? 0);
     const count       = Math.max(1, Number(v.installmentsCount ?? 1));
@@ -207,12 +207,14 @@ export class ContractNewComponent implements OnInit {
       0,
     );
 
+    const cashPrice    = unitPrice * Math.max(1, totalQty);
     const afterDown    = Math.max(0, cashPrice - downPayment);
     const profitAmount = afterDown * (profitRate / 100);
     const totalAmount  = afterDown + profitAmount;
     const installmentAmt = totalAmount / count;
 
     return {
+      unitPrice,
       cashPrice,
       downPayment,
       afterDown,
@@ -386,7 +388,6 @@ export class ContractNewComponent implements OnInit {
       if (this.prefilling) return;
       const productId = Number(id);
       if (!productId) return;
-      if (Number(this.form.get('cashPrice')?.value) > 0) return;
 
       this.productsService.getById(productId).subscribe({
         next: (product) => {
@@ -397,13 +398,33 @@ export class ContractNewComponent implements OnInit {
         error: () => { /* operator enters price manually */ },
       });
     });
+
+    // When paymentFrequency changes, update cashPrice based on the selected product's price.
+    this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
+      if (this.prefilling) return;
+      const productId = Number(this.itemsArray.at(0)?.get('productId')?.value);
+      if (!productId) return;
+
+      this.productsService.getById(productId).subscribe({
+        next: (product) => {
+          const price = this.priceForFrequency(product, freq as ContractPaymentFrequency);
+          this.form.patchValue({ cashPrice: price }, { emitEvent: true });
+        },
+        error: () => { /* operator enters price manually */ },
+      });
+    });
   }
 
   private calculateInstallment(): void {
-    const cashPrice   = Number(this.form.get('cashPrice')?.value) || 0;
+    const unitPrice   = Number(this.form.get('cashPrice')?.value) || 0;
     const downPayment = Number(this.form.get('downPayment')?.value) || 0;
     const profitRate  = Number(this.form.get('profitRate')?.value) || 0;
     const count       = Number(this.form.get('installmentsCount')?.value) || 1;
+    const totalQty    = (this.itemsArray.controls as AbstractControl[]).reduce(
+      (sum, ctrl) => sum + (Number(ctrl.get('quantity')?.value) || 0),
+      0,
+    );
+    const cashPrice   = unitPrice * Math.max(1, totalQty);
 
     const remaining = cashPrice - downPayment;
 
