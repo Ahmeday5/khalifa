@@ -65,10 +65,13 @@ import { CreatedClient, DashboardClient } from '../../models/dashboard-client.mo
 export class DirectContractModalComponent {
   // ── inputs ──
   readonly open = input.required<boolean>();
+  /** When provided the modal operates in edit mode. */
+  readonly editId = input<number | null>(null);
 
   // ── outputs ──
   readonly closed = output<void>();
   readonly created = output<CreatedDirectContract>();
+  readonly updated = output<CreatedDirectContract>();
 
   // ── deps ──
   private readonly fb = inject(FormBuilder);
@@ -82,9 +85,12 @@ export class DirectContractModalComponent {
   // ── state ──
   protected readonly submitting = signal(false);
   protected readonly loadingLookups = signal(false);
+  protected readonly loadingEdit = signal(false);
   protected readonly serverError = signal<string | null>(null);
   protected readonly lookupsLoaded = signal(false);
   protected readonly pendingPrintData = signal<ContractSlipData | null>(null);
+
+  protected readonly isEditMode = computed(() => !!this.editId());
 
   // ── lookup data ──
   protected readonly clients = signal<DashboardClient[]>([]);
@@ -161,6 +167,16 @@ export class DirectContractModalComponent {
         if (!this.open()) return;
         if (this.lookupsLoaded()) return;
         this.loadLookups();
+      },
+      { allowSignalWrites: true },
+    );
+
+    // When opening in edit mode, populate the form with existing data
+    effect(
+      () => {
+        const id = this.editId();
+        if (!this.open() || !id) return;
+        this.loadForEdit(id);
       },
       { allowSignalWrites: true },
     );
@@ -242,6 +258,26 @@ export class DirectContractModalComponent {
     this.serverError.set(null);
     this.submitting.set(true);
 
+    const editId = this.editId();
+
+    if (editId) {
+      this.contractsService
+        .updateDirect(editId, payload)
+        .pipe(finalize(() => this.submitting.set(false)))
+        .subscribe({
+          next: (res) => {
+            this.toast.success('تم تعديل العقد المباشر بنجاح');
+            this.updated.emit(res);
+            this.resetForm();
+            this.closed.emit();
+          },
+          error: (err: ApiError) => {
+            this.serverError.set(err.message || 'تعذّر تعديل العقد');
+          },
+        });
+      return;
+    }
+
     this.contractsService
       .createDirect(payload)
       .pipe(
@@ -279,6 +315,50 @@ export class DirectContractModalComponent {
   }
 
   // ─────────── internals ───────────
+
+  private loadForEdit(id: number): void {
+    this.loadingEdit.set(true);
+    this.contractsService.getDetails(id).pipe(
+      finalize(() => this.loadingEdit.set(false)),
+    ).subscribe({
+      next: (d) => {
+        const c = d.contract;
+
+        // rebuild items FormArray
+        this.itemsArray.clear({ emitEvent: false });
+        for (const item of c.items) {
+          this.itemsArray.push(
+            this.fb.nonNullable.group({
+              productName:      [item.productName,      [Validators.required, Validators.maxLength(200)]],
+              quantity:         [item.quantity,         [Validators.required, Validators.min(1)]],
+              unitPurchasePrice:[item.unitPurchasePrice, [Validators.required, Validators.min(0)]],
+            }),
+            { emitEvent: false },
+          );
+        }
+
+        this.form.patchValue({
+          clientId:             d.client.id,
+          dateOfSale:           c.dateOfSale.split('T')[0],
+          cashPrice:            c.cashPrice,
+          downPayment:          c.downPayment,
+          profitRate:           c.profitRate,
+          installmentsCount:    c.installmentsCount,
+          installmentAmount:    c.installmentAmount,
+          paymentFrequency:     c.paymentFrequency as ContractPaymentFrequency,
+          firstInstallmentDate: c.firstInstallmentDate.split('T')[0],
+          treasuryId:           c.treasuryId,
+          representativeId:     d.representative?.id ?? null,
+          notes:                c.notes ?? '',
+        }, { emitEvent: false });
+
+        this.serverError.set(null);
+      },
+      error: (err: ApiError) => {
+        this.serverError.set(err.message || 'تعذّر تحميل بيانات العقد');
+      },
+    });
+  }
 
   private loadLookups(): void {
     this.loadingLookups.set(true);

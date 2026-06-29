@@ -88,6 +88,31 @@ export class ContractsService {
   }
 
   /**
+   * Update an existing direct contract (no product/warehouse link).
+   *
+   * PUT /dashboard/contracts/direct/{id}
+   */
+  updateDirect(
+    id: number,
+    payload: CreateDirectContractPayload,
+  ): Observable<CreatedDirectContract> {
+    return this.api.put<CreatedDirectContract>(
+      API_ENDPOINTS.contracts.directById(id),
+      payload,
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([
+            CONTRACTS_CACHE_KEY,
+            'client',
+            'treasur',
+            'financial-separation',
+          ]),
+        ),
+      },
+    );
+  }
+
+  /**
    * Update an existing installment contract.
    *
    * PUT /dashboard/contracts/{id}

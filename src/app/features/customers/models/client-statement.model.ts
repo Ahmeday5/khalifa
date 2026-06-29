@@ -15,6 +15,7 @@ export interface ClientContractListItem {
  */
 export interface ClientContractRow {
   id: number;
+  isDirect: boolean;
   items: ClientContractListItem[];
   /** Total quantity across all items. */
   quantity: number;
@@ -56,6 +57,7 @@ export interface ContractDetailItemRow {
 
 export interface ContractDetailsContract {
   id: number;
+  isDirect: boolean;
   items: ContractDetailItemRow[];
   /** Total quantity across all items. */
   quantity: number;

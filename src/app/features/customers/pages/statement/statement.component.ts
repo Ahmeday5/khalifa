@@ -47,6 +47,7 @@ import { todayIsoDate } from '../../../../shared/utils/date-iso.util';
 import { PrintService } from '../../../../core/services/print.service';
 import { fetchAllPages } from '../../../../core/utils/api-list.util';
 import { ReturnContractModalComponent } from '../../../contracts/components/return-contract-modal/return-contract-modal.component';
+import { DirectContractModalComponent } from '../../components/direct-contract-modal/direct-contract-modal.component';
 import {
   ContractSlipsPrintService,
   ContractSlipData,
@@ -79,6 +80,7 @@ interface PaymentForm {
     CurrencyArPipe,
     SearchableSelectComponent,
     ReturnContractModalComponent,
+    DirectContractModalComponent,
   ],
   templateUrl: './statement.component.html',
   styleUrl: './statement.component.scss',
@@ -129,6 +131,10 @@ export class StatementComponent {
   protected readonly detailsLoading = signal(false);
   protected readonly details = signal<ContractDetails | null>(null);
   private readonly activeContractId = signal<number | null>(null);
+
+  // ── edit direct contract modal ────────────────────────────────────
+  protected readonly editDirectOpen = signal(false);
+  protected readonly editDirectId = signal<number | null>(null);
 
   // ── return-contract modal ─────────────────────────────────────────
   protected readonly returnContractOpen = signal(false);
@@ -499,6 +505,24 @@ export class StatementComponent {
         this.toast.error(apiErrorToMessage(err, 'تعذّر تحميل تفاصيل العقد'));
       },
     });
+  }
+
+  protected openEditDirect(row: ClientContractRow): void {
+    this.editDirectId.set(row.id);
+    this.editDirectOpen.set(true);
+  }
+
+  protected closeEditDirect(): void {
+    this.editDirectOpen.set(false);
+    this.editDirectId.set(null);
+  }
+
+  protected onDirectUpdated(): void {
+    this.closeEditDirect();
+    const clientId = this.selectedClientId();
+    if (clientId !== null) {
+      this.fetchContracts(clientId, this.pageIndex(), this.pageSize(), true);
+    }
   }
 
   protected onContractReturned(): void {

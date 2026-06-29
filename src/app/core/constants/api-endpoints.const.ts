@@ -167,6 +167,8 @@ export const API_ENDPOINTS = {
     details: (id: number) => `dashboard/contracts/${id}/details`,
     /** POST: create a direct installment contract (free-text product, no warehouse). */
     direct: 'dashboard/contracts/direct',
+    /** PUT: update an existing direct contract. */
+    directById: (id: number) => `dashboard/contracts/direct/${id}`,
     /** POST: return / cancel a contract (only when no installments have been paid). */
     return: (id: number) => `dashboard/contracts/${id}/return`,
   },
