@@ -36,6 +36,10 @@ export interface DashboardClient {
   fullName: string;
   phoneNumber: string;
   address: string;
+  // ── extended profile (may be absent in list response) ──
+  clientCode?: string | null;
+  region?: string | null;
+  occupation?: string | null;
 
   // ── contract aggregates (null for `status === 'New'`) ──
   goods: string | null;

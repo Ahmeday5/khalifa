@@ -18,7 +18,7 @@ import {
 } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError, finalize, switchMap } from 'rxjs/operators';
 
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormErrorComponent } from '../../../../shared/components/form-error/form-error.component';
@@ -46,7 +46,7 @@ import {
   CreateDirectContractPayload,
   DirectContractItemPayload,
 } from '../../../contracts/models/contract.model';
-import { DashboardClient } from '../../models/dashboard-client.model';
+import { CreatedClient, DashboardClient } from '../../models/dashboard-client.model';
 
 @Component({
   selector: 'app-direct-contract-modal',
@@ -123,7 +123,7 @@ export class DirectContractModalComponent {
     dateOfSale:           [this.todayStr(), [Validators.required]],
     cashPrice:            [0, [Validators.required, Validators.min(1)]],
     downPayment:          [0, [Validators.required, Validators.min(0)]],
-    profitRate:           [20, [Validators.required, Validators.min(0), Validators.max(100)]],
+    profitRate:           [{ value: 0, disabled: true }],
     installmentsCount:    [12, [Validators.required, Validators.min(1), Validators.max(120)]],
     installmentAmount:    [{ value: 0, disabled: true }, [Validators.required]],
     paymentFrequency:     ['Quarterly' as ContractPaymentFrequency, [Validators.required]],
@@ -244,14 +244,24 @@ export class DirectContractModalComponent {
 
     this.contractsService
       .createDirect(payload)
-      .pipe(finalize(() => this.submitting.set(false)))
+      .pipe(
+        switchMap((res) =>
+          this.customersService
+            .getClient(Number(raw.clientId))
+            .pipe(
+              catchError(() => of(null)),
+              switchMap((fullClient) => {
+                this.toast.success('تم إنشاء العقد المباشر بنجاح');
+                const slipData = this.buildPrintData(raw, validItems, res, fullClient);
+                this.pendingPrintData.set(slipData);
+                this.created.emit(res);
+                return of(null);
+              }),
+            ),
+        ),
+        finalize(() => this.submitting.set(false)),
+      )
       .subscribe({
-        next: (res) => {
-          this.toast.success('تم إنشاء العقد المباشر بنجاح');
-          const slipData = this.buildPrintData(raw, validItems, res);
-          this.pendingPrintData.set(slipData);
-          this.created.emit(res);
-        },
         error: (err: ApiError) => {
           this.serverError.set(err.message || 'تعذّر إنشاء العقد');
         },
@@ -318,7 +328,7 @@ export class DirectContractModalComponent {
       dateOfSale:           this.todayStr(),
       cashPrice:            0,
       downPayment:          0,
-      profitRate:           20,
+      profitRate:           0,
       installmentsCount:    12,
       installmentAmount:    0,
       paymentFrequency:     'Quarterly',
@@ -348,9 +358,10 @@ export class DirectContractModalComponent {
     raw: ReturnType<typeof this.form.getRawValue>,
     items: DirectContractItemPayload[],
     res: CreatedDirectContract,
+    fullClient: CreatedClient | null,
   ): ContractSlipData {
-    const selectedClient = this.clients().find((c) => c.id === Number(raw.clientId));
-    const selectedRep    = this.representatives().find((r) => r.id === Number(raw.representativeId));
+    const listClient  = this.clients().find((c) => c.id === Number(raw.clientId));
+    const selectedRep = this.representatives().find((r) => r.id === Number(raw.representativeId));
 
     const cashPrice      = Number(raw.cashPrice);
     const downPayment    = Number(raw.downPayment);
@@ -363,11 +374,14 @@ export class DirectContractModalComponent {
     return {
       contractId:           res.id,
       dateOfSale:           raw.dateOfSale,
-      clientName:           selectedClient?.fullName    ?? '',
-      clientPhone:          selectedClient?.phoneNumber  ?? '',
-      clientAddress:        selectedClient?.address      ?? null,
-      repName:              selectedRep?.fullName         ?? null,
-      repPhone:             selectedRep?.phoneNumber      ?? null,
+      clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
+      clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',
+      clientCode:           fullClient?.clientCode  ?? null,
+      clientAddress:        fullClient?.address     ?? listClient?.address     ?? null,
+      clientRegion:         fullClient?.region      ?? null,
+      clientOccupation:     fullClient?.occupation  ?? null,
+      repName:              selectedRep?.fullName   ?? null,
+      repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         items.map((i) => ({ name: i.productName, quantity: i.quantity })),
       totalAmount:          Math.round(totalAmount),
       downPayment,

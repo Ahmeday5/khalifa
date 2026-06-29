@@ -17,7 +17,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { forkJoin, finalize, of, catchError } from 'rxjs';
+import { forkJoin, finalize, of, catchError, switchMap } from 'rxjs';
 
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -51,7 +51,7 @@ import {
 import { ContractDetails } from '../../models/client-statement.model';
 import { Product } from '../../../products/models/product.model';
 
-import { DashboardClient } from '../../models/dashboard-client.model';
+import { CreatedClient, DashboardClient } from '../../models/dashboard-client.model';
 import { LookupItem } from '../../../../core/models/lookup.model';
 
 @Component({
@@ -505,13 +505,23 @@ export class ContractNewComponent implements OnInit {
 
     this.contractsService
       .create(sharedFields)
-      .pipe(finalize(() => this.isSaving.set(false)))
+      .pipe(
+        switchMap((created) =>
+          this.customersService
+            .getClient(Number(raw.clientId))
+            .pipe(
+              catchError(() => of(null)),
+              switchMap((fullClient) => {
+                this.toast.success('تم إنشاء العقد بنجاح');
+                const printData = this.buildPrintData(raw, created.id, sharedFields.items, fullClient);
+                this.pendingPrintData.set(printData);
+                return of(null);
+              }),
+            ),
+        ),
+        finalize(() => this.isSaving.set(false)),
+      )
       .subscribe({
-        next: (created) => {
-          this.toast.success('تم إنشاء العقد بنجاح');
-          const printData = this.buildPrintData(raw, created.id, sharedFields.items);
-          this.pendingPrintData.set(printData);
-        },
         error: (err: ApiError) => {
           this.toast.error(apiErrorToMessage(err, 'فشل في إنشاء العقد'));
         },
@@ -568,8 +578,10 @@ export class ContractNewComponent implements OnInit {
     raw: ReturnType<typeof this.form.getRawValue>,
     contractId: number,
     items: ContractItemFormState[],
+    fullClient: CreatedClient | null,
   ): ContractSlipData {
-    const selectedClient = this.clients().find((c) => c.id === Number(raw.clientId));
+    // Prefer full client record (from GET /clients/{id}); fall back to list entry
+    const listClient     = this.clients().find((c) => c.id === Number(raw.clientId));
     const selectedRep    = this.representatives().find((r) => r.id === Number(raw.representativeId)) ?? null;
 
     const productLines = items
@@ -590,11 +602,14 @@ export class ContractNewComponent implements OnInit {
     return {
       contractId,
       dateOfSale:           raw.dateOfSale,
-      clientName:           selectedClient?.fullName   ?? '',
-      clientPhone:          selectedClient?.phoneNumber ?? '',
-      clientAddress:        selectedClient?.address     ?? null,
-      repName:              selectedRep?.fullName         ?? null,
-      repPhone:             selectedRep?.phoneNumber      ?? null,
+      clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
+      clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',
+      clientCode:           fullClient?.clientCode  ?? null,
+      clientAddress:        fullClient?.address     ?? listClient?.address     ?? null,
+      clientRegion:         fullClient?.region      ?? null,
+      clientOccupation:     fullClient?.occupation  ?? null,
+      repName:              selectedRep?.fullName   ?? null,
+      repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         productLines.length ? productLines : [{ name: 'منتج', quantity: 1 }],
       totalAmount:          Math.round(totalAmount),
       downPayment,

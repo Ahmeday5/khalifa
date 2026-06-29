@@ -10,6 +10,9 @@ import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
 import { CustomersService } from '../../services/customers.service';
 import { InstallmentsService } from '../../services/installments.service';
 import { ContractsService } from '../../../contracts/services/contracts.service';
@@ -22,9 +25,7 @@ import {
   ContractInstallmentStatus,
   PayInstallmentPayload,
 } from '../../models/client-statement.model';
-import {
-  DashboardClient,
-} from '../../models/dashboard-client.model';
+import { DashboardClient } from '../../models/dashboard-client.model';
 import { LookupItem } from '../../../../core/models/lookup.model';
 import {
   BadgeComponent,
@@ -102,8 +103,8 @@ export class StatementComponent {
   protected readonly clientsLoading = signal(false);
   protected readonly selectedClientId = signal<number | null>(null);
 
-  protected readonly selectedClient = computed(() =>
-    this.clients().find((c) => c.id === this.selectedClientId()) ?? null,
+  protected readonly selectedClient = computed(
+    () => this.clients().find((c) => c.id === this.selectedClientId()) ?? null,
   );
 
   /** Client list shaped for the searchable select (name + phone search). */
@@ -131,8 +132,6 @@ export class StatementComponent {
 
   // ── return-contract modal ─────────────────────────────────────────
   protected readonly returnContractOpen = signal(false);
-
-  /** Tracks which row is loading its details for the inline return action. */
   protected readonly returnLoadingId = signal<number | null>(null);
 
   // ── payment modal ──────────────────────────────────────────────────
@@ -174,9 +173,7 @@ export class StatementComponent {
     // (covers cross-tab events as well).
     onInvalidate(this.cache, 'contract', () => this.refreshAfterMutation());
     onInvalidate(this.cache, 'payment', () => this.refreshAfterMutation());
-    onInvalidate(this.cache, 'installment', () =>
-      this.refreshAfterMutation(),
-    );
+    onInvalidate(this.cache, 'installment', () => this.refreshAfterMutation());
   }
 
   // ─────────── loaders ───────────
@@ -280,31 +277,98 @@ export class StatementComponent {
     ).subscribe({
       next: (rows) => {
         this.isPrinting.set(false);
-        const totalSale = rows.reduce((s, r) => s + (r.totalContractAmount ?? 0), 0);
+        const totalSale = rows.reduce(
+          (s, r) => s + (r.totalContractAmount ?? 0),
+          0,
+        );
         const totalPaid = rows.reduce((s, r) => s + (r.totalPaid ?? 0), 0);
-        const totalRemaining = rows.reduce((s, r) => s + (r.remainingAmount ?? 0), 0);
+        const totalRemaining = rows.reduce(
+          (s, r) => s + (r.remainingAmount ?? 0),
+          0,
+        );
 
         this.printer.print<ClientContractRow>({
           title: 'كشف حساب العميل',
           subtitle: client.fullName,
           meta: [
             { label: 'العميل', value: client.fullName },
-            ...(client.phoneNumber ? [{ label: 'الهاتف', value: client.phoneNumber }] : []),
+            ...(client.phoneNumber
+              ? [{ label: 'الهاتف', value: client.phoneNumber }]
+              : []),
             { label: 'عدد العقود', value: String(rows.length) },
           ],
           orientation: 'landscape',
           columns: [
-            { key: 'id',                  header: 'العقد',         align: 'center', width: '52px', format: (v) => `#${v}` },
-            { key: 'items',               header: 'الأصناف',        align: 'start',  bold: true,  format: (v) => this.itemsLabel(v as ClientContractListItem[]) },
-            { key: 'quantity',            header: 'الكمية',         align: 'center', format: 'number' },
-            { key: 'dateOfSale',          header: 'تاريخ البيع',   align: 'center', format: 'shortDate' },
-            { key: 'cashPrice',           header: 'سعر النقد',     align: 'end',    format: 'currency' },
-            { key: 'downPayment',         header: 'المقدم',         align: 'end',    format: 'currency' },
-            { key: 'installmentsCount',   header: 'عدد الأقساط',    align: 'center', format: 'number' },
-            { key: 'installmentAmount',   header: 'قيمة القسط',     align: 'end',    format: 'currency' },
-            { key: 'totalContractAmount', header: 'إجمالي العقد',  align: 'end',    format: 'currency', bold: true },
-            { key: 'totalPaid',           header: 'المدفوع',        align: 'end',    format: 'currency' },
-            { key: 'remainingAmount',     header: 'المتبقي',        align: 'end',    format: 'currency', bold: true },
+            {
+              key: 'id',
+              header: 'العقد',
+              align: 'center',
+              width: '52px',
+              format: (v) => `#${v}`,
+            },
+            {
+              key: 'items',
+              header: 'الأصناف',
+              align: 'start',
+              bold: true,
+              format: (v) => this.itemsLabel(v as ClientContractListItem[]),
+            },
+            {
+              key: 'quantity',
+              header: 'الكمية',
+              align: 'center',
+              format: 'number',
+            },
+            {
+              key: 'dateOfSale',
+              header: 'تاريخ البيع',
+              align: 'center',
+              format: 'shortDate',
+            },
+            {
+              key: 'cashPrice',
+              header: 'سعر النقد',
+              align: 'end',
+              format: 'currency',
+            },
+            {
+              key: 'downPayment',
+              header: 'المقدم',
+              align: 'end',
+              format: 'currency',
+            },
+            {
+              key: 'installmentsCount',
+              header: 'عدد الأقساط',
+              align: 'center',
+              format: 'number',
+            },
+            {
+              key: 'installmentAmount',
+              header: 'قيمة القسط',
+              align: 'end',
+              format: 'currency',
+            },
+            {
+              key: 'totalContractAmount',
+              header: 'إجمالي العقد',
+              align: 'end',
+              format: 'currency',
+              bold: true,
+            },
+            {
+              key: 'totalPaid',
+              header: 'المدفوع',
+              align: 'end',
+              format: 'currency',
+            },
+            {
+              key: 'remainingAmount',
+              header: 'المتبقي',
+              align: 'end',
+              format: 'currency',
+              bold: true,
+            },
             {
               key: 'status',
               header: 'الحالة',
@@ -372,8 +436,11 @@ export class StatementComponent {
     if (this.printLoadingId() === row.id) return;
     this.printLoadingId.set(row.id);
 
-    this.contractsService.refreshDetails(row.id).subscribe({
-      next: (d) => {
+    forkJoin({
+      details:    this.contractsService.refreshDetails(row.id),
+      fullClient: this.customersService.getClient(this.selectedClientId()!).pipe(catchError(() => of(null))),
+    }).subscribe({
+      next: ({ details: d, fullClient }) => {
         this.printLoadingId.set(null);
 
         const schedule: InstallmentSlipRow[] = d.installments.map((inst) => ({
@@ -382,28 +449,23 @@ export class StatementComponent {
           amount:   inst.dueAmount,
         }));
 
-        const cashPrice    = d.contract.cashPrice;
-        const downPayment  = d.contract.downPayment;
-        const profitRate   = d.contract.profitRate;
-        const afterDown    = Math.max(0, cashPrice - downPayment);
-        const totalAmount  = afterDown * (1 + profitRate / 100);
+        const afterDown   = Math.max(0, d.contract.cashPrice - d.contract.downPayment);
+        const totalAmount = afterDown * (1 + d.contract.profitRate / 100);
 
         const slipData: ContractSlipData = {
           contractId:           d.contract.id,
           dateOfSale:           d.contract.dateOfSale,
-          clientName:           d.client.fullName,
-          clientPhone:          d.client.phoneNumber,
-          clientAddress:        d.client.address ?? null,
-          clientRegion:         null,
-          clientOccupation:     null,
-          repName:              d.representative?.fullName  ?? null,
+          clientName:           fullClient?.fullName    ?? d.client.fullName,
+          clientPhone:          fullClient?.phoneNumber ?? d.client.phoneNumber,
+          clientCode:           fullClient?.clientCode  ?? null,
+          clientAddress:        fullClient?.address     ?? d.client.address ?? null,
+          clientRegion:         fullClient?.region      ?? null,
+          clientOccupation:     fullClient?.occupation  ?? null,
+          repName:              d.representative?.fullName    ?? null,
           repPhone:             d.representative?.phoneNumber ?? null,
-          productLines:         d.contract.items.map((i) => ({
-            name:     i.productName,
-            quantity: i.quantity,
-          })),
+          productLines:         d.contract.items.map((i) => ({ name: i.productName, quantity: i.quantity })),
           totalAmount:          Math.round(totalAmount),
-          downPayment:          downPayment,
+          downPayment:          d.contract.downPayment,
           installmentAmount:    d.contract.installmentAmount,
           installmentsCount:    d.contract.installmentsCount,
           firstInstallmentDate: d.contract.firstInstallmentDate,
@@ -469,7 +531,8 @@ export class StatementComponent {
   protected openPayment(): void {
     const d = this.details();
     if (!d) return;
-    const suggested = d.nextInstallment?.amount ?? d.summary.totalRemaining ?? 0;
+    const suggested =
+      d.nextInstallment?.amount ?? d.summary.totalRemaining ?? 0;
     const defaultTreasury = this.treasuries()[0]?.id ?? null;
     this.payForm.set({
       amount: Math.round(suggested * 100) / 100,
@@ -553,7 +616,9 @@ export class StatementComponent {
     return map[freq] ?? freq;
   }
 
-  protected itemsLabel(items: ClientContractListItem[] | null | undefined): string {
+  protected itemsLabel(
+    items: ClientContractListItem[] | null | undefined,
+  ): string {
     if (!items?.length) return '—';
     return items.map((i) => `${i.productName} (${i.quantity})`).join(' / ');
   }

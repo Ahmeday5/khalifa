@@ -9,6 +9,7 @@ export interface ContractSlipData {
   // Client
   clientName:          string;
   clientPhone:         string;
+  clientCode?:         string | null;
   clientAddress?:      string | null;
   clientRegion?:       string | null;
   clientOccupation?:   string | null;
@@ -99,7 +100,7 @@ export class ContractSlipsPrintService {
     const productText    = data.productLines
       .map(p => p.quantity > 1 ? `عدد ${p.quantity} ${esc(p.name)}` : esc(p.name))
       .join(' / ') || '—';
-    const region         = esc(data.clientRegion ?? data.clientAddress ?? '—');
+    const region         = esc(data.clientRegion ?? '—');
 
     return `
 <div class="slip">
@@ -123,7 +124,7 @@ export class ContractSlipsPrintService {
     <div class="hdr-meta">
       <div class="meta-row">
         <span class="meta-lbl">الكود</span>
-        <span class="meta-val">${esc(String(data.contractId))}</span>
+        <span class="meta-val">${esc(data.clientCode ?? String(data.contractId))}</span>
       </div>
       <div class="meta-row">
         <span class="meta-lbl">المنطقة</span>
@@ -168,9 +169,9 @@ export class ContractSlipsPrintService {
 
     <tr>
       <td class="lbl-cell">العمل</td>
-      <td class="val-cell">${esc(data.clientOccupation ?? '—')}</td>
+      <td class="val-cell">${esc(data.clientAddress ?? '—')}</td>
       <td class="lbl-cell">الوظيفة</td>
-      <td class="val-cell">—</td>
+      <td class="val-cell">${esc(data.clientOccupation ?? '—')}</td>
     </tr>
 
     <tr class="row-inst">

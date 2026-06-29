@@ -1,379 +1,261 @@
-<app-modal
-  [open]="open()"
-  [title]="pendingPrintData() ? 'تم حفظ العقد بنجاح!' : 'عقد مباشر جديد'"
-  size="lg"
-  [closeOnBackdrop]="!submitting() && !pendingPrintData()"
-  [closeOnEsc]="!submitting() && !pendingPrintData()"
-  (closed)="pendingPrintData() ? null : close()"
->
+<app-modal [open]="open()" [title]="pendingPrintData() ? 'تم حفظ العقد بنجاح!' : 'عقد مباشر جديد'" size="lg"
+  [closeOnBackdrop]="!submitting() && !pendingPrintData()" [closeOnEsc]="!submitting() && !pendingPrintData()"
+  (closed)="pendingPrintData() ? null : close()">
   <!-- ══ Print confirmation screen ══ -->
   @if (pendingPrintData(); as printData) {
-    <div class="dcm-print-confirm">
-      <div class="dcm-print-icon">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.5"
-             stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 6 2 18 2 18 9"/>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-      </div>
-      <p class="dcm-print-sub">
-        تم إنشاء العقد لـ <strong>{{ printData.clientName }}</strong>
-        بـ <strong>{{ printData.installmentsCount }}</strong> قسط.
-        <br>هل تريد طباعة إيصالات الأقساط الآن؟
-      </p>
-      <div class="dcm-print-note">
-        سيتم فتح <strong>{{ printData.installmentsCount }} ورقة</strong> للطباعة —
-        كل ورقة تحتوي على بيانات قسط واحد بتصميم الإيصال الرسمي.
-      </div>
+  <div class="dcm-print-confirm">
+    <div class="dcm-print-icon">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+      </svg>
     </div>
+    <p class="dcm-print-sub">
+      تم إنشاء العقد لـ <strong>{{ printData.clientName }}</strong>
+      بـ <strong>{{ printData.installmentsCount }}</strong> قسط.
+      <br>هل تريد طباعة إيصالات الأقساط الآن؟
+    </p>
+    <div class="dcm-print-note">
+      سيتم فتح <strong>{{ printData.installmentsCount }} ورقة</strong> للطباعة —
+      كل ورقة تحتوي على بيانات قسط واحد بتصميم الإيصال الرسمي.
+    </div>
+  </div>
   }
 
   @if (pendingPrintData(); as printData) {
-    <ng-container modal-footer>
-      <button type="button" class="btn dcm-skip-btn" (click)="skipPrintAndClose()">
-        تخطي الطباعة
-      </button>
-      <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
-              (click)="printAndClose()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6 9 6 2 18 2 18 9"/>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-        طباعة الإيصالات ({{ printData.installmentsCount }} ورقة)
-      </button>
-    </ng-container>
+  <ng-container modal-footer>
+    <button type="button" class="btn dcm-skip-btn" (click)="skipPrintAndClose()">
+      تخطي الطباعة
+    </button>
+    <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2" (click)="printAndClose()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 6 2 18 2 18 9" />
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+        <rect x="6" y="14" width="12" height="8" />
+      </svg>
+      طباعة الإيصالات ({{ printData.installmentsCount }} ورقة)
+    </button>
+  </ng-container>
   }
 
   @if (!pendingPrintData() && loadingLookups()) {
-    <div class="dcm-loading-lookups">
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-      <span>جاري تحميل البيانات...</span>
-    </div>
+  <div class="dcm-loading-lookups">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>جاري تحميل البيانات...</span>
+  </div>
   } @else if (!pendingPrintData()) {
-    <form
-      [formGroup]="form"
-      (ngSubmit)="onSubmit()"
-      novalidate
-      autocomplete="off"
-    >
-      <div class="row g-3">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
+    <div class="row g-3">
 
-        <!-- ── Client ── -->
-        <div class="col-12 col-md-6">
-          <label class="form-label">العميل <span class="text-danger">*</span></label>
-          <app-searchable-select
-            formControlName="clientId"
-            [options]="clientOptions()"
-            placeholder="اختر العميل"
-            searchPlaceholder="ابحث بالاسم أو الهاتف…"
-          />
-          <app-form-error [control]="form.controls.clientId" label="العميل" />
-        </div>
-
-        <!-- ── Date of sale ── -->
-        <div class="col-12 col-md-3">
-          <label class="form-label">تاريخ البيع <span class="text-danger">*</span></label>
-          <input
-            type="date"
-            class="form-control"
-            formControlName="dateOfSale"
-            dir="ltr"
-            [class.is-invalid]="isInvalid('dateOfSale')"
-          />
-          <app-form-error [control]="form.controls.dateOfSale" label="تاريخ البيع" />
-        </div>
-
-        <!-- ── Representative ── -->
-        <div class="col-12 col-md-3">
-          <label class="form-label">المندوب <span class="dcm-optional">(اختياري)</span></label>
-          <app-searchable-select
-            formControlName="representativeId"
-            [options]="representativeOptions()"
-            placeholder="اختر المندوب"
-            searchPlaceholder="ابحث باسم المندوب أو هاتفه…"
-          />
-        </div>
-
+      <!-- ── Client ── -->
+      <div class="col-12 col-md-6">
+        <label class="form-label">العميل <span class="text-danger">*</span></label>
+        <app-searchable-select formControlName="clientId" [options]="clientOptions()" placeholder="اختر العميل"
+          searchPlaceholder="ابحث بالاسم أو الهاتف…" />
+        <app-form-error [control]="form.controls.clientId" label="العميل" />
       </div>
 
-      <!-- ══ Items section ══ -->
-      <div class="dcm-items-section">
-        <div class="dcm-items-header">
-          <span class="dcm-items-title">الأصناف</span>
-          <button type="button" class="btn btn-sm btn-bl" (click)="addItem()">+ إضافة صنف</button>
-        </div>
-
-        <div formArrayName="items">
-          @for (grp of itemGroups; track $index; let i = $index) {
-            <div class="dcm-item-row" [formGroupName]="i">
-
-              <!-- Product name -->
-              <div class="dcm-item-name">
-                <label class="form-label">اسم المنتج <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  formControlName="productName"
-                  placeholder="مثال: شاشة سامسونج 55 بوصة"
-                  autocomplete="off"
-                  [class.is-invalid]="isItemInvalid(i, 'productName')"
-                />
-                @if (isItemInvalid(i, 'productName')) {
-                  <div class="invalid-feedback">اسم المنتج مطلوب</div>
-                }
-              </div>
-
-              <!-- Quantity -->
-              <div class="dcm-item-qty">
-                <label class="form-label">الكمية <span class="text-danger">*</span></label>
-                <input
-                  type="number"
-                  class="form-control"
-                  formControlName="quantity"
-                  min="1"
-                  step="1"
-                  dir="ltr"
-                  [class.is-invalid]="isItemInvalid(i, 'quantity')"
-                />
-                @if (isItemInvalid(i, 'quantity')) {
-                  <div class="invalid-feedback">كمية صحيحة مطلوبة</div>
-                }
-              </div>
-
-              <!-- Unit purchase price -->
-              <div class="dcm-item-price">
-                <label class="form-label">سعر التكلفة للوحدة</label>
-                <input
-                  type="number"
-                  class="form-control"
-                  formControlName="unitPurchasePrice"
-                  min="0"
-                  step="0.01"
-                  dir="ltr"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <!-- Remove button -->
-              <div class="dcm-item-remove">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-re"
-                  [disabled]="itemsArray.length <= 1"
-                  title="حذف الصنف"
-                  (click)="removeItem(i)"
-                >×</button>
-              </div>
-
-            </div>
-          }
-        </div>
+      <!-- ── Date of sale ── -->
+      <div class="col-12 col-md-3">
+        <label class="form-label">تاريخ البيع <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" formControlName="dateOfSale" dir="ltr"
+          [class.is-invalid]="isInvalid('dateOfSale')" />
+        <app-form-error [control]="form.controls.dateOfSale" label="تاريخ البيع" />
       </div>
 
-      <div class="row g-3 mt-1">
+      <!-- ── Representative ── -->
+      <div class="col-12 col-md-3">
+        <label class="form-label">المندوب <span class="dcm-optional">(اختياري)</span></label>
+        <app-searchable-select formControlName="representativeId" [options]="representativeOptions()"
+          placeholder="اختر المندوب" searchPlaceholder="ابحث باسم المندوب أو هاتفه…" />
+      </div>
 
-        <!-- ── Cash price ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label">سعر البيع الكاش <span class="text-danger">*</span></label>
-          <input
-            type="number"
-            class="form-control"
-            formControlName="cashPrice"
-            min="1"
-            step="0.01"
-            dir="ltr"
-            placeholder="0.00"
-            [class.is-invalid]="isInvalid('cashPrice')"
-          />
-          <app-form-error [control]="form.controls.cashPrice" label="سعر البيع الكاش" />
-        </div>
+    </div>
 
-        <!-- ── Down payment ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label">المقدم</label>
-          <input
-            type="number"
-            class="form-control"
-            formControlName="downPayment"
-            min="0"
-            step="0.01"
-            dir="ltr"
-            placeholder="0.00"
-            [class.is-invalid]="isInvalid('downPayment')"
-          />
-          <app-form-error [control]="form.controls.downPayment" label="المقدم" />
-        </div>
+    <!-- ══ Items section ══ -->
+    <div class="dcm-items-section">
+      <div class="dcm-items-header">
+        <span class="dcm-items-title">الأصناف</span>
+        <button type="button" class="btn btn-sm btn-bl" (click)="addItem()">+ إضافة صنف</button>
+      </div>
 
-        <!-- ── Profit rate ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label">نسبة الربح % <span class="text-danger">*</span></label>
-          <input
-            type="number"
-            class="form-control"
-            formControlName="profitRate"
-            min="0"
-            max="100"
-            step="0.1"
-            dir="ltr"
-            placeholder="20"
-            [class.is-invalid]="isInvalid('profitRate')"
-          />
-          <app-form-error [control]="form.controls.profitRate" label="نسبة الربح" />
-        </div>
+      <div formArrayName="items">
+        @for (grp of itemGroups; track $index; let i = $index) {
+        <div class="dcm-item-row" [formGroupName]="i">
 
-        <!-- ── Installments count ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label">عدد الأقساط <span class="text-danger">*</span></label>
-          <input
-            type="number"
-            class="form-control"
-            formControlName="installmentsCount"
-            min="1"
-            max="120"
-            step="1"
-            dir="ltr"
-            placeholder="12"
-            [class.is-invalid]="isInvalid('installmentsCount')"
-          />
-          <app-form-error [control]="form.controls.installmentsCount" label="عدد الأقساط" />
-        </div>
-
-        <!-- ── Installment amount (calculated) ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label d-flex justify-content-between">
-            <span>قيمة القسط</span>
-            <span class="dcm-calc-badge">محسوب تلقائياً</span>
-          </label>
-          <input
-            type="number"
-            class="form-control dcm-readonly-field"
-            formControlName="installmentAmount"
-            dir="ltr"
-            readonly
-            tabindex="-1"
-          />
-        </div>
-
-        <!-- ── Payment frequency ── -->
-        <div class="col-6 col-md-3">
-          <label class="form-label">طريقة التقسيط <span class="text-danger">*</span></label>
-          <select
-            class="form-select"
-            formControlName="paymentFrequency"
-            [class.is-invalid]="isInvalid('paymentFrequency')"
-          >
-            @for (f of frequencies; track f.value) {
-              <option [value]="f.value">{{ f.label }}</option>
+          <!-- Product name -->
+          <div class="dcm-item-name">
+            <label class="form-label">اسم المنتج <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" formControlName="productName"
+              placeholder="مثال: شاشة سامسونج 55 بوصة" autocomplete="off"
+              [class.is-invalid]="isItemInvalid(i, 'productName')" />
+            @if (isItemInvalid(i, 'productName')) {
+            <div class="invalid-feedback">اسم المنتج مطلوب</div>
             }
-          </select>
-          <app-form-error [control]="form.controls.paymentFrequency" label="طريقة التقسيط" />
-        </div>
-
-        <!-- ── First installment date ── -->
-        <div class="col-12 col-md-3">
-          <label class="form-label">تاريخ أول قسط <span class="text-danger">*</span></label>
-          <input
-            type="date"
-            class="form-control"
-            formControlName="firstInstallmentDate"
-            dir="ltr"
-            [class.is-invalid]="isInvalid('firstInstallmentDate')"
-          />
-          <app-form-error [control]="form.controls.firstInstallmentDate" label="تاريخ أول قسط" />
-        </div>
-
-        <!-- ── Treasury ── -->
-        <div class="col-12 col-md-3">
-          <label class="form-label">الخزينة <span class="text-danger">*</span></label>
-          <app-searchable-select
-            formControlName="treasuryId"
-            [options]="treasuryOptions()"
-            placeholder="اختر الخزينة"
-            searchPlaceholder="ابحث باسم الخزينة…"
-          />
-          <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
-        </div>
-
-        <!-- ── Notes ── -->
-        <div class="col-12">
-          <label class="form-label">ملاحظات <span class="dcm-optional">(اختياري)</span></label>
-          <input
-            type="text"
-            class="form-control"
-            formControlName="notes"
-            autocomplete="off"
-            placeholder="(اختياري)"
-          />
-        </div>
-      </div>
-
-      <!-- ── Financial summary ── -->
-      @if (summary().cashPrice > 0) {
-        <div class="dcm-summary">
-          <div class="dcm-summary-title">ملخص العقد</div>
-          <div class="dcm-summary-grid">
-            <div class="dcm-summary-row">
-              <span>إجمالي سعر البيع</span>
-              <span class="fw-600">{{ summary().cashPrice | currencyAr: true }}</span>
-            </div>
-            <div class="dcm-summary-row">
-              <span>المقدم</span>
-              <span>{{ summary().downPayment | currencyAr: true }}</span>
-            </div>
-            <div class="dcm-summary-row">
-              <span>الباقي بعد المقدم</span>
-              <span>{{ summary().afterDown | currencyAr: true }}</span>
-            </div>
-            <div class="dcm-summary-row">
-              <span>الربح ({{ form.controls.profitRate.value }}%)</span>
-              <span>{{ summary().profitAmount | currencyAr: true }}</span>
-            </div>
-            <div class="dcm-summary-row dcm-summary-total">
-              <span>إجمالي العقد</span>
-              <span class="fw-700">{{ summary().totalAmount | currencyAr: true }}</span>
-            </div>
-            <div class="dcm-summary-row dcm-summary-inst">
-              <span>قيمة القسط ({{ summary().count }} قسط)</span>
-              <span class="fw-700">{{ summary().installmentAmt | currencyAr: true }}</span>
-            </div>
           </div>
-        </div>
-      }
-    </form>
 
-    <!-- ── Server error ── -->
-    @if (serverError(); as msg) {
-      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
-        {{ msg }}
+          <!-- Quantity -->
+          <div class="dcm-item-qty">
+            <label class="form-label">الكمية <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" formControlName="quantity" min="1" step="1" dir="ltr"
+              [class.is-invalid]="isItemInvalid(i, 'quantity')" />
+            @if (isItemInvalid(i, 'quantity')) {
+            <div class="invalid-feedback">كمية صحيحة مطلوبة</div>
+            }
+          </div>
+
+          <!-- Unit purchase price -->
+          <div class="dcm-item-price">
+            <label class="form-label">سعر التكلفة للوحدة</label>
+            <input type="number" class="form-control" formControlName="unitPurchasePrice" min="0" step="0.01" dir="ltr"
+              placeholder="0.00" />
+          </div>
+
+          <!-- Remove button -->
+          <div class="dcm-item-remove">
+            <button type="button" class="btn btn-sm btn-re" [disabled]="itemsArray.length <= 1" title="حذف الصنف"
+              (click)="removeItem(i)">×</button>
+          </div>
+
+        </div>
+        }
       </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+
+      <!-- ── Cash price ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label">سعر البيع الكاش <span class="text-danger">*</span></label>
+        <input type="number" class="form-control" formControlName="cashPrice" min="1" step="0.01" dir="ltr"
+          placeholder="0.00" [class.is-invalid]="isInvalid('cashPrice')" />
+        <app-form-error [control]="form.controls.cashPrice" label="سعر البيع الكاش" />
+      </div>
+
+      <!-- ── Down payment ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label">المقدم</label>
+        <input type="number" class="form-control" formControlName="downPayment" min="0" step="0.01" dir="ltr"
+          placeholder="0.00" [class.is-invalid]="isInvalid('downPayment')" />
+        <app-form-error [control]="form.controls.downPayment" label="المقدم" />
+      </div>
+
+      <!-- ── Profit rate ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label">نسبة الربح %</label>
+        <input type="number" class="form-control" formControlName="profitRate" dir="ltr"
+          placeholder="0" readonly />
+      </div>
+
+      <!-- ── Installments count ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label">عدد الأقساط <span class="text-danger">*</span></label>
+        <input type="number" class="form-control" formControlName="installmentsCount" min="1" max="120" step="1"
+          dir="ltr" placeholder="12" [class.is-invalid]="isInvalid('installmentsCount')" />
+        <app-form-error [control]="form.controls.installmentsCount" label="عدد الأقساط" />
+      </div>
+
+      <!-- ── Installment amount (calculated) ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label d-flex justify-content-between">
+          <span>قيمة القسط</span>
+          <span class="dcm-calc-badge">محسوب تلقائياً</span>
+        </label>
+        <input type="number" class="form-control dcm-readonly-field" formControlName="installmentAmount" dir="ltr"
+          readonly tabindex="-1" />
+      </div>
+
+      <!-- ── Payment frequency ── -->
+      <div class="col-6 col-md-3">
+        <label class="form-label">طريقة التقسيط <span class="text-danger">*</span></label>
+        <select class="form-select" formControlName="paymentFrequency"
+          [class.is-invalid]="isInvalid('paymentFrequency')">
+          @for (f of frequencies; track f.value) {
+          <option [value]="f.value">{{ f.label }}</option>
+          }
+        </select>
+        <app-form-error [control]="form.controls.paymentFrequency" label="طريقة التقسيط" />
+      </div>
+
+      <!-- ── First installment date ── -->
+      <div class="col-12 col-md-3">
+        <label class="form-label">تاريخ أول قسط <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" formControlName="firstInstallmentDate" dir="ltr"
+          [class.is-invalid]="isInvalid('firstInstallmentDate')" />
+        <app-form-error [control]="form.controls.firstInstallmentDate" label="تاريخ أول قسط" />
+      </div>
+
+      <!-- ── Treasury ── -->
+      <div class="col-12 col-md-3">
+        <label class="form-label">الخزينة <span class="text-danger">*</span></label>
+        <app-searchable-select formControlName="treasuryId" [options]="treasuryOptions()" placeholder="اختر الخزينة"
+          searchPlaceholder="ابحث باسم الخزينة…" />
+        <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+      </div>
+
+      <!-- ── Notes ── -->
+      <div class="col-12">
+        <label class="form-label">ملاحظات <span class="dcm-optional">(اختياري)</span></label>
+        <input type="text" class="form-control" formControlName="notes" autocomplete="off" placeholder="(اختياري)" />
+      </div>
+    </div>
+
+    <!-- ── Financial summary ── -->
+    @if (summary().cashPrice > 0) {
+    <div class="dcm-summary">
+      <div class="dcm-summary-title">ملخص العقد</div>
+      <div class="dcm-summary-grid">
+        <div class="dcm-summary-row">
+          <span>إجمالي سعر البيع</span>
+          <span class="fw-600">{{ summary().cashPrice | currencyAr: true }}</span>
+        </div>
+        <div class="dcm-summary-row">
+          <span>المقدم</span>
+          <span>{{ summary().downPayment | currencyAr: true }}</span>
+        </div>
+        <div class="dcm-summary-row">
+          <span>الباقي بعد المقدم</span>
+          <span>{{ summary().afterDown | currencyAr: true }}</span>
+        </div>
+        <div class="dcm-summary-row">
+          <span>الربح ({{ form.controls.profitRate.value }}%)</span>
+          <span>{{ summary().profitAmount | currencyAr: true }}</span>
+        </div>
+        <div class="dcm-summary-row dcm-summary-total">
+          <span>إجمالي العقد</span>
+          <span class="fw-700">{{ summary().totalAmount | currencyAr: true }}</span>
+        </div>
+        <div class="dcm-summary-row dcm-summary-inst">
+          <span>قيمة القسط ({{ summary().count }} قسط)</span>
+          <span class="fw-700">{{ summary().installmentAmt | currencyAr: true }}</span>
+        </div>
+      </div>
+    </div>
     }
+  </form>
+
+  <!-- ── Server error ── -->
+  @if (serverError(); as msg) {
+  <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+    {{ msg }}
+  </div>
+  }
   }
 
   @if (!pendingPrintData()) {
-    <ng-container modal-footer>
-      <button
-        type="button"
-        class="btn"
-        [disabled]="submitting()"
-        (click)="close()"
-      >إلغاء</button>
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">إلغاء</button>
 
-      <button
-        type="button"
-        class="btn btn-bl d-inline-flex align-items-center gap-2"
-        [disabled]="submitting() || loadingLookups()"
-        (click)="onSubmit()"
-      >
-        @if (submitting()) {
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        }
-        <span>{{ submitting() ? 'جاري الحفظ...' : 'حفظ العقد' }}</span>
-      </button>
-    </ng-container>
+    <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || loadingLookups()" (click)="onSubmit()">
+      @if (submitting()) {
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : 'حفظ العقد' }}</span>
+    </button>
+  </ng-container>
   }
 </app-modal>

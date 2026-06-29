@@ -82,6 +82,9 @@ export interface ContractDetailsClient {
   fullName: string;
   phoneNumber: string;
   address: string;
+  clientCode?: string | null;
+  region?: string | null;
+  occupation?: string | null;
 }
 
 export interface ContractDetailsRepresentative {
