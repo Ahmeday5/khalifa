@@ -9,10 +9,93 @@
   display: block;
 }
 
+.login-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  font-size: 12px;
+  color: var(--txt2);
+  margin-bottom: 24px;
+}
+
+/* ── Input with leading icon ── */
+.input-icon-wrap {
+  position: relative;
+
+  .input-icon {
+    position: absolute;
+    inset-inline-start: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--txt3);
+    pointer-events: none;
+    transition: color 0.15s;
+  }
+
+  .form-control {
+    padding-inline-start: 34px !important;
+  }
+
+  ::ng-deep .pw-input {
+    padding-inline-start: 34px !important;
+  }
+
+  &:has(.form-control:focus) .input-icon,
+  &:has(.pw-input:focus) .input-icon {
+    color: var(--bl);
+  }
+}
+
 /* Bootstrap's spinner-border is white-on-button — slim it down so it lines up
    nicely with our smaller-than-default button text. */
 .btn .spinner-border-sm {
   width: 0.95rem;
   height: 0.95rem;
   border-width: 0.14em;
+}
+
+.login-submit {
+  margin-top: 6px;
+  padding: 9px 13px;
+  font-size: 12px;
+  transition: transform 0.12s, box-shadow 0.12s;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(27, 95, 168, 0.25);
+  }
+
+  &:not(:disabled):active {
+    transform: translateY(0);
+  }
+
+  i {
+    font-size: 11px;
+  }
+}
+
+.alert {
+  i {
+    margin-top: 1px;
+  }
+}
+
+form {
+  animation: login-fields-in 0.4s ease-out 0.05s both;
+}
+
+@keyframes login-fields-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

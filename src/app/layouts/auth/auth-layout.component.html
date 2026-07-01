@@ -1,8 +1,65 @@
-<div class="auth-container d-flex align-items-center justify-content-center min-vh-100 p-3">
-  <div class="auth-card">
-    <div class="d-flex align-items-center justify-content-center gap-2 mb-4">
-      <img src="/assets/img/logo.jpeg" alt="logo" width="90" height="90" class="rounded-circle" />
+<div class="auth-shell">
+  <div class="auth-form-col">
+    <div class="auth-form-col-inner">
+      <div class="auth-brand">
+        <img src="/assets/img/logo.jpeg" alt="logo" width="52" height="52" class="rounded-circle" />
+        <span class="auth-brand-name">الخليفة</span>
+      </div>
+
+      <div class="auth-form-card">
+        <router-outlet />
+      </div>
+
+      <p class="auth-footer-note">Developed by TheOneSystem</p>
     </div>
-    <router-outlet />
+  </div>
+
+  <div class="auth-info-col">
+    <div class="auth-info-inner">
+      <div class="auth-info-badge">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>نظام إدارة الأعمال المتكامل</span>
+      </div>
+
+      <h1 class="auth-info-title">لوحة تحكم الخليفة</h1>
+      <p class="auth-info-desc">
+        منصة متكاملة لإدارة العملاء والعقود والمخازن والشؤون المالية، مصممة لتمنحك
+        رؤية دقيقة وسريعة على كل تفاصيل أعمالك من مكان واحد.
+      </p>
+
+      <div class="auth-feature-list">
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <h3>إدارة العملاء والعقود</h3>
+            <p>تتبّع بيانات العملاء، العقود، وسجلات الائتمان بسهولة ودقة.</p>
+          </div>
+        </div>
+
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+          <div>
+            <h3>المخازن والمنتجات</h3>
+            <p>إدارة كاملة للمنتجات، الفئات، الموردين، ومستويات المخزون.</p>
+          </div>
+        </div>
+
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <div>
+            <h3>الفواتير والخزينة</h3>
+            <p>متابعة الفواتير، السندات، والحركات المالية في الوقت الحقيقي.</p>
+          </div>
+        </div>
+
+        <div class="auth-feature">
+          <div class="auth-feature-icon"><i class="fa-solid fa-chart-pie"></i></div>
+          <div>
+            <h3>التقارير والتدقيق</h3>
+            <p>تقارير تحليلية شاملة وسجل تدقيق كامل لكل العمليات.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
