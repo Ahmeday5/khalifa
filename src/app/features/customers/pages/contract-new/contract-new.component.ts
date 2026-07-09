@@ -161,7 +161,7 @@ export class ContractNewComponent implements OnInit {
     ],
 
     installmentsCount: [
-      4,
+      3,
       [Validators.required, Validators.min(1), Validators.max(120)],
     ],
 
@@ -402,6 +402,13 @@ export class ContractNewComponent implements OnInit {
     // When paymentFrequency changes, update cashPrice based on the selected product's price.
     this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
       if (this.prefilling) return;
+
+      this.form.patchValue(
+        { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
+        { emitEvent: false },
+      );
+      this.calculateInstallment();
+
       const productId = Number(this.itemsArray.at(0)?.get('productId')?.value);
       if (!productId) return;
 
@@ -413,6 +420,15 @@ export class ContractNewComponent implements OnInit {
         error: () => { /* operator enters price manually */ },
       });
     });
+  }
+
+  /** Default installments count matching each payment frequency (still editable). */
+  private installmentsCountForFrequency(freq: ContractPaymentFrequency): number {
+    switch (freq) {
+      case 'SemiAnnual': return 6;
+      case 'Annual':     return 12;
+      default:           return 3; // Quarterly
+    }
   }
 
   private calculateInstallment(): void {
@@ -633,7 +649,7 @@ export class ContractNewComponent implements OnInit {
         cashPrice: 0,
         downPayment: 0,
         profitRate: 20,
-        installmentsCount: 4,
+        installmentsCount: 3,
         paymentFrequency: 'Quarterly',
         dateOfSale: this.todayStr(),
         firstInstallmentDate: this.nextQuarterStr(),

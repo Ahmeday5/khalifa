@@ -130,7 +130,7 @@ export class DirectContractModalComponent {
     cashPrice:            [0, [Validators.required, Validators.min(1)]],
     downPayment:          [0, [Validators.required, Validators.min(0)]],
     profitRate:           [{ value: 0, disabled: true }],
-    installmentsCount:    [12, [Validators.required, Validators.min(1), Validators.max(120)]],
+    installmentsCount:    [3, [Validators.required, Validators.min(1), Validators.max(120)]],
     installmentAmount:    [{ value: 0, disabled: true }, [Validators.required]],
     paymentFrequency:     ['Quarterly' as ContractPaymentFrequency, [Validators.required]],
     firstInstallmentDate: [this.nextMonthStr(), [Validators.required]],
@@ -183,6 +183,23 @@ export class DirectContractModalComponent {
 
     // Recalculate installment amount whenever form values change
     this.form.valueChanges.subscribe(() => this.recalculateInstallment());
+
+    // When paymentFrequency changes, default installmentsCount to match (still editable).
+    this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
+      this.form.patchValue(
+        { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
+        { emitEvent: true },
+      );
+    });
+  }
+
+  /** Default installments count matching each payment frequency (still editable). */
+  private installmentsCountForFrequency(freq: ContractPaymentFrequency): number {
+    switch (freq) {
+      case 'SemiAnnual': return 6;
+      case 'Annual':     return 12;
+      default:           return 3; // Quarterly
+    }
   }
 
   // ─────────── items FormArray helpers ───────────
@@ -409,7 +426,7 @@ export class DirectContractModalComponent {
       cashPrice:            0,
       downPayment:          0,
       profitRate:           0,
-      installmentsCount:    12,
+      installmentsCount:    3,
       installmentAmount:    0,
       paymentFrequency:     'Quarterly',
       firstInstallmentDate: this.nextMonthStr(),
