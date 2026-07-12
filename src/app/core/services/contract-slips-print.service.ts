@@ -6,6 +6,8 @@ const COMPANY_CITY   = 'القاهرة - العباسية';
 
 export interface ContractSlipData {
   contractId:          number;
+  /** Contract code — `null`/absent for legacy contracts created before this field existed. */
+  contractCode?:       string | null;
   dateOfSale:          string;
   clientName:          string;
   clientPhone:         string;
@@ -85,10 +87,11 @@ export class ContractSlipsPrintService {
     const productText    = data.productLines
       .map(p => p.quantity > 1 ? `عدد ${p.quantity} ${esc(p.name)}` : esc(p.name))
       .join(' + ') || '—';
-    const region  = esc(data.clientRegion  ?? '—');
-    const code    = esc(data.clientCode    ?? String(data.contractId));
-    const repName = esc(data.repName       ?? '—');
-    const repPhone= esc(data.repPhone      ?? '—');
+    const region      = esc(data.clientRegion  ?? '—');
+    const code        = esc(data.clientCode    ?? String(data.contractId));
+    const contractCode = esc(data.contractCode ?? '—');
+    const repName     = esc(data.repName       ?? '—');
+    const repPhone    = esc(data.repPhone      ?? '—');
 
     return `
 <div class="slip">
@@ -148,6 +151,12 @@ export class ContractSlipsPrintService {
         <span class="dg-v">${region}</span>
         <span class="dg-sep"></span>
         <span class="dg-v">${this.fmtMoney(data.installmentAmount)}</span>
+        <span class="dg-k">كود العقد</span>
+        <span class="dg-sep"></span>
+        <span class="dg-k"></span>
+        <span class="dg-v">${contractCode}</span>
+        <span class="dg-sep"></span>
+        <span class="dg-v"></span>
       </div>
     </div>
 
@@ -518,7 +527,7 @@ html, body {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 2px 1fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   padding: 6px 10px;
   gap: 3px 6px;
   align-content: center;

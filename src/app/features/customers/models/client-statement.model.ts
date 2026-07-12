@@ -15,6 +15,8 @@ export interface ClientContractListItem {
  */
 export interface ClientContractRow {
   id: number;
+  /** Contract code — `null` for contracts created before this field existed. */
+  code: string | null;
   isDirect: boolean;
   items: ClientContractListItem[];
   /** Total quantity across all items. */
@@ -57,6 +59,8 @@ export interface ContractDetailItemRow {
 
 export interface ContractDetailsContract {
   id: number;
+  /** Contract code — `null` for contracts created before this field existed. */
+  code: string | null;
   isDirect: boolean;
   items: ContractDetailItemRow[];
   /** Total quantity across all items. */

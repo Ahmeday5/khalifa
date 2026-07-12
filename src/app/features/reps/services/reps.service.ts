@@ -156,8 +156,6 @@ export class RepsService {
       .pipe(toPaged<CommissionPayoutRow>());
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ writes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
   // ─────────── assigned areas ───────────
 
   /** Areas currently assigned to a representative. Always bypasses cache so the modal never opens on stale state. */

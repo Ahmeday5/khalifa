@@ -88,6 +88,8 @@ export interface CreateContractPayload {
   /** Omit when no representative is attached — do NOT send 0 or null. */
   representativeId?: number;
   notes?: string;
+  /** Contract code — user-entered, unique per contract. Omit when blank. */
+  code?: string;
 }
 
 /** Response shape from `POST /dashboard/contracts`. */
@@ -107,6 +109,8 @@ export interface CreatedContract {
   representativeId: number | null;
   representativeCommission: number;
   notes: string | null;
+  /** Contract code — `null` for contracts created before this field existed. */
+  code: string | null;
 }
 
 /**
@@ -127,6 +131,8 @@ export interface ContractFormState {
   treasuryId: number | null;
   representativeId: number | null;
   notes?: string;
+  /** Contract code — user-entered, unique per contract. */
+  code?: string;
 }
 
 /** Build `POST /dashboard/contracts` body from form state. */
@@ -160,6 +166,9 @@ export function buildCreateContractPayload(
   const trimmedNotes = form.notes?.trim();
   if (trimmedNotes) payload.notes = trimmedNotes;
 
+  const trimmedCode = form.code?.trim();
+  if (trimmedCode) payload.code = trimmedCode;
+
   return payload;
 }
 
@@ -180,6 +189,7 @@ export interface UpdateContractPayload {
   treasuryId: number;
   representativeId?: number;
   notes?: string;
+  code?: string;
 }
 
 /** Form-state shape for the edit page — identical to ContractFormState. */
@@ -228,6 +238,8 @@ export interface CreateDirectContractPayload {
   treasuryId: number;
   representativeId?: number;
   notes?: string;
+  /** Contract code — user-entered, unique per contract. Omit when blank. */
+  code?: string;
 }
 
 /** Response shape from `POST /dashboard/contracts/direct`. */
@@ -247,4 +259,6 @@ export interface CreatedDirectContract {
   representativeId: number | null;
   representativeCommission: number;
   notes: string | null;
+  /** Contract code — `null` for contracts created before this field existed. */
+  code: string | null;
 }

@@ -137,6 +137,7 @@ export class DirectContractModalComponent {
     treasuryId:           this.fb.control<number | null>(null, [Validators.required]),
     representativeId:     this.fb.control<number | null>(null),
     notes:                [''],
+    code:                 [''],
   });
 
   get itemsArray(): FormArray { return this.form.get('items') as FormArray; }
@@ -270,6 +271,7 @@ export class DirectContractModalComponent {
       treasuryId:           Number(raw.treasuryId),
       representativeId:     raw.representativeId ? Number(raw.representativeId) : undefined,
       notes:                raw.notes?.trim() || undefined,
+      code:                 raw.code?.trim() || undefined,
     };
 
     this.serverError.set(null);
@@ -367,6 +369,7 @@ export class DirectContractModalComponent {
           treasuryId:           c.treasuryId,
           representativeId:     d.representative?.id ?? null,
           notes:                c.notes ?? '',
+          code:                 c.code ?? '',
         }, { emitEvent: false });
 
         this.serverError.set(null);
@@ -433,6 +436,7 @@ export class DirectContractModalComponent {
       treasuryId:           null,
       representativeId:     null,
       notes:                '',
+      code:                 '',
     });
     this.serverError.set(null);
   }
@@ -470,6 +474,7 @@ export class DirectContractModalComponent {
 
     return {
       contractId:           res.id,
+      contractCode:         raw.code?.trim() || null,
       dateOfSale:           raw.dateOfSale,
       clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
       clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',

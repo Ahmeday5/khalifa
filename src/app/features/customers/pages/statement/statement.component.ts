@@ -460,6 +460,7 @@ export class StatementComponent {
 
         const slipData: ContractSlipData = {
           contractId:           d.contract.id,
+          contractCode:         d.contract.code ?? null,
           dateOfSale:           d.contract.dateOfSale,
           clientName:           fullClient?.fullName    ?? d.client.fullName,
           clientPhone:          fullClient?.phoneNumber ?? d.client.phoneNumber,

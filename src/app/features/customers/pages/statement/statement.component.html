@@ -61,6 +61,7 @@
       <thead>
         <tr>
           <th>#</th>
+          <th>كود العقد</th>
           <th>النوع</th>
           <th>المنتج</th>
           <th>الكمية</th>
@@ -83,16 +84,17 @@
       <tbody>
         @if (contractsLoading()) {
         <tr>
-          <td colspan="18" class="st-loading">جارٍ التحميل...</td>
+          <td colspan="19" class="st-loading">جارٍ التحميل...</td>
         </tr>
         } @else if (contracts().length === 0) {
         <tr>
-          <td colspan="18" class="st-empty">لا توجد عقود لهذا العميل بعد</td>
+          <td colspan="19" class="st-empty">لا توجد عقود لهذا العميل بعد</td>
         </tr>
         } @else {
         @for (row of contracts(); track row.id) {
         <tr>
           <td class="st-id">#{{ row.id }}</td>
+          <td>{{ row.code || '—' }}</td>
           <td>
             <span class="st-type-badge" [class.st-type-direct]="row.isDirect" [class.st-type-regular]="!row.isDirect">
               {{ row.isDirect ? 'مباشر' : 'عادي' }}
@@ -224,7 +226,7 @@
       <div class="st-d-block-v">
         <app-badge [text]="contractStatusLabel(d.contract.status)" [type]="contractStatusBadge(d.contract.status)" />
       </div>
-      <div class="st-d-block-s">#{{ d.contract.id }}</div>
+      <div class="st-d-block-s">#{{ d.contract.id }} — كود: {{ d.contract.code || '—' }}</div>
     </div>
   </div>
 

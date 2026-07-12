@@ -179,6 +179,8 @@ export class ContractNewComponent implements OnInit {
     representativeId: [null as number | null],
 
     notes: [''],
+
+    code: [''],
   });
 
   get itemsArray(): FormArray {
@@ -322,6 +324,7 @@ export class ContractNewComponent implements OnInit {
       firstInstallmentDate: d.contract.firstInstallmentDate.split('T')[0],
       representativeId: d.representative?.id ?? null,
       notes: d.contract.notes ?? '',
+      code: d.contract.code ?? '',
     });
 
     this.prefilling = false;
@@ -500,6 +503,7 @@ export class ContractNewComponent implements OnInit {
         ? Number(raw.representativeId)
         : null,
       notes: raw.notes?.trim() || '',
+      code: raw.code?.trim() || '',
     };
 
     if (id) {
@@ -617,6 +621,7 @@ export class ContractNewComponent implements OnInit {
 
     return {
       contractId,
+      contractCode:         raw.code?.trim() || null,
       dateOfSale:           raw.dateOfSale,
       clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
       clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',
@@ -656,6 +661,7 @@ export class ContractNewComponent implements OnInit {
         treasuryId: null,
         representativeId: null,
         notes: '',
+        code: '',
       },
       { emitEvent: false },
     );
