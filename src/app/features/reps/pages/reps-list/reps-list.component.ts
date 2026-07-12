@@ -28,6 +28,7 @@ import { RepFormModalComponent } from '../../components/rep-form-modal/rep-form-
 import { RepStatementModalComponent } from '../../components/rep-statement-modal/rep-statement-modal.component';
 import { CommissionPayoutModalComponent } from '../../components/commission-payout-modal/commission-payout-modal.component';
 import { CommissionPayoutsModalComponent } from '../../components/commission-payouts-modal/commission-payouts-modal.component';
+import { AssignAreasModalComponent } from '../../components/assign-areas-modal/assign-areas-modal.component';
 import {
   REP_PERMISSION_BADGE,
   REP_PERMISSION_LABELS,
@@ -55,6 +56,7 @@ const DEFAULT_PAGE_SIZE = 10;
     RepStatementModalComponent,
     CommissionPayoutModalComponent,
     CommissionPayoutsModalComponent,
+    AssignAreasModalComponent,
     CommonModule,
     HasPermissionDirective,
   ],
@@ -99,6 +101,8 @@ export class RepsListComponent implements OnInit {
   protected readonly payoutOpen = signal(false);
   protected readonly payoutRep = signal<Representative | null>(null);
   protected readonly payoutsHistoryOpen = signal(false);
+  protected readonly assignAreasOpen = signal(false);
+  protected readonly assignAreasRep = signal<Representative | null>(null);
 
   // ── derived ──
   protected readonly hasReps = computed(() => this.reps().length > 0);
@@ -392,6 +396,15 @@ export class RepsListComponent implements OnInit {
   protected onCommissionPaid(): void {
     this.payoutOpen.set(false);
     this.refresh();
+  }
+
+  protected openAssignAreas(rep: Representative): void {
+    this.assignAreasRep.set(rep);
+    this.assignAreasOpen.set(true);
+  }
+
+  protected onAreasAssigned(): void {
+    this.assignAreasOpen.set(false);
   }
 
   // ─────────── view helpers ───────────

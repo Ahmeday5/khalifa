@@ -1,0 +1,111 @@
+<div class="as" [class.as--open]="open()" [class.as--disabled]="disabled()">
+  <!-- closed control -->
+  <div class="as__row">
+    <button
+      type="button"
+      class="form-select as__control text-end"
+      [class.is-invalid]="isInvalid()"
+      [disabled]="disabled()"
+      (click)="toggle()"
+    >
+      @if (displayLabel(); as label) {
+        <span class="as__value">{{ label }}</span>
+        <span class="as__clear" role="button" aria-label="مسح الاختيار" (click)="clear($event)">&times;</span>
+      } @else {
+        <span class="as__placeholder">{{ placeholder() }}</span>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-sm btn-bl as__add-btn"
+      [disabled]="disabled()"
+      title="إضافة منطقة جديدة"
+      (click)="openCreateArea($event)"
+    >
+      <span aria-hidden="true">+</span>
+      <span>منطقة</span>
+    </button>
+  </div>
+
+  <!-- dropdown panel -->
+  @if (open()) {
+    <div class="as__panel">
+      <input
+        #searchBox
+        type="text"
+        class="form-control as__search"
+        [placeholder]="searchPlaceholder()"
+        [value]="term()"
+        (input)="onSearch($event)"
+        autocomplete="off"
+      />
+
+      <ul class="as__list" (scroll)="onListScroll($event)">
+        @for (opt of areas(); track opt.id) {
+          <li class="as__option" [class.as__option--selected]="selectedOption()?.id === opt.id">
+            <span class="as__option-label" (click)="select(opt)">{{ opt.name }}</span>
+            <span class="as__option-actions">
+              <button
+                type="button"
+                class="as__icon-btn"
+                title="تعديل المنطقة"
+                aria-label="تعديل المنطقة"
+                (click)="openEditArea(opt, $event)"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="as__icon-btn as__icon-btn--danger"
+                title="حذف المنطقة"
+                aria-label="حذف المنطقة"
+                [disabled]="deletingId() === opt.id"
+                (click)="confirmDeleteArea(opt, $event)"
+              >
+                @if (deletingId() === opt.id) {
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                } @else {
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  </svg>
+                }
+              </button>
+            </span>
+          </li>
+        } @empty {
+          @if (loading() || searching()) {
+            <li class="as__empty">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span>جاري التحميل...</span>
+            </li>
+          } @else {
+            <li class="as__empty">لا توجد مناطق مطابقة</li>
+          }
+        }
+
+        @if (loadingMore()) {
+          <li class="as__loading-more">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span>جاري تحميل المزيد...</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>
+
+<app-area-form-modal
+  [open]="formOpen()"
+  [mode]="formMode()"
+  [area]="formTarget()"
+  (closed)="closeAreaForm()"
+  (saved)="onAreaSaved($event)"
+/>

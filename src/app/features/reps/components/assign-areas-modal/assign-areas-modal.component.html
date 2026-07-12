@@ -1,0 +1,100 @@
+<app-modal
+  [open]="open()"
+  title="تعيين المناطق"
+  size="lg"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <div class="aam-rep">
+    <span class="aam-rep-label">المندوب</span>
+    <span class="aam-rep-name">{{ representativeName() }}</span>
+  </div>
+
+  @if (loading()) {
+    <div class="aam-loading">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <span>جاري تحميل المناطق...</span>
+    </div>
+  } @else {
+    <div class="aam-toolbar">
+      <div class="aam-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m21 21-4.3-4.3" />
+        </svg>
+        <input
+          type="text"
+          placeholder="بحث عن منطقة..."
+          [value]="term()"
+          (input)="onSearch($event)"
+        />
+      </div>
+
+      <div class="aam-summary">
+        <span class="aam-count-badge">{{ selectedCount() }} / {{ totalCount() }} منطقة محددة</span>
+        <button type="button" class="btn btn-sm" (click)="toggleSelectAllFiltered()">
+          {{ allFilteredSelected() ? 'إلغاء تحديد الكل' : 'تحديد الكل' }}
+        </button>
+        @if (selectedCount() > 0) {
+          <button type="button" class="btn btn-sm btn-re" (click)="clearSelection()">
+            مسح التحديد
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="aam-grid">
+      @for (area of filteredAreas(); track area.id) {
+        <label class="aam-item" [class.aam-item--checked]="isSelected(area.id)">
+          <input
+            type="checkbox"
+            class="aam-checkbox"
+            [checked]="isSelected(area.id)"
+            (change)="toggle(area.id)"
+          />
+          <span class="aam-item-name">{{ area.name }}</span>
+          @if (isSelected(area.id)) {
+            <svg class="aam-item-check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          }
+        </label>
+      } @empty {
+        <div class="aam-empty">
+          @if (term()) {
+            لا توجد مناطق مطابقة لـ "{{ term() }}"
+          } @else {
+            لا توجد مناطق بعد — أضف مناطق أولًا من نموذج بيانات العميل.
+          }
+        </div>
+      }
+    </div>
+
+    @if (serverError(); as msg) {
+      <div class="alert alert-danger mt-3 mb-0" role="alert" style="font-size:11px;">
+        {{ msg }}
+      </div>
+    }
+  }
+
+  <ng-container modal-footer>
+    <button type="button" class="btn" [disabled]="submitting()" (click)="close()">
+      إلغاء
+    </button>
+    <button
+      type="button"
+      class="btn btn-bl d-inline-flex align-items-center gap-2"
+      [disabled]="submitting() || loading()"
+      (click)="onSubmit()"
+    >
+      @if (submitting()) {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      }
+      <span>{{ submitting() ? 'جاري الحفظ...' : 'حفظ المناطق' }}</span>
+    </button>
+  </ng-container>
+</app-modal>

@@ -184,6 +184,12 @@
                 <button
                   type="button"
                   class="btn btn-sm"
+                  (click)="openAssignAreas(rep)"
+                  title="تعيين المناطق"
+                >المناطق</button>
+                <button
+                  type="button"
+                  class="btn btn-sm"
                   *appHasPermission="PERMS.treasuryView"
                   (click)="openStatement(rep)"
                   title="كشف الحساب"
@@ -299,4 +305,13 @@
 <app-commission-payouts-modal
   [open]="payoutsHistoryOpen()"
   (closed)="payoutsHistoryOpen.set(false)"
+/>
+
+<!-- Assign Areas Modal -->
+<app-assign-areas-modal
+  [open]="assignAreasOpen()"
+  [representativeId]="assignAreasRep()?.id ?? null"
+  [representativeName]="assignAreasRep()?.fullName ?? ''"
+  (closed)="assignAreasOpen.set(false)"
+  (saved)="onAreasAssigned()"
 />

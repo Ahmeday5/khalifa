@@ -1,0 +1,147 @@
+.aam-rep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: var(--bg3);
+  border-radius: var(--r);
+  font-size: 12px;
+}
+
+.aam-rep-label {
+  color: var(--txt3);
+}
+
+.aam-rep-name {
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.aam-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 0;
+  color: var(--txt3);
+  font-size: 12px;
+}
+
+.aam-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.aam-search {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 160px;
+
+  svg {
+    position: absolute;
+    inset-inline-start: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--txt3);
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    padding: 7px 10px 7px 10px;
+    padding-inline-start: 30px;
+    border: 1px solid var(--bg3);
+    border-radius: var(--r);
+    background: var(--bg2);
+    color: var(--txt);
+    font-size: 12px;
+
+    &:focus {
+      outline: none;
+      border-color: var(--bl);
+    }
+  }
+}
+
+.aam-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aam-count-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bl);
+  background: rgba(13, 110, 253, 0.1);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.aam-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.aam-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--bg3);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  user-select: none;
+
+  &:hover {
+    border-color: var(--bl);
+  }
+
+  &--checked {
+    border-color: var(--bl);
+    background: rgba(13, 110, 253, 0.08);
+  }
+}
+
+.aam-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.aam-item-name {
+  flex: 1 1 auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aam-item-check {
+  flex: 0 0 auto;
+  color: var(--bl);
+}
+
+.aam-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 36px 0;
+  color: var(--txt3);
+  font-size: 12px;
+}

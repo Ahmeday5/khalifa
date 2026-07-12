@@ -621,7 +621,7 @@ export class ContractNewComponent implements OnInit {
       clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
       clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',
       clientCode:           fullClient?.clientCode  ?? null,
-      clientAddress:        fullClient?.address     ?? listClient?.address     ?? null,
+      clientAddress:        fullClient?.areaName    ?? listClient?.areaName    ?? null,
       clientRegion:         fullClient?.region      ?? null,
       clientOccupation:     fullClient?.occupation  ?? null,
       repName:              selectedRep?.fullName   ?? null,

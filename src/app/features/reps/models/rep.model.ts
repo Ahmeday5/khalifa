@@ -208,6 +208,13 @@ export interface CommissionPayoutRow {
   notes: string;
 }
 
+// ── Assigned areas ───────────────────────────────────────────────────────
+
+/** POST body for `representatives/{id}/areas` — replaces the full assignment set. */
+export interface AssignAreasPayload {
+  areaIds: number[];
+}
+
 /** Query string for the paginated payouts history. */
 export type CommissionPayoutsQuery = PagedQuery;
 

@@ -104,7 +104,7 @@ export class CustomersService {
     const base: CreateClientPayload = {
       fullName:       payload.fullName.trim(),
       nationalId:     payload.nationalId.trim(),
-      address:        payload.address.trim(),
+      areaId:         payload.areaId,
       phoneNumber:    payload.phoneNumber.trim(),
       whatsappNumber: payload.whatsappNumber.trim(),
     };
@@ -149,7 +149,7 @@ export class CustomersService {
     const base: UpdateClientPayload = {
       fullName:       payload.fullName.trim(),
       nationalId:     payload.nationalId.trim(),
-      address:        payload.address.trim(),
+      areaId:         payload.areaId,
       phoneNumber:    payload.phoneNumber.trim(),
       whatsappNumber: payload.whatsappNumber.trim(),
     };

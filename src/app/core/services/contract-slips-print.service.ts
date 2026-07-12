@@ -178,7 +178,7 @@ export class ContractSlipsPrintService {
         <td class="ct-val ct-ltr">${esc(data.clientPhone) || '—'}</td>
       </tr>
       <tr>
-        <td class="ct-hdr">العنوان</td>
+        <td class="ct-hdr">المنطقة</td>
         <td class="ct-val">${esc(data.clientAddress ?? '—')}</td>
         <td class="ct-hdr">الوظيفة</td>
         <td class="ct-val">${esc(data.clientOccupation ?? '—')}</td>

@@ -136,6 +136,10 @@ export const API_ENDPOINTS = {
     topThisMonth: 'dashboard/clients/top-this-month',
     contracts: (id: number) => `dashboard/clients/${id}/contracts`,
   },
+  areas: {
+    base: 'dashboard/areas',
+    byId: (id: number) => `dashboard/areas/${id}`,
+  },
   inventory: {
     alerts: 'dashboard/inventory/alerts',
   },
@@ -160,6 +164,8 @@ export const API_ENDPOINTS = {
     commissionPayouts: 'dashboard/representatives/commission-payouts',
     /** Admin: paginated list of requests submitted by representatives. */
     requests: 'dashboard/representative-requests',
+    /** GET: areas assigned to a representative. POST: replace the assignment set. */
+    areas: (id: number) => `dashboard/representatives/${id}/areas`,
   },
   contracts: {
     base: 'dashboard/contracts',

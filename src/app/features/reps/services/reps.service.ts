@@ -11,7 +11,9 @@ import {
 import { toList, toPaged } from '../../../core/utils/api-list.util';
 import { LookupItem } from '../../../core/models/lookup.model';
 import { PagedResponse } from '../../../core/models/api-response.model';
+import { Area } from '../../areas/models/area.model';
 import {
+  AssignAreasPayload,
   CommissionPayoutPayload,
   CommissionPayoutResult,
   CommissionPayoutRow,
@@ -156,6 +158,28 @@ export class RepsService {
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ writes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+  // ─────────── assigned areas ───────────
+
+  /** Areas currently assigned to a representative. Always bypasses cache so the modal never opens on stale state. */
+  getAreas(id: number): Observable<Area[]> {
+    return this.api
+      .get<unknown>(API_ENDPOINTS.representatives.areas(id), {
+        context: withCacheBypass(withCache({ ttlMs: REPS_TTL_MS })),
+      })
+      .pipe(toList<Area>());
+  }
+
+  /** Replaces the full set of areas assigned to a representative. */
+  assignAreas(id: number, payload: AssignAreasPayload): Observable<null> {
+    return this.api.put<null>(
+      API_ENDPOINTS.representatives.areas(id),
+      payload,
+      {
+        context: withInlineHandling(withCacheInvalidate([REPS_CACHE_KEY])),
+      },
+    );
+  }
+
   /**
    * Admin: pays (part of) a representative's outstanding commission. The
    * backend rejects an `amount` greater than what's owed. Invalidates the
@@ -252,7 +276,7 @@ export class RepsService {
     };
   }
 
- 
+
   private normalize(
     payload: CreateRepresentativePayload,
   ): CreateRepresentativePayload {

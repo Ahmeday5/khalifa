@@ -14,6 +14,7 @@ import { FormErrorComponent } from '../../../../shared/components/form-error/for
 import { ToastService } from '../../../../core/services/toast.service';
 import { ApiError } from '../../../../core/models/api-response.model';
 import { CustomersService } from '../../services/customers.service';
+import { AreaSelectComponent } from '../../../areas/components/area-select/area-select.component';
 import {
   CreateClientPayload,
   CreatedClient,
@@ -34,6 +35,7 @@ const EG_NATIONAL_ID = /^[0-9]{14}$/;
     ReactiveFormsModule,
     ModalComponent,
     FormErrorComponent,
+    AreaSelectComponent,
   ],
   templateUrl: './client-form-modal.component.html',
 })
@@ -63,7 +65,7 @@ export class ClientFormModalComponent {
   protected readonly form = this.fb.nonNullable.group({
     fullName:       ['', [Validators.required, Validators.minLength(3)]],
     nationalId:     ['', [Validators.pattern(EG_NATIONAL_ID)]],
-    address:        ['', [Validators.required, Validators.minLength(2)]],
+    areaId:         this.fb.control<number | null>(null, [Validators.required]),
     phoneNumber:    ['', [Validators.required, Validators.pattern(EG_PHONE)]],
     whatsappNumber: ['', [Validators.required, Validators.pattern(EG_PHONE)]],
     // ── extended profile ──
@@ -181,7 +183,7 @@ export class ClientFormModalComponent {
     this.form.reset({
       fullName: '',
       nationalId: '',
-      address: '',
+      areaId: null,
       phoneNumber: '',
       whatsappNumber: '',
       clientCode: '',
@@ -204,7 +206,7 @@ export class ClientFormModalComponent {
     this.form.reset({
       fullName: row.fullName,
       nationalId: '',
-      address: row.address,
+      areaId: row.areaId,
       phoneNumber: row.phoneNumber,
       whatsappNumber: '',
       clientCode: '',
@@ -222,7 +224,7 @@ export class ClientFormModalComponent {
         this.form.patchValue({
           fullName:       full.fullName,
           nationalId:     full.nationalId ?? '',
-          address:        full.address,
+          areaId:         full.areaId,
           phoneNumber:    full.phoneNumber,
           whatsappNumber: full.whatsappNumber ?? '',
           clientCode:     full.clientCode ?? '',
@@ -262,7 +264,7 @@ export class ClientFormModalComponent {
     const payload: CreateClientPayload = {
       fullName:       raw.fullName.trim(),
       nationalId:     raw.nationalId.trim(),
-      address:        raw.address.trim(),
+      areaId:         raw.areaId!,
       phoneNumber:    raw.phoneNumber.trim(),
       whatsappNumber: this.resolvedWhatsapp(),
     };
@@ -275,7 +277,7 @@ export class ClientFormModalComponent {
     const payload: UpdateClientPayload = {
       fullName:       raw.fullName.trim(),
       nationalId:     raw.nationalId.trim(),
-      address:        raw.address.trim(),
+      areaId:         raw.areaId!,
       phoneNumber:    raw.phoneNumber.trim(),
       whatsappNumber: this.resolvedWhatsapp(),
     };

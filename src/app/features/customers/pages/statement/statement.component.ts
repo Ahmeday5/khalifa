@@ -464,7 +464,7 @@ export class StatementComponent {
           clientName:           fullClient?.fullName    ?? d.client.fullName,
           clientPhone:          fullClient?.phoneNumber ?? d.client.phoneNumber,
           clientCode:           fullClient?.clientCode  ?? null,
-          clientAddress:        fullClient?.address     ?? d.client.address ?? null,
+          clientAddress:        fullClient?.areaName    ?? null,
           clientRegion:         fullClient?.region      ?? null,
           clientOccupation:     fullClient?.occupation  ?? null,
           repName:              d.representative?.fullName    ?? null,

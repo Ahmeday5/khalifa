@@ -35,9 +35,11 @@ export interface DashboardClient {
   id: number;
   fullName: string;
   phoneNumber: string;
-  address: string;
+  areaId: number | null;
+  areaName: string | null;
   // ── extended profile (may be absent in list response) ──
   clientCode?: string | null;
+  /** Free-text occupation/work field — labeled "العمل" in the UI. */
   region?: string | null;
   occupation?: string | null;
 
@@ -81,7 +83,7 @@ export interface DashboardClientsResponse {
 export interface CreateClientPayload {
   fullName: string;
   nationalId: string;
-  address: string;
+  areaId: number;
   phoneNumber: string;
   whatsappNumber: string;
   // ── extended profile ──
@@ -97,7 +99,7 @@ export interface CreateClientPayload {
 export interface UpdateClientPayload {
   fullName: string;
   nationalId: string;
-  address: string;
+  areaId: number;
   phoneNumber: string;
   whatsappNumber: string;
   // ── extended profile ──
@@ -118,7 +120,8 @@ export interface CreatedClient {
   id: number;
   fullName: string;
   nationalId: string | null;
-  address: string;
+  areaId: number | null;
+  areaName: string | null;
   phoneNumber: string;
   whatsappNumber: string;
   createdAt: string;

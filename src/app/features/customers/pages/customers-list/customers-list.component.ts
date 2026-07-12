@@ -296,10 +296,10 @@ export class CustomersListComponent {
       { label: 'واتساب',             value: c.whatsappNumber },
 
       { label: 'الرقم القومي',       value: c.nationalId || '—' },
-      { label: 'العنوان',            value: c.address || '—' },
+      { label: 'المنطقة',            value: c.areaName || '—' },
     ];
     if (c.clientCode)  fields.push({ label: 'كود العميل',     value: c.clientCode });
-    if (c.region)      fields.push({ label: 'المنطقة / الحي', value: c.region });
+    if (c.region)      fields.push({ label: 'العمل',           value: c.region });
     if (c.occupation)  fields.push({ label: 'المهنة',          value: c.occupation });
     if (c.building)    fields.push({ label: 'المبنى',          value: c.building });
     if (c.floor)       fields.push({ label: 'الدور',           value: c.floor });
