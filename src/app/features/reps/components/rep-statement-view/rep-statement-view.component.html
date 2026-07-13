@@ -39,8 +39,16 @@
           <span class="rs-cell-v rs-pos">{{ s.totalProfit | currencyAr: true }}</span>
         </div>
         <div class="rs-cell">
-          <span class="rs-cell-l">إجمالي العمولة</span>
+          <span class="rs-cell-l">عمولة التحصيل</span>
           <span class="rs-cell-v">{{ s.totalCommission | currencyAr: true }}</span>
+        </div>
+        <div class="rs-cell">
+          <span class="rs-cell-l">عمولة المنتجات</span>
+          <span class="rs-cell-v">{{ s.totalProductCommission | currencyAr: true }}</span>
+        </div>
+        <div class="rs-cell">
+          <span class="rs-cell-l">إجمالي العمولة</span>
+          <span class="rs-cell-v">{{ s.totalCombinedCommission | currencyAr: true }}</span>
         </div>
         <div class="rs-cell">
           <span class="rs-cell-l">المدفوع منها</span>
@@ -49,6 +57,14 @@
         <div class="rs-cell">
           <span class="rs-cell-l">العمولة المتبقية</span>
           <span class="rs-cell-v rs-due">{{ s.outstandingCommission | currencyAr: true }}</span>
+        </div>
+        <div class="rs-cell">
+          <span class="rs-cell-l">إجمالي المحصّل</span>
+          <span class="rs-cell-v rs-pos">{{ s.totalCollected | currencyAr: true }}</span>
+        </div>
+        <div class="rs-cell">
+          <span class="rs-cell-l">إجمالي المتبقي</span>
+          <span class="rs-cell-v rs-due">{{ s.totalOutstanding | currencyAr: true }}</span>
         </div>
         <div class="rs-cell">
           <span class="rs-cell-l">أول / آخر عقد</span>
@@ -68,13 +84,16 @@
         <thead>
           <tr>
             <th>#</th>
+            <th>الكود</th>
             <th>العميل</th>
             <th>المنتج</th>
             <th>الكمية</th>
-            <th>قيمة البيع</th>
+            <th>قيمة العقد</th>
             <th>التكلفة</th>
             <th>الربح</th>
             <th>العمولة</th>
+            <th>المحصّل</th>
+            <th>المتبقي</th>
             <th>الحالة</th>
             <th>تاريخ البيع</th>
           </tr>
@@ -83,19 +102,22 @@
           @for (c of contracts(); track c.contractId) {
             <tr>
               <td>#{{ c.contractId }}</td>
+              <td>{{ c.code ?? '—' }}</td>
               <td style="font-weight:600">{{ c.clientName }}</td>
               <td>{{ c.productName }}</td>
               <td>{{ c.quantity }}</td>
-              <td class="trf-amount">{{ c.saleAmount | currencyAr: true }}</td>
+              <td class="trf-amount">{{ c.totalContractAmount | currencyAr: true }}</td>
               <td>{{ c.cost | currencyAr: true }}</td>
               <td class="rs-pos">{{ c.profit | currencyAr: true }}</td>
-              <td>{{ c.commission | currencyAr: true }}</td>
+              <td>{{ c.commission + c.productCommission | currencyAr: true }}</td>
+              <td class="rs-pos">{{ c.collectedAmount | currencyAr: true }}</td>
+              <td class="rs-due">{{ c.remainingAmount | currencyAr: true }}</td>
               <td><app-badge [text]="c.status" [type]="contractBadge(c.status)" /></td>
               <td class="trf-date">{{ c.dateOfSale | dateAr: 'short' }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="10" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+              <td colspan="13" class="text-center py-4" style="color:var(--txt3);font-size:12px">
                 @if (loading()) { جاري التحميل... } @else { لا توجد عقود لهذا المندوب. }
               </td>
             </tr>

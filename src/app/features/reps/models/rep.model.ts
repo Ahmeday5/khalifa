@@ -139,9 +139,18 @@ export interface RepStatementSummary {
   totalSales: number;
   totalCost: number;
   totalProfit: number;
+  /** عمولة نسبة الربح (التحصيل). */
   totalCommission: number;
+  /** عمولة المنتجات. */
+  totalProductCommission: number;
+  /** المجموع الكلي للعمولة = totalCommission + totalProductCommission. */
+  totalCombinedCommission: number;
   paidCommission: number;
   outstandingCommission: number;
+  /** إجمالي المحصّل من قيمة العقود. */
+  totalCollected: number;
+  /** إجمالي المتبقي من قيمة العقود. */
+  totalOutstanding: number;
   firstContractDate: string | null;
   lastContractDate: string | null;
 }
@@ -149,18 +158,29 @@ export interface RepStatementSummary {
 /** One contract row inside a representative statement. */
 export interface RepStatementContractRow {
   contractId: number;
+  /** Contract code — nullable until assigned. */
+  code: string | null;
   clientId: number;
   clientName: string;
-  productId: number;
+  productId: number | null;
   productName: string;
   quantity: number;
   cashPrice: number;
   saleAmount: number;
   cost: number;
   profit: number;
+  /** عمولة نسبة الربح (التحصيل). */
   commission: number;
+  /** عمولة المنتج. */
+  productCommission: number;
   status: string;
   dateOfSale: string;
+  /** إجمالي قيمة العقد (بالأقساط). */
+  totalContractAmount: number;
+  /** المحصّل من هذا العقد. */
+  collectedAmount: number;
+  /** المتبقي من هذا العقد. */
+  remainingAmount: number;
 }
 
 /** Wire shape of `data` for both statement endpoints. */
