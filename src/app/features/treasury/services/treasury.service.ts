@@ -46,7 +46,6 @@ export class TreasuryService {
       })
       .pipe(toList<Treasury>());
   }
-  
 
   lookup(): Observable<LookupItem[]> {
     return this.api
@@ -117,6 +116,21 @@ export class TreasuryService {
     return this.api.post<TreasuryTransfer>(
       API_ENDPOINTS.treasuries.transfers,
       payload,
+      {
+        context: withInlineHandling(withCacheInvalidate([TREASURY_CACHE_KEY])),
+      },
+    );
+  }
+
+  /**
+   * Reverses a previously recorded transfer — the backend restores both
+   * treasuries' balances. Invalidates the `treasury` cache scope so every
+   * page (balances, transfers, operations) re-fetches the canonical state.
+   */
+  cancelTransfer(id: number): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>(
+      API_ENDPOINTS.treasuries.cancelTransfer(id),
+      {},
       {
         context: withInlineHandling(withCacheInvalidate([TREASURY_CACHE_KEY])),
       },

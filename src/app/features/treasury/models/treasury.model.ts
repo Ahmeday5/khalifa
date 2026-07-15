@@ -71,6 +71,9 @@ export interface TreasurySummary {
    Treasury transfers (inter-treasury money movements)
    ════════════════════════════════════════════════════════════════ */
 
+/** Lifecycle state of a treasury transfer. */
+export type TreasuryTransferStatus = 'Completed' | 'Cancelled';
+
 /** Row shape returned by `GET /dashboard/treasuries/transfers`. */
 export interface TreasuryTransfer {
   id: number;
@@ -83,6 +86,9 @@ export interface TreasuryTransfer {
   transferDate: string;
   notes: string | null;
   createdAt: string;
+  status: TreasuryTransferStatus;
+  /** ISO datetime the transfer was cancelled at; `null` while `Completed`. */
+  cancelledAt: string | null;
 }
 
 /** POST /dashboard/treasuries/transfers body. */

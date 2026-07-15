@@ -22,6 +22,9 @@ export const API_ENDPOINTS = {
     base: 'dashboard/treasuries',
     byId: (id: number) => `dashboard/treasuries/${id}`,
     transfers: 'dashboard/treasuries/transfers',
+    /** POST: reverses a transfer and restores both treasuries' balances. */
+    cancelTransfer: (id: number) =>
+      `dashboard/treasuries/transfers/${id}/cancel`,
     operations: 'dashboard/treasuries/operations',
     monthlyProfits: 'dashboard/treasuries/monthly-profits',
     /** Lightweight `{id,name}` list for pickers (role-scoped server-side). */
@@ -102,8 +105,7 @@ export const API_ENDPOINTS = {
     payments: (id: number) =>
       `dashboard/supplier-purchase-invoices/${id}/payments`,
     /** POST: return / cancel a purchase invoice (only when no payments have been recorded). */
-    return: (id: number) =>
-      `dashboard/supplier-purchase-invoices/${id}/return`,
+    return: (id: number) => `dashboard/supplier-purchase-invoices/${id}/return`,
   },
   dashboard: {
     summary: 'dashboard/summary',

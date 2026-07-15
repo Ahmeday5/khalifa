@@ -225,6 +225,8 @@
                 <th>المبلغ</th>
                 <th>التاريخ</th>
                 <th>ملاحظات</th>
+                <th class="text-center">الحالة</th>
+                <th class="text-center" *appHasPermission="PERMS.treasuryFullAccess">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -241,10 +243,26 @@
                 <td class="trf-amount">{{ t.amount | currencyAr: true }}</td>
                 <td class="trf-date">{{ t.transferDate | dateAr: 'short' }}</td>
                 <td class="trf-notes" [title]="t.notes ?? ''">{{ t.notes || '—' }}</td>
+                <td class="text-center">
+                  <app-badge [text]="transferStatusLabel(t.status)" [type]="transferStatusBadge(t.status)" />
+                </td>
+                <td class="text-center" *appHasPermission="PERMS.treasuryFullAccess">
+                  @if (t.status !== 'Cancelled') {
+                  <button type="button" class="btn btn-sm btn-re d-inline-flex align-items-center gap-1"
+                    [disabled]="cancellingTransferId() === t.id" (click)="confirmCancelTransfer(t)" title="إلغاء التحويل">
+                    @if (cancellingTransferId() === t.id) {
+                    <span class="spinner-border spinner-border-sm"></span>
+                    }
+                    <span>إلغاء</span>
+                  </button>
+                  } @else {
+                  <span style="color:var(--txt3);font-size:11px">—</span>
+                  }
+                </td>
               </tr>
               } @empty {
               <tr>
-                <td colspan="6" class="text-center py-4" style="color:var(--txt3);font-size:12px">
+                <td colspan="8" class="text-center py-4" style="color:var(--txt3);font-size:12px">
                   @if (transfersLoading()) {
                   جاري التحميل...
                   } @else if (hasTransferFilters()) {

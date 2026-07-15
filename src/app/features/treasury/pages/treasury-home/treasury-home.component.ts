@@ -10,6 +10,7 @@ import {
 import {
   Treasury,
   TreasuryTransfer,
+  TreasuryTransferStatus,
   TreasuryOperation,
   MonthlyProfit,
 } from '../../models/treasury.model';
@@ -44,6 +45,10 @@ import {
   TREASURY_TYPE_BADGE,
   TREASURY_TYPE_LABELS,
 } from '../../constants/treasury-type-labels';
+import {
+  TREASURY_TRANSFER_STATUS_BADGE,
+  TREASURY_TRANSFER_STATUS_LABELS,
+} from '../../constants/treasury-transfer-status-labels';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -115,6 +120,9 @@ export class TreasuryHomeComponent implements OnInit {
   protected readonly transfers = signal<TreasuryTransfer[]>([]);
   protected readonly transfersLoading = signal(false);
   protected readonly transferModalOpen = signal(false);
+
+  /** Tracks which transfer row is currently being cancelled, for inline button state. */
+  protected readonly cancellingTransferId = signal<number | null>(null);
 
   // transfer filters
   protected readonly tFromFilter = signal<number | ''>('');
@@ -458,6 +466,14 @@ export class TreasuryHomeComponent implements OnInit {
     this.fetchTransfers(this.transfersTrigger(), true);
   }
 
+  protected transferStatusLabel(status: TreasuryTransferStatus): string {
+    return TREASURY_TRANSFER_STATUS_LABELS[status] ?? status;
+  }
+
+  protected transferStatusBadge(status: TreasuryTransferStatus): BadgeType {
+    return TREASURY_TRANSFER_STATUS_BADGE[status] ?? 'info';
+  }
+
   // transfer filter handlers
   protected onTransferFromChange(value: string): void {
     this.tFromFilter.set(value === '' ? '' : Number(value));
@@ -513,6 +529,30 @@ export class TreasuryHomeComponent implements OnInit {
     this.transferModalOpen.set(false);
     // Cache invalidation in the service already triggers `onInvalidate`,
     // which re-fetches treasuries AND transfers — no manual refresh needed.
+  }
+
+  protected async confirmCancelTransfer(
+    transfer: TreasuryTransfer,
+  ): Promise<void> {
+    const ok = await this.dialog.confirm({
+      title: 'إلغاء التحويل',
+      message: `هل أنت متأكد من إلغاء التحويل #${transfer.id} من "${transfer.fromTreasuryName}" إلى "${transfer.toTreasuryName}" بمبلغ ${transfer.amount}؟ سيتم عكس المبلغ على رصيد الخزينتين، ولا يمكن التراجع عن هذا الإجراء.`,
+      confirmText: 'إلغاء التحويل',
+      cancelText: 'تراجع',
+      type: 'danger',
+    });
+    if (!ok) return;
+
+    this.cancellingTransferId.set(transfer.id);
+    this.treasuryService.cancelTransfer(transfer.id).subscribe({
+      next: () => {
+        this.cancellingTransferId.set(null);
+        this.toast.success('تم إلغاء التحويل بنجاح');
+        // Cache invalidation in the service already triggers `onInvalidate`,
+        // which re-fetches treasuries AND transfers — no manual refresh needed.
+      },
+      error: (_err: ApiError) => this.cancellingTransferId.set(null),
+    });
   }
 
   // ─────────────── operations ───────────────
@@ -732,6 +772,12 @@ export class TreasuryHomeComponent implements OnInit {
               format: 'shortDate',
             },
             { key: 'notes', header: 'ملاحظات', align: 'start' },
+            {
+              key: 'status',
+              header: 'الحالة',
+              align: 'center',
+              format: (_v, r) => this.transferStatusLabel(r.status),
+            },
           ],
           totals: {
             label: 'إجمالي التحويلات',
@@ -740,6 +786,7 @@ export class TreasuryHomeComponent implements OnInit {
               this.formatCurrencyTotal(
                 rows.reduce((s, r) => s + (r.amount ?? 0), 0),
               ),
+              '',
               '',
               '',
             ],
