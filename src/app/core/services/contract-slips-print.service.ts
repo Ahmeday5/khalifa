@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 
-const COMPANY_PHONE  = '01129912187';
-const COMPANY_PHONE2 = '01111446789';
-const COMPANY_CITY   = 'القاهرة - العباسية';
+const COMPANY_NAME = 'شركة الخليفة للأدوات المنزلية والمفروشات';
+const COMPANY_PHONE = '01129912187';
 
 export interface ContractSlipData {
   contractId:          number;
@@ -12,9 +11,16 @@ export interface ContractSlipData {
   clientName:          string;
   clientPhone:         string;
   clientCode?:         string | null;
+  /** Client's home/mailing area label (list `areaName`) — kept for backward compat, unused by the new slip. */
   clientAddress?:      string | null;
   clientRegion?:       string | null;
   clientOccupation?:   string | null;
+  /** Building / عمارة — printed as "العنوان (المبنى)". */
+  clientBuilding?:     string | null;
+  /** Floor — combined with `clientDepartment` into "الدور / الشقة". */
+  clientFloor?:        string | null;
+  /** Apartment/department — combined with `clientFloor` into "الدور / الشقة". */
+  clientDepartment?:   string | null;
   repName?:            string | null;
   repPhone?:           string | null;
   productLines:        { name: string; quantity: number }[];
@@ -32,6 +38,16 @@ export interface InstallmentSlipRow {
   dueDate:  string;
   amount:   number;
 }
+
+const FREQ_LABELS: Record<string, string> = {
+  Monthly: 'شهري',
+  Weekly: 'أسبوعي',
+  Quarterly: 'ربع سنوي',
+  SemiAnnual: 'نصف سنوي',
+  SemiAnnually: 'نصف سنوي',
+  Annual: 'سنوي',
+  Annually: 'سنوي',
+};
 
 @Injectable({ providedIn: 'root' })
 export class ContractSlipsPrintService {
@@ -61,16 +77,21 @@ export class ContractSlipsPrintService {
 
   private freqMonths(freq: string): number {
     switch (freq) {
-      case 'SemiAnnual': return 6;
-      case 'Annual':     return 12;
-      default:           return 3;
+      case 'SemiAnnual':
+      case 'SemiAnnually': return 6;
+      case 'Annual':
+      case 'Annually':     return 12;
+      case 'Monthly':      return 1;
+      default:             return 3;
     }
   }
 
   // ─── HTML document ───────────────────────────────────────────────────────────
 
   private buildDocument(data: ContractSlipData, schedule: InstallmentSlipRow[]): string {
-    const slips = schedule.map((inst) => this.buildSlip(data, inst, schedule.length)).join('\n');
+    const slips = schedule
+      .map((inst) => this.buildSlip(data, inst, schedule.length))
+      .join('\n');
     return `<!doctype html>
 <html dir="rtl" lang="ar">
 <head>
@@ -83,234 +104,106 @@ export class ContractSlipsPrintService {
   }
 
   private buildSlip(data: ContractSlipData, inst: InstallmentSlipRow, total: number): string {
-    const remainingAfter = Math.max(0, Math.round(data.installmentAmount * (total - inst.sequence)));
-    const productText    = data.productLines
-      .map(p => p.quantity > 1 ? `عدد ${p.quantity} ${esc(p.name)}` : esc(p.name))
-      .join(' + ') || '—';
-    const region      = esc(data.clientRegion  ?? '—');
-    const code        = esc(data.clientCode    ?? String(data.contractId));
+    const remainingAfter = Math.max(
+      0,
+      Math.round(data.totalAmount - data.installmentAmount * inst.sequence),
+    );
+    const productText = data.productLines
+      .map((p) => (p.quantity > 1 ? `${esc(p.name)} × ${p.quantity}` : esc(p.name)))
+      .join('، ') || '—';
+
     const contractCode = esc(data.contractCode ?? '—');
-    const repName     = esc(data.repName       ?? '—');
-    const repPhone    = esc(data.repPhone      ?? '—');
+    const receiptNo = `${inst.sequence} / ${total}`;
+
+    const floorDept = [data.clientFloor, data.clientDepartment]
+      .filter((v) => v && v.trim())
+      .join(' / ');
 
     return `
 <div class="slip">
 
   <!-- ═══ HEADER ═══ -->
   <div class="hdr">
-
-    <!-- RIGHT: Logo + Brand -->
+    <div class="hdr-badge">
+      <span class="hdr-badge-l">رقم الإيصال / القسط</span>
+      <span class="hdr-badge-v">${esc(receiptNo)}</span>
+    </div>
     <div class="hdr-brand">
-      <div class="logo-box">
-        <svg class="logo-svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- House outline -->
-          <path d="M8 30L32 10L56 30V56H40V42H24V56H8V30Z" stroke="#C9A84C" stroke-width="3" fill="none"/>
-          <!-- Door -->
-          <rect x="26" y="42" width="12" height="14" rx="1" stroke="#C9A84C" stroke-width="2" fill="none"/>
-          <!-- Window left -->
-          <rect x="12" y="34" width="8" height="7" rx="1" fill="#C9A84C" opacity=".7"/>
-          <!-- Window right -->
-          <rect x="44" y="34" width="8" height="7" rx="1" fill="#C9A84C" opacity=".7"/>
-          <!-- Sofa seat -->
-          <rect x="18" y="44" width="28" height="7" rx="2" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
-          <!-- Sofa back -->
-          <rect x="16" y="40" width="32" height="5" rx="2" stroke="#C9A84C" stroke-width="1.5" fill="none"/>
-          <!-- Sofa legs -->
-          <line x1="20" y1="51" x2="20" y2="54" stroke="#C9A84C" stroke-width="1.5"/>
-          <line x1="44" y1="51" x2="44" y2="54" stroke="#C9A84C" stroke-width="1.5"/>
-        </svg>
-      </div>
-      <div class="brand-text">
-        <div class="brand-name">شركة الخليفة</div>
-        <div class="brand-sub">للمفروشات والأدوات المنزلية</div>
+      <div class="brand-name">${esc(COMPANY_NAME)}</div>
+      <div class="brand-code">
+        <span class="brand-code-l">كود العقد</span>
+        <span class="brand-code-v">${contractCode}</span>
       </div>
     </div>
-
-    <!-- CENTER: Title -->
-    <div class="hdr-title">
-      <div class="title-line">
-        <span class="title-dash">—</span>
-        <span class="title-text">إيصال قبض</span>
-        <span class="title-dash">—</span>
-      </div>
-    </div>
-
-    <!-- LEFT: Receipt data box -->
-    <div class="hdr-data">
-      <div class="data-label">بيانات الايصال</div>
-      <div class="data-grid">
-        <span class="dg-k">الكود</span>
-        <span class="dg-sep"></span>
-        <span class="dg-k">الاجمالي</span>
-        <span class="dg-v">${code}</span>
-        <span class="dg-sep"></span>
-        <span class="dg-v">${this.fmtMoney(data.totalAmount)}</span>
-        <span class="dg-k">المنطقة</span>
-        <span class="dg-sep"></span>
-        <span class="dg-k">${total} قسط</span>
-        <span class="dg-v">${region}</span>
-        <span class="dg-sep"></span>
-        <span class="dg-v">${this.fmtMoney(data.installmentAmount)}</span>
-        <span class="dg-k">كود العقد</span>
-        <span class="dg-sep"></span>
-        <span class="dg-k"></span>
-        <span class="dg-v">${contractCode}</span>
-        <span class="dg-sep"></span>
-        <span class="dg-v"></span>
-      </div>
-    </div>
-
   </div><!-- /.hdr -->
 
-  <!-- ═══ CLIENT INFO ═══ -->
-  <div class="client-section">
+  <!-- ═══ BODY: 3 columns ═══ -->
+  <div class="body3">
 
-    <!-- Clipboard icon column -->
-    <div class="clip-col">
-      <svg class="clip-svg" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="8" width="32" height="40" rx="3" fill="#0C2340"/>
-        <rect x="4" y="8" width="32" height="40" rx="3" stroke="#C9A84C" stroke-width="1.5"/>
-        <rect x="13" y="2" width="14" height="10" rx="2" fill="#C9A84C"/>
-        <rect x="13" y="2" width="14" height="10" rx="2" stroke="#0C2340" stroke-width="1"/>
-        <circle cx="20" cy="7" r="2" fill="#0C2340"/>
-        <!-- checkmark -->
-        <path d="M11 28l5 5 10-10" stroke="#C9A84C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-
-    <!-- Client table -->
-    <table class="client-tbl">
-      <tr>
-        <td class="ct-hdr">الاسم</td>
-        <td class="ct-val ct-bold ct-name">${esc(data.clientName)}</td>
-        <td class="ct-hdr">الموبايل</td>
-        <td class="ct-val ct-ltr">${esc(data.clientPhone) || '—'}</td>
-      </tr>
-      <tr>
-        <td class="ct-hdr">المنطقة</td>
-        <td class="ct-val">${esc(data.clientAddress ?? '—')}</td>
-        <td class="ct-hdr">الوظيفة</td>
-        <td class="ct-val">${esc(data.clientOccupation ?? '—')}</td>
-      </tr>
-      <tr>
-        <td class="ct-hdr">العمل</td>
-        <td class="ct-val">${esc(data.clientRegion ?? '—')}</td>
-        <td class="ct-hdr">قيمة القسط</td>
-        <td class="ct-val ct-inst">${this.fmtMoney(inst.amount)}</td>
-      </tr>
-    </table>
-
-  </div><!-- /.client-section -->
-
-  <!-- ═══ PRODUCT / PAYMENT ═══ -->
-  <table class="prod-tbl">
-    <thead>
-      <tr>
-        <th class="pt-hdr">المنتج</th>
-        <th class="pt-hdr">طريقة السداد</th>
-        <th class="pt-hdr">قيمة القسط</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="pt-product">${productText}</td>
-        <td class="pt-method">المبلغ فقط لا غير</td>
-        <td class="pt-amount">
-          <span class="amt-value">${this.fmtMoney(inst.amount)} جنيه</span>
-          <div class="amt-remaining">
-            المبلغ المتبقي بعد القسط الحالي
-            <br>
-            <span class="amt-rem-val">${this.fmtMoney(remainingAfter)} جنيه</span>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- ═══ FOOTER INFO ═══ -->
-  <div class="footer-info">
-
-    <!-- RIGHT: Sale date + first installment -->
-    <div class="fi-col fi-dates">
-      <div class="fi-col-hdr">
-        <svg class="fi-icon" viewBox="0 0 20 20" fill="none">
-          <rect x="2" y="3" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/>
-          <rect x="6" y="1" width="2" height="4" rx="1" fill="currentColor"/>
-          <rect x="12" y="1" width="2" height="4" rx="1" fill="currentColor"/>
-        </svg>
-        تاريخ البيع
-      </div>
-      <div class="fi-value">${this.fmtDate(data.dateOfSale)}</div>
-      <div class="fi-col-hdr fi-mt">
-        <svg class="fi-icon" viewBox="0 0 20 20" fill="none">
-          <rect x="2" y="3" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M2 7h16" stroke="currentColor" stroke-width="1.5"/>
-          <rect x="6" y="1" width="2" height="4" rx="1" fill="currentColor"/>
-          <rect x="12" y="1" width="2" height="4" rx="1" fill="currentColor"/>
-        </svg>
-        تاريخ بداية الأقساط
-      </div>
-      <div class="fi-value">${this.fmtDate(data.firstInstallmentDate)}</div>
-    </div>
-
-    <!-- CENTER: Representative -->
-    <div class="fi-col fi-rep">
-      <div class="fi-col-hdr">
-        <svg class="fi-icon" viewBox="0 0 20 20" fill="none">
-          <circle cx="10" cy="6" r="3.5" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M3 17c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        يحصل في
-      </div>
-      <div class="fi-row">
-        <span class="fi-label">المندوب</span>
-        <span class="fi-val-text">${repName}</span>
-      </div>
-      <div class="fi-row">
-        <span class="fi-label">الموبايل</span>
-        <span class="fi-val-text fi-ltr">${repPhone}</span>
+    <!-- RIGHT: بيانات العميل -->
+    <div class="col col-client">
+      <div class="col-hdr">بيانات العميل</div>
+      <div class="col-body">
+        <div class="fld"><span class="fld-l">كود العميل:</span><span class="fld-v">${esc(data.clientCode ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">الاسم الكامل:</span><span class="fld-v fld-bold">${esc(data.clientName)}</span></div>
+        <div class="fld"><span class="fld-l">رقم الهاتف:</span><span class="fld-v fld-ltr">${esc(data.clientPhone) || '—'}</span></div>
+        <div class="fld"><span class="fld-l">جهة العمل:</span><span class="fld-v">${esc(data.clientRegion ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">الوظيفة:</span><span class="fld-v">${esc(data.clientOccupation ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">العنوان (المبنى):</span><span class="fld-v">${esc(data.clientBuilding ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">الدور / الشقة:</span><span class="fld-v">${esc(floorDept || '—')}</span></div>
       </div>
     </div>
 
-    <!-- LEFT: Company contact -->
-    <div class="fi-col fi-company">
-      <div class="fi-col-hdr">
-        <svg class="fi-icon" viewBox="0 0 20 20" fill="none">
-          <path d="M2 5a2 2 0 012-2h2.5a1 1 0 01.95.684l1 3a1 1 0 01-.275 1.05l-1.3 1.3a9.042 9.042 0 004.096 4.096l1.3-1.3a1 1 0 011.05-.275l3 1a1 1 0 01.684.95V16a2 2 0 01-2 2C7.164 18 2 12.836 2 6.5 2 5.672 2 5 2 5z" stroke="currentColor" stroke-width="1.3"/>
-        </svg>
-        للتواصل مع الشركة
-      </div>
-      <div class="fi-row">
-        <span class="fi-label">موبايل المندوب</span>
-        <span class="fi-val-text fi-ltr">${esc(COMPANY_PHONE)}</span>
+    <!-- MIDDLE: تفاصيل المنتج والقسط -->
+    <div class="col col-product">
+      <div class="col-hdr">تفاصيل المنتج والقسط</div>
+      <div class="col-body">
+        <div class="pd-label">تفاصيل / بيان المنتج:</div>
+        <div class="pd-product">${productText}</div>
+
+        <div class="pd-due">
+          <div class="pd-due-l">مبلغ القسط المستحق هذا الشهر</div>
+          <div class="pd-due-v">${this.fmtMoney(inst.amount)} ج.م</div>
+          <div class="pd-due-words">فقط وقدره: ......................................</div>
+        </div>
+
+        <div class="fld fld-collect"><span class="fld-l">يحصل في تاريخ:</span><span class="fld-v">${this.fmtDate(inst.dueDate)}</span></div>
       </div>
     </div>
 
-  </div><!-- /.footer-info -->
+    <!-- LEFT: تفاصيل العقد -->
+    <div class="col col-contract">
+      <div class="col-hdr">تفاصيل العقد</div>
+      <div class="col-body">
+        <div class="fld"><span class="fld-l">إجمالي العقد:</span><span class="fld-v fld-bold">${this.fmtMoney(data.totalAmount)}</span></div>
+        <div class="fld"><span class="fld-l">المقدم:</span><span class="fld-v">${this.fmtMoney(data.downPayment)}</span></div>
+        <div class="fld"><span class="fld-l">نظام التقسيط:</span><span class="fld-v">${this.freqLabel(data.paymentFrequency)}</span></div>
+        <div class="fld"><span class="fld-l">تاريخ البيع:</span><span class="fld-v">${this.fmtDate(data.dateOfSale)}</span></div>
+        <div class="fld"><span class="fld-l">بداية الأقساط:</span><span class="fld-v">${this.fmtDate(data.firstInstallmentDate)}</span></div>
 
-  <!-- ═══ BOTTOM BAR ═══ -->
-  <div class="bottom-bar">
-    <span class="bb-item">
-      <svg class="bb-icon" viewBox="0 0 16 16" fill="none">
-        <path d="M1 4a1.5 1.5 0 011.5-1.5h1.8a.75.75 0 01.713.513l.75 2.25a.75.75 0 01-.206.788L4.62 7.3a6.78 6.78 0 003.075 3.075l1.25-.975a.75.75 0 01.788-.206l2.25.75a.75.75 0 01.513.713V12.5A1.5 1.5 0 0111 14C5.477 14 1 9.523 1 4z" stroke="currentColor" stroke-width="1.2"/>
-      </svg>
-      ${esc(COMPANY_PHONE)}
-    </span>
-    <span class="bb-sep">|</span>
-    <span class="bb-item">
-      <svg class="bb-icon" viewBox="0 0 16 16" fill="none">
-        <path d="M1 4a1.5 1.5 0 011.5-1.5h1.8a.75.75 0 01.713.513l.75 2.25a.75.75 0 01-.206.788L4.62 7.3a6.78 6.78 0 003.075 3.075l1.25-.975a.75.75 0 01.788-.206l2.25.75a.75.75 0 01.513.713V12.5A1.5 1.5 0 0111 14C5.477 14 1 9.523 1 4z" stroke="currentColor" stroke-width="1.2"/>
-      </svg>
-      ${esc(COMPANY_PHONE2)}
-    </span>
-    <span class="bb-sep">|</span>
-    <span class="bb-item">
-      <svg class="bb-icon" viewBox="0 0 16 16" fill="none">
-        <path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5zm0 6.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" stroke="currentColor" stroke-width="1.2"/>
-      </svg>
-      ${esc(COMPANY_CITY)}
-    </span>
+        <div class="pd-remaining">
+          <div class="pd-remaining-l">المبلغ المتبقي بعد الإيصال</div>
+          <div class="pd-remaining-v">${this.fmtMoney(remainingAfter)} ج.م</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.body3 -->
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="ftr">
+    <div class="ftr-item ftr-service">
+      <span class="ftr-l">خدمة العملاء</span>
+      <span class="ftr-v fld-ltr">${esc(COMPANY_PHONE)}</span>
+    </div>
+    <div class="ftr-item">
+      <span class="ftr-l">هاتف المندوب:</span>
+      <span class="ftr-v fld-ltr">${esc(data.repPhone ?? '—')}</span>
+    </div>
+    <div class="ftr-item">
+      <span class="ftr-l">اسم المندوب:</span>
+      <span class="ftr-v">${esc(data.repName ?? '—')}</span>
+    </div>
   </div>
 
 </div><!-- /.slip -->`;
@@ -324,7 +217,7 @@ export class ContractSlipsPrintService {
     iframe.setAttribute('title', 'طباعة الأقساط');
     iframe.style.cssText = [
       'position:fixed', 'left:-9999px', 'top:0',
-      'width:297mm', 'height:210mm',
+      'width:210mm', 'height:297mm',
       'border:0', 'opacity:0', 'pointer-events:none', 'z-index:-1',
     ].join(';');
     document.body.appendChild(iframe);
@@ -358,6 +251,10 @@ export class ContractSlipsPrintService {
 
   // ─── helpers ──────────────────────────────────────────────────────────────────
 
+  private freqLabel(freq: string): string {
+    return FREQ_LABELS[freq] ?? freq;
+  }
+
   private fmtDate(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
@@ -384,13 +281,15 @@ function esc(v: unknown): string {
 }
 
 // ─── Stylesheet ───────────────────────────────────────────────────────────────
+//
+// Slip footprint is fixed at 95mm × 205mm — exactly one third of an A4
+// portrait sheet (210mm × 297mm, minus a hairline margin) — so three slips
+// stack per printed page with no gaps and no manual cutting guesswork.
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-
 @page {
-  size: A4 landscape;
-  margin: 6mm 8mm 6mm 8mm;
+  size: A4 portrait;
+  margin: 0;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -398,25 +297,27 @@ const STYLES = `
 html, body {
   background: #fff;
   color: #0D1829;
-  font-family: 'Cairo', 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif;
-  font-size: 9pt;
-  line-height: 1.45;
+  font-family: "Segoe UI", Tahoma, Cairo, "Noto Sans Arabic", Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.35;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   color-adjust: exact;
 }
 
-/* ══ One slip per page ══ */
+/* ══ One slip = 95mm × 205mm, three per A4 portrait page ══ */
 .slip {
-  width: 100%;
+  width: 205mm;
+  height: 95mm;
+  /* Printed on a portrait sheet turned so the slip's long edge (205mm)
+     runs across the 210mm page width, and its short edge (95mm) stacks
+     three-high down the 297mm page height (3 × 95mm = 285mm ≤ 297mm). */
   display: flex;
   flex-direction: column;
   page-break-after: always;
   break-after: page;
-  border: 2.5px solid #0C2340;
-  border-radius: 6px;
+  border: 1.5px solid #0C2340;
   overflow: hidden;
-  min-height: 192mm;
   background: #fff;
 }
 .slip:last-child { page-break-after: avoid; break-after: avoid; }
@@ -425,381 +326,252 @@ html, body {
    HEADER
 ══════════════════════════════════════════ */
 .hdr {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: stretch;
   background: #0C2340;
-  color: #fff;
-  min-height: 36mm;
-}
-
-/* ── Brand (right) ── */
-.hdr-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px 10px 12px;
-  border-left: 1px solid rgba(201,168,76,.25);
-}
-
-.logo-box {
-  width: 56px;
-  height: 56px;
-  border: 2px solid #C9A84C;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(201,168,76,.08);
   flex-shrink: 0;
 }
 
-.logo-svg { width: 44px; height: 44px; }
+.hdr-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: #fff;
+  border: 1.5px solid #0C2340;
+  border-radius: 5px;
+  margin: 7px 0 7px 10px;
+  padding: 5px 14px;
+  flex-shrink: 0;
+}
 
-.brand-text { display: flex; flex-direction: column; }
+.hdr-badge-l {
+  font-size: 7pt;
+  font-weight: 700;
+  color: #0C2340;
+  white-space: nowrap;
+}
+
+.hdr-badge-v {
+  font-size: 13pt;
+  font-weight: 900;
+  color: #B45309;
+}
+
+.hdr-brand {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+}
 
 .brand-name {
-  font-size: 20pt;
+  font-size: 15pt;
   font-weight: 900;
   color: #fff;
-  letter-spacing: .3px;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.brand-sub {
-  font-size: 7.5pt;
-  color: #C9A84C;
-  margin-top: 2px;
   letter-spacing: .2px;
-  white-space: nowrap;
-}
-
-/* ── Title (center) ── */
-.hdr-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-}
-
-.title-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.title-text {
-  font-size: 22pt;
-  font-weight: 900;
-  color: #fff;
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-.title-dash {
-  font-size: 16pt;
-  color: #C9A84C;
-  font-weight: 400;
-  opacity: .9;
-}
-
-/* ── Receipt data box (left) ── */
-.hdr-data {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid rgba(201,168,76,.25);
-  min-width: 140px;
-}
-
-.data-label {
-  background: #0A1D33;
-  color: #C9A84C;
-  font-size: 8pt;
-  font-weight: 700;
   text-align: center;
-  padding: 5px 12px;
-  border-bottom: 1px solid rgba(201,168,76,.3);
-  letter-spacing: .3px;
-}
-
-.data-grid {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 2px 1fr;
-  grid-template-rows: auto auto auto;
-  padding: 6px 10px;
-  gap: 3px 6px;
-  align-content: center;
-}
-
-.dg-k {
-  font-size: 7.5pt;
-  color: rgba(255,255,255,.55);
   white-space: nowrap;
-  align-self: end;
 }
 
-.dg-sep {
-  background: rgba(255,255,255,.15);
-  width: 1px;
-  align-self: stretch;
-  margin: 2px 0;
-}
-
-.dg-v {
-  font-size: 9.5pt;
-  font-weight: 700;
-  color: #fff;
-  white-space: nowrap;
-  align-self: start;
-}
-
-/* ══════════════════════════════════════════
-   CLIENT INFO
-══════════════════════════════════════════ */
-.client-section {
-  display: flex;
-  align-items: stretch;
-  border-bottom: 1.5px solid #C9A84C;
-}
-
-.clip-col {
-  background: #0C2340;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-left: 1.5px solid #C9A84C;
-  flex-shrink: 0;
-  width: 52px;
-}
-
-.clip-svg { width: 32px; height: 42px; }
-
-.client-tbl {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.client-tbl tr {
-  border-bottom: 1px solid #D8DEE9;
-}
-
-.client-tbl tr:last-child { border-bottom: none; }
-
-.ct-hdr {
-  background: #0C2340;
-  color: #C9A84C;
-  font-size: 8pt;
-  font-weight: 700;
-  padding: 6px 10px;
-  white-space: nowrap;
-  width: 10%;
-  border-left: 1px solid rgba(201,168,76,.25);
-  vertical-align: middle;
-  letter-spacing: .2px;
-}
-
-.ct-val {
-  background: #fff;
-  color: #0D1829;
-  font-size: 9pt;
-  padding: 6px 12px;
-  border-left: 1px solid #D8DEE9;
-  vertical-align: middle;
-  width: 28%;
-}
-
-.ct-val:last-child { border-left: none; }
-
-.ct-bold { font-weight: 700; }
-.ct-name { font-size: 10.5pt; font-weight: 900; color: #0C2340; }
-.ct-ltr  { direction: ltr; text-align: right; unicode-bidi: embed; }
-.ct-inst { font-size: 11pt; font-weight: 900; color: #B45309; }
-
-/* ══════════════════════════════════════════
-   PRODUCT / PAYMENT TABLE
-══════════════════════════════════════════ */
-.prod-tbl {
-  width: 100%;
-  border-collapse: collapse;
-  border-bottom: 1.5px solid #C9A84C;
-}
-
-.pt-hdr {
-  background: #0C2340;
-  color: #C9A84C;
-  font-size: 8.5pt;
-  font-weight: 700;
-  padding: 6px 12px;
-  text-align: center;
-  border-left: 1px solid rgba(201,168,76,.25);
-  letter-spacing: .2px;
-}
-
-.pt-hdr:last-child { border-left: none; }
-
-.pt-product {
-  padding: 8px 14px;
-  font-size: 10pt;
-  font-weight: 700;
-  color: #0C2340;
-  border-left: 1px solid #D8DEE9;
-  vertical-align: middle;
-  width: 45%;
-}
-
-.pt-method {
-  padding: 8px 14px;
-  font-size: 9.5pt;
-  font-weight: 700;
-  color: #374151;
-  text-align: center;
-  border-left: 1px solid #D8DEE9;
-  vertical-align: middle;
-  width: 25%;
-}
-
-.pt-amount {
-  padding: 8px 14px;
-  text-align: center;
-  vertical-align: middle;
-  width: 30%;
-}
-
-.amt-value {
-  display: block;
-  font-size: 12pt;
-  font-weight: 900;
-  color: #B45309;
-  line-height: 1.2;
-}
-
-.amt-remaining {
-  margin-top: 4px;
-  font-size: 7.5pt;
-  color: #6B7280;
-  line-height: 1.3;
-}
-
-.amt-rem-val {
-  display: block;
-  font-size: 11pt;
-  font-weight: 900;
-  color: #B45309;
-  margin-top: 1px;
-}
-
-/* ══════════════════════════════════════════
-   FOOTER INFO (3 columns)
-══════════════════════════════════════════ */
-.footer-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  flex: 1;
-  border-bottom: 1.5px solid #C9A84C;
-}
-
-.fi-col {
-  padding: 10px 14px;
-  border-left: 1px solid #D8DEE9;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fi-col:last-child { border-left: none; }
-
-.fi-dates { border-left: none; }
-
-.fi-col-hdr {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 8.5pt;
-  font-weight: 700;
-  color: #fff;
-  background: #0C2340;
-  padding: 4px 8px;
-  border-radius: 4px;
-  width: fit-content;
-}
-
-.fi-icon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  stroke: #C9A84C;
-}
-
-.fi-value {
-  font-size: 10pt;
-  font-weight: 700;
-  color: #0C2340;
-  direction: ltr;
-  text-align: right;
-  padding-right: 4px;
-}
-
-.fi-mt { margin-top: 4px; }
-
-.fi-row {
+.brand-code {
   display: flex;
   align-items: baseline;
   gap: 6px;
 }
 
-.fi-label {
+.brand-code-l {
   font-size: 7.5pt;
-  color: #6B7280;
-  white-space: nowrap;
-  min-width: 52px;
+  font-weight: 600;
+  color: #C9A84C;
 }
 
-.fi-val-text {
-  font-size: 9.5pt;
-  font-weight: 700;
-  color: #0C2340;
-}
-
-.fi-ltr {
-  direction: ltr;
-  unicode-bidi: embed;
+.brand-code-v {
+  font-size: 10.5pt;
+  font-weight: 900;
+  color: #fff;
 }
 
 /* ══════════════════════════════════════════
-   BOTTOM BAR
+   BODY — 3 columns
 ══════════════════════════════════════════ */
-.bottom-bar {
+.body3 {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  min-height: 0;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #C9A84C;
+  min-width: 0;
+}
+.col:last-child { border-left: none; }
+
+.col-hdr {
   background: #0C2340;
   color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 7px 16px;
-  font-size: 8.5pt;
-  font-weight: 600;
+  font-size: 7.5pt;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 6px;
+  letter-spacing: .2px;
 }
 
-.bb-item {
+.col-body {
+  flex: 1;
+  padding: 7px 10px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 0;
+}
+
+/* ── field rows (shared) ── */
+.fld {
+  display: flex;
+  align-items: baseline;
   gap: 5px;
-  white-space: nowrap;
-  direction: ltr;
+  border-bottom: 0.5px dotted #D8DEE9;
+  padding-bottom: 3px;
 }
 
-.bb-icon {
-  width: 13px;
-  height: 13px;
-  stroke: #C9A84C;
+.fld-l {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #6B7280;
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
-.bb-sep {
-  color: rgba(201,168,76,.4);
-  font-size: 10pt;
+.fld-v {
+  font-size: 9pt;
+  font-weight: 600;
+  color: #0D1829;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.fld-bold { font-weight: 900; color: #0C2340; }
+.fld-ltr { direction: ltr; text-align: right; unicode-bidi: embed; }
+
+/* ── client column ── */
+.col-client .fld-v { font-size: 8.5pt; }
+
+/* ── product column ── */
+.pd-label {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.pd-product {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #0C2340;
+  border: 0.5px solid #D8DEE9;
+  border-radius: 3px;
+  padding: 6px 8px;
+  min-height: 18mm;
+  flex-shrink: 0;
+}
+
+.pd-due {
+  background: #FBF3DF;
+  border: 1px solid #C9A84C;
+  border-radius: 4px;
+  padding: 6px 8px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.pd-due-l {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #7A5B10;
+}
+
+.pd-due-v {
+  font-size: 15pt;
+  font-weight: 900;
+  color: #B45309;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.pd-due-words {
+  font-size: 6.5pt;
+  color: #8A8578;
+  margin-top: 3px;
+}
+
+.fld-collect { margin-top: auto; padding-top: 6px; }
+
+/* ── contract column ── */
+.pd-remaining {
+  margin-top: auto;
+  background: #EEF2F7;
+  border: 1px solid #0C2340;
+  border-radius: 4px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.pd-remaining-l {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #374151;
+}
+
+.pd-remaining-v {
+  font-size: 13.5pt;
+  font-weight: 900;
+  color: #0C2340;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+.ftr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0A1D33;
+  padding: 5px 12px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ftr-item {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ftr-service { flex-shrink: 0; }
+
+.ftr-l {
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: #C9A84C;
+}
+
+.ftr-v {
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 `;

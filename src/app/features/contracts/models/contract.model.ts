@@ -90,6 +90,13 @@ export interface CreateContractPayload {
   notes?: string;
   /** Contract code — user-entered, unique per contract. Omit when blank. */
   code?: string;
+  /**
+   * When `true`, the server recalculates the last installment to absorb
+   * whatever remainder doesn't divide evenly across `installmentsCount`,
+   * instead of forcing every installment to the exact same amount.
+   * Defaults to `false` — omit entirely to keep prior behavior unchanged.
+   */
+  adjustLastInstallmentForRemainder?: boolean;
 }
 
 /** Response shape from `POST /dashboard/contracts`. */
@@ -133,6 +140,8 @@ export interface ContractFormState {
   notes?: string;
   /** Contract code — user-entered, unique per contract. */
   code?: string;
+  /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
+  adjustLastInstallmentForRemainder?: boolean;
 }
 
 /** Build `POST /dashboard/contracts` body from form state. */
@@ -169,6 +178,10 @@ export function buildCreateContractPayload(
   const trimmedCode = form.code?.trim();
   if (trimmedCode) payload.code = trimmedCode;
 
+  if (form.adjustLastInstallmentForRemainder) {
+    payload.adjustLastInstallmentForRemainder = true;
+  }
+
   return payload;
 }
 
@@ -190,6 +203,8 @@ export interface UpdateContractPayload {
   representativeId?: number;
   notes?: string;
   code?: string;
+  /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
+  adjustLastInstallmentForRemainder?: boolean;
 }
 
 /** Form-state shape for the edit page — identical to ContractFormState. */
@@ -240,6 +255,8 @@ export interface CreateDirectContractPayload {
   notes?: string;
   /** Contract code — user-entered, unique per contract. Omit when blank. */
   code?: string;
+  /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
+  adjustLastInstallmentForRemainder?: boolean;
 }
 
 /** Response shape from `POST /dashboard/contracts/direct`. */

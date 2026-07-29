@@ -278,6 +278,23 @@
             />
           </div>
 
+          <!-- قيمة القسط -->
+          <div class="col-12 col-sm-6">
+            <label class="form-label d-flex justify-content-between">
+              <span>قيمة القسط</span>
+              @if (!form.controls.adjustLastInstallmentForRemainder.value) {
+                <span class="cn-calc-badge">محسوب تلقائياً</span>
+              }
+            </label>
+            <input
+              type="number"
+              formControlName="installmentAmount"
+              class="form-control"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
           <!-- أول قسط -->
           <div class="col-12 col-sm-6">
             <label class="form-label">تاريخ أول قسط</label>
@@ -301,6 +318,31 @@
               [options]="treasuryOptions()"
             />
             <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
+          </div>
+
+          <!-- ضبط القسط الأخير تلقائيًا -->
+          <div class="col-12">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="cnAdjustLastInstallment"
+                formControlName="adjustLastInstallmentForRemainder"
+              />
+              <label class="form-check-label" for="cnAdjustLastInstallment">
+                ضبط القسط الأخير تلقائيًا
+              </label>
+            </div>
+            @if (form.controls.adjustLastInstallmentForRemainder.value) {
+              <div class="cn-remainder-note">
+                آخر قسط هيتحسب تلقائيًا من الباقي، ومش هيكون بالضرورة نفس قيمة باقي الأقساط.
+                @if (summary().count > 1) {
+                  <br>القيمة التقريبية المتوقعة لآخر قسط:
+                  <strong>{{ summary().lastInstallmentPreview | currencyAr }}</strong>
+                  (تقديرية — السيرفر هو من يحسب القيمة النهائية).
+                }
+              </div>
+            }
           </div>
 
           <!-- ملاحظات -->
@@ -372,6 +414,13 @@
           <span>القسط × {{ summary().count }}</span>
           <span>{{ summary().installmentAmt | currencyAr }}</span>
         </div>
+
+        @if (form.controls.adjustLastInstallmentForRemainder.value && summary().count > 1) {
+          <div class="cr" style="border-top:1px dashed var(--bg3);margin-top:8px;padding-top:8px">
+            <span style="color:var(--txt3)">آخر قسط (تقديري)</span>
+            <span style="font-weight:700">{{ summary().lastInstallmentPreview | currencyAr }}</span>
+          </div>
+        }
 
         <div class="d-flex gap-2 mt-3">
 
@@ -488,6 +537,26 @@
   }
   .cn-print-btn-skip:hover {
     background: #f5f5f5;
+  }
+
+  .cn-calc-badge {
+    font-size: 10px;
+    color: var(--txt3, #6c757d);
+    background: var(--bg2, #f1f3f5);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 400;
+  }
+
+  .cn-remainder-note {
+    background: #f4f7fb;
+    border: 1px dashed #b8c8e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .8rem;
+    color: #5a6480;
+    line-height: 1.6;
+    margin-top: 8px;
   }
 
   .cn-item-row {

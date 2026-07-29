@@ -55,17 +55,17 @@ export class DashboardService {
       .pipe(toList<TopClientDto>());
   }
 
-  installmentsDueThisWeek(): Observable<DueInstallmentDto[]> {
+  installmentsDueThisMonth(): Observable<DueInstallmentDto[]> {
     return this.api
-      .get<DueInstallmentDto[]>(API_ENDPOINTS.installments.dueThisWeek, {
+      .get<DueInstallmentDto[]>(API_ENDPOINTS.installments.dueThisMonth, {
         context: withCache({ ttlMs: HOME_WIDGET_TTL_MS }),
       })
       .pipe(toList<DueInstallmentDto>());
   }
 
-  refreshInstallmentsDueThisWeek(): Observable<DueInstallmentDto[]> {
+  refreshInstallmentsDueThisMonth(): Observable<DueInstallmentDto[]> {
     return this.api
-      .get<DueInstallmentDto[]>(API_ENDPOINTS.installments.dueThisWeek, {
+      .get<DueInstallmentDto[]>(API_ENDPOINTS.installments.dueThisMonth, {
         context: withCacheBypass(withCache({ ttlMs: HOME_WIDGET_TTL_MS })),
       })
       .pipe(toList<DueInstallmentDto>());

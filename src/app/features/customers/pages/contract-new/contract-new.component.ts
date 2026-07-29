@@ -181,6 +181,8 @@ export class ContractNewComponent implements OnInit {
     notes: [''],
 
     code: [''],
+
+    adjustLastInstallmentForRemainder: [false],
   });
 
   get itemsArray(): FormArray {
@@ -215,6 +217,15 @@ export class ContractNewComponent implements OnInit {
     const totalAmount  = afterDown + profitAmount;
     const installmentAmt = totalAmount / count;
 
+    // Preview only — mirrors the server's remainder formula so the user can
+    // see roughly what the last installment will be. The server computes
+    // and persists the authoritative value; this is not sent in the payload.
+    // In manual mode `v.installmentAmount` holds the user-entered amount
+    // (the control is enabled, so it's included in valueChanges); otherwise
+    // fall back to the auto-computed even-division amount.
+    const manualInstallmentAmt = Number(v.installmentAmount ?? installmentAmt) || installmentAmt;
+    const lastInstallmentPreview = totalAmount - (count - 1) * manualInstallmentAmt;
+
     return {
       unitPrice,
       cashPrice,
@@ -224,6 +235,7 @@ export class ContractNewComponent implements OnInit {
       profitAmount,
       totalAmount,
       installmentAmt,
+      lastInstallmentPreview,
       count,
       totalQty,
     };
@@ -384,6 +396,20 @@ export class ContractNewComponent implements OnInit {
       this.calculateInstallment();
     });
 
+    // "ضبط القسط الأخير تلقائيًا": when on, the user types the installment
+    // amount by hand (it no longer has to divide the total evenly — the
+    // server absorbs the remainder into the last installment). When off,
+    // restore the normal auto-computed/disabled behavior.
+    this.form.get('adjustLastInstallmentForRemainder')?.valueChanges.subscribe((on) => {
+      const ctrl = this.form.get('installmentAmount');
+      if (on) {
+        ctrl?.enable({ emitEvent: false });
+      } else {
+        ctrl?.disable({ emitEvent: false });
+        this.calculateInstallment();
+      }
+    });
+
     // When the product in the FIRST item changes, auto-fill cashPrice once
     // using the price that matches the selected paymentFrequency.
     const firstProductCtrl = this.itemsArray.at(0)?.get('productId');
@@ -435,6 +461,10 @@ export class ContractNewComponent implements OnInit {
   }
 
   private calculateInstallment(): void {
+    // Manual mode: the user is entering their own installment amount —
+    // don't overwrite it with the even-division calculation.
+    if (this.form.get('adjustLastInstallmentForRemainder')?.value) return;
+
     const unitPrice   = Number(this.form.get('cashPrice')?.value) || 0;
     const downPayment = Number(this.form.get('downPayment')?.value) || 0;
     const profitRate  = Number(this.form.get('profitRate')?.value) || 0;
@@ -504,6 +534,7 @@ export class ContractNewComponent implements OnInit {
         : null,
       notes: raw.notes?.trim() || '',
       code: raw.code?.trim() || '',
+      adjustLastInstallmentForRemainder: !!raw.adjustLastInstallmentForRemainder,
     };
 
     if (id) {
@@ -629,6 +660,9 @@ export class ContractNewComponent implements OnInit {
       clientAddress:        fullClient?.areaName    ?? listClient?.areaName    ?? null,
       clientRegion:         fullClient?.region      ?? null,
       clientOccupation:     fullClient?.occupation  ?? null,
+      clientBuilding:       fullClient?.building    ?? null,
+      clientFloor:          fullClient?.floor       ?? null,
+      clientDepartment:     fullClient?.department  ?? null,
       repName:              selectedRep?.fullName   ?? null,
       repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         productLines.length ? productLines : [{ name: 'منتج', quantity: 1 }],
@@ -662,9 +696,11 @@ export class ContractNewComponent implements OnInit {
         representativeId: null,
         notes: '',
         code: '',
+        adjustLastInstallmentForRemainder: false,
       },
       { emitEvent: false },
     );
+    this.form.get('installmentAmount')?.disable({ emitEvent: false });
     this.form.get('installmentAmount')?.setValue(0, { emitEvent: false });
     this.form.markAsUntouched();
     this.form.markAsPristine();

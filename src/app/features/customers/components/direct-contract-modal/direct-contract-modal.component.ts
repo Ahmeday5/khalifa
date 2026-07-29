@@ -138,6 +138,7 @@ export class DirectContractModalComponent {
     representativeId:     this.fb.control<number | null>(null),
     notes:                [''],
     code:                 [''],
+    adjustLastInstallmentForRemainder: [false],
   });
 
   get itemsArray(): FormArray { return this.form.get('items') as FormArray; }
@@ -158,7 +159,14 @@ export class DirectContractModalComponent {
     const profitAmount  = afterDown * (profitRate / 100);
     const totalAmount   = afterDown + profitAmount;
     const installmentAmt = totalAmount / count;
-    return { cashPrice, downPayment, afterDown, profitAmount, totalAmount, installmentAmt, count };
+    // Preview only — mirrors the server's remainder formula; the server
+    // computes and persists the authoritative last-installment value.
+    // In manual mode `v.installmentAmount` holds the user-entered amount
+    // (the control is enabled, so it's included in valueChanges); otherwise
+    // fall back to the auto-computed even-division amount.
+    const manualInstallmentAmt = Number(v.installmentAmount ?? installmentAmt) || installmentAmt;
+    const lastInstallmentPreview = totalAmount - (count - 1) * manualInstallmentAmt;
+    return { cashPrice, downPayment, afterDown, profitAmount, totalAmount, installmentAmt, lastInstallmentPreview, count };
   });
 
   constructor() {
@@ -184,6 +192,20 @@ export class DirectContractModalComponent {
 
     // Recalculate installment amount whenever form values change
     this.form.valueChanges.subscribe(() => this.recalculateInstallment());
+
+    // "ضبط القسط الأخير تلقائيًا": when on, the user types the installment
+    // amount by hand (it no longer has to divide the total evenly — the
+    // server absorbs the remainder into the last installment). When off,
+    // restore the normal auto-computed/disabled behavior.
+    this.form.get('adjustLastInstallmentForRemainder')?.valueChanges.subscribe((on) => {
+      const ctrl = this.form.get('installmentAmount');
+      if (on) {
+        ctrl?.enable({ emitEvent: false });
+      } else {
+        ctrl?.disable({ emitEvent: false });
+        this.recalculateInstallment();
+      }
+    });
 
     // When paymentFrequency changes, default installmentsCount to match (still editable).
     this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
@@ -272,6 +294,7 @@ export class DirectContractModalComponent {
       representativeId:     raw.representativeId ? Number(raw.representativeId) : undefined,
       notes:                raw.notes?.trim() || undefined,
       code:                 raw.code?.trim() || undefined,
+      adjustLastInstallmentForRemainder: raw.adjustLastInstallmentForRemainder || undefined,
     };
 
     this.serverError.set(null);
@@ -403,6 +426,10 @@ export class DirectContractModalComponent {
   }
 
   private recalculateInstallment(): void {
+    // Manual mode: the user is entering their own installment amount —
+    // don't overwrite it with the even-division calculation.
+    if (this.form.get('adjustLastInstallmentForRemainder')?.value) return;
+
     const cashPrice   = Number(this.form.get('cashPrice')?.value ?? 0);
     const downPayment = Number(this.form.get('downPayment')?.value ?? 0);
     const profitRate  = Number(this.form.get('profitRate')?.value ?? 0);
@@ -437,7 +464,9 @@ export class DirectContractModalComponent {
       representativeId:     null,
       notes:                '',
       code:                 '',
+      adjustLastInstallmentForRemainder: false,
     });
+    this.form.get('installmentAmount')?.disable({ emitEvent: false });
     this.serverError.set(null);
   }
 
@@ -482,6 +511,9 @@ export class DirectContractModalComponent {
       clientAddress:        fullClient?.areaName    ?? listClient?.areaName    ?? null,
       clientRegion:         fullClient?.region      ?? null,
       clientOccupation:     fullClient?.occupation  ?? null,
+      clientBuilding:       fullClient?.building    ?? null,
+      clientFloor:          fullClient?.floor       ?? null,
+      clientDepartment:     fullClient?.department  ?? null,
       repName:              selectedRep?.fullName   ?? null,
       repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         items.map((i) => ({ name: i.productName, quantity: i.quantity })),

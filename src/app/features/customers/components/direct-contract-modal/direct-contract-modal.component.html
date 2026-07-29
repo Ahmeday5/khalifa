@@ -165,14 +165,18 @@
         <app-form-error [control]="form.controls.installmentsCount" label="عدد الأقساط" />
       </div>
 
-      <!-- ── Installment amount (calculated) ── -->
+      <!-- ── Installment amount (calculated, or manual when adjusting the last installment) ── -->
       <div class="col-6 col-md-3">
         <label class="form-label d-flex justify-content-between">
           <span>قيمة القسط</span>
+          @if (!form.controls.adjustLastInstallmentForRemainder.value) {
           <span class="dcm-calc-badge">محسوب تلقائياً</span>
+          }
         </label>
-        <input type="number" class="form-control dcm-readonly-field" formControlName="installmentAmount" dir="ltr"
-          readonly tabindex="-1" />
+        <input type="number" class="form-control" formControlName="installmentAmount" dir="ltr"
+          [class.dcm-readonly-field]="!form.controls.adjustLastInstallmentForRemainder.value"
+          [readonly]="!form.controls.adjustLastInstallmentForRemainder.value"
+          [tabindex]="form.controls.adjustLastInstallmentForRemainder.value ? 0 : -1" min="0" step="0.01" />
       </div>
 
       <!-- ── Payment frequency ── -->
@@ -201,6 +205,27 @@
         <app-searchable-select formControlName="treasuryId" [options]="treasuryOptions()" placeholder="اختر الخزينة"
           searchPlaceholder="ابحث باسم الخزينة…" />
         <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+      </div>
+
+      <!-- ── Adjust last installment for remainder ── -->
+      <div class="col-12">
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="dcmAdjustLastInstallment"
+            formControlName="adjustLastInstallmentForRemainder" />
+          <label class="form-check-label" for="dcmAdjustLastInstallment">
+            ضبط القسط الأخير تلقائيًا
+          </label>
+        </div>
+        @if (form.controls.adjustLastInstallmentForRemainder.value) {
+        <div class="dcm-remainder-note">
+          آخر قسط هيتحسب تلقائيًا من الباقي، ومش هيكون بالضرورة نفس قيمة باقي الأقساط.
+          @if (summary().count > 1) {
+          <br>القيمة التقريبية المتوقعة لآخر قسط:
+          <strong>{{ summary().lastInstallmentPreview | currencyAr }}</strong>
+          (تقديرية — السيرفر هو من يحسب القيمة النهائية).
+          }
+        </div>
+        }
       </div>
 
       <!-- ── Notes ── -->
@@ -239,6 +264,12 @@
           <span>قيمة القسط ({{ summary().count }} قسط)</span>
           <span class="fw-700">{{ summary().installmentAmt | currencyAr: true }}</span>
         </div>
+        @if (form.controls.adjustLastInstallmentForRemainder.value && summary().count > 1) {
+        <div class="dcm-summary-row">
+          <span>آخر قسط (تقديري)</span>
+          <span class="fw-700">{{ summary().lastInstallmentPreview | currencyAr: true }}</span>
+        </div>
+        }
       </div>
     </div>
     }

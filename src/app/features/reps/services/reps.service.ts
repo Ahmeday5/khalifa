@@ -104,8 +104,6 @@ export class RepsService {
       .pipe(toList<RepresentativeSubTreasury>());
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ account statement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
   /** Admin: full account statement for a specific representative. */
   statement(
     id: number,

@@ -281,8 +281,8 @@ export class DashboardHomeComponent implements OnInit {
       ? this.dashService.refreshTopClientsThisMonth()
       : this.dashService.topClientsThisMonth();
     const installments$ = force
-      ? this.dashService.refreshInstallmentsDueThisWeek()
-      : this.dashService.installmentsDueThisWeek();
+      ? this.dashService.refreshInstallmentsDueThisMonth()
+      : this.dashService.installmentsDueThisMonth();
 
     profits$.subscribe({
       next: (rows) => this.profitMonths.set(rows),

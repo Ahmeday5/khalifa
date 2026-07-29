@@ -119,7 +119,7 @@ export const API_ENDPOINTS = {
     profitsLast6Months: 'dashboard/charts/profits-last-6-months',
   },
   installments: {
-    dueThisWeek: 'dashboard/installments/due-this-week',
+    dueThisMonth: 'dashboard/installments/due-this-month',
     /**
      * Records a payment against an open installment contract.
      * Note: this endpoint is mounted at the API root (no /dashboard prefix).
