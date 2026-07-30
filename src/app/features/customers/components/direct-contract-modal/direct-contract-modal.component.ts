@@ -91,6 +91,8 @@ export class DirectContractModalComponent {
   protected readonly pendingPrintData = signal<ContractSlipData | null>(null);
 
   protected readonly isEditMode = computed(() => !!this.editId());
+  /** Suppresses the dateOfSale→firstInstallmentDate auto-sync while patching form values from server data. */
+  private prefilling = false;
 
   // ── lookup data ──
   protected readonly clients = signal<DashboardClient[]>([]);
@@ -130,10 +132,10 @@ export class DirectContractModalComponent {
     cashPrice:            [0, [Validators.required, Validators.min(1)]],
     downPayment:          [0, [Validators.required, Validators.min(0)]],
     profitRate:           [{ value: 0, disabled: true }],
-    installmentsCount:    [3, [Validators.required, Validators.min(1), Validators.max(120)]],
+    installmentsCount:    [12, [Validators.required, Validators.min(1), Validators.max(120)]],
     installmentAmount:    [{ value: 0, disabled: true }, [Validators.required]],
-    paymentFrequency:     ['Quarterly' as ContractPaymentFrequency, [Validators.required]],
-    firstInstallmentDate: [this.nextMonthStr(), [Validators.required]],
+    paymentFrequency:     ['Annual' as ContractPaymentFrequency, [Validators.required]],
+    firstInstallmentDate: [this.nextMonthStr(this.todayStr()), [Validators.required]],
     treasuryId:           this.fb.control<number | null>(null, [Validators.required]),
     representativeId:     this.fb.control<number | null>(null),
     notes:                [''],
@@ -213,6 +215,24 @@ export class DirectContractModalComponent {
         { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
         { emitEvent: true },
       );
+    });
+
+    // Auto-advance "تاريخ أول قسط" to exactly one month after "تاريخ البيع"
+    // whenever the sale date changes, so the operator doesn't have to set it
+    // by hand. Stops once the user edits the first-installment date directly.
+    let firstInstallmentTouchedManually = false;
+    this.form.get('firstInstallmentDate')?.valueChanges.subscribe(() => {
+      if (this.prefilling) return;
+      const expected = this.nextMonthStr(this.form.get('dateOfSale')?.value ?? this.todayStr());
+      if (this.form.get('firstInstallmentDate')?.value !== expected) {
+        firstInstallmentTouchedManually = true;
+      }
+    });
+    this.form.get('dateOfSale')?.valueChanges.subscribe((dateOfSale) => {
+      if (this.prefilling || firstInstallmentTouchedManually) return;
+      this.form
+        .get('firstInstallmentDate')
+        ?.setValue(this.nextMonthStr(dateOfSale), { emitEvent: false });
     });
   }
 
@@ -365,6 +385,7 @@ export class DirectContractModalComponent {
     ).subscribe({
       next: (d) => {
         const c = d.contract;
+        this.prefilling = true;
 
         // rebuild items FormArray
         this.itemsArray.clear({ emitEvent: false });
@@ -395,6 +416,7 @@ export class DirectContractModalComponent {
           code:                 c.code ?? '',
         }, { emitEvent: false });
 
+        this.prefilling = false;
         this.serverError.set(null);
       },
       error: (err: ApiError) => {
@@ -456,10 +478,10 @@ export class DirectContractModalComponent {
       cashPrice:            0,
       downPayment:          0,
       profitRate:           0,
-      installmentsCount:    3,
+      installmentsCount:    12,
       installmentAmount:    0,
-      paymentFrequency:     'Quarterly',
-      firstInstallmentDate: this.nextMonthStr(),
+      paymentFrequency:     'Annual',
+      firstInstallmentDate: this.nextMonthStr(this.todayStr()),
       treasuryId:           null,
       representativeId:     null,
       notes:                '',
@@ -552,8 +574,10 @@ export class DirectContractModalComponent {
     return new Date().toISOString().split('T')[0];
   }
 
-  private nextMonthStr(): string {
-    const d = new Date();
+  /** One calendar month after the given date (yyyy-MM-dd in, yyyy-MM-dd out). */
+  private nextMonthStr(dateStr: string): string {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return this.todayStr();
     d.setMonth(d.getMonth() + 1);
     return d.toISOString().split('T')[0];
   }

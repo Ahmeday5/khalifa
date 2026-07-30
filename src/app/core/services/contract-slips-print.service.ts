@@ -15,11 +15,11 @@ export interface ContractSlipData {
   clientAddress?:      string | null;
   clientRegion?:       string | null;
   clientOccupation?:   string | null;
-  /** Building / عمارة — printed as "العنوان (المبنى)". */
+  /** Building / عمارة — printed as "المبنى". */
   clientBuilding?:     string | null;
-  /** Floor — combined with `clientDepartment` into "الدور / الشقة". */
+  /** Floor — printed as "الدور". Falls back to `clientDepartment` if empty. */
   clientFloor?:        string | null;
-  /** Apartment/department — combined with `clientFloor` into "الدور / الشقة". */
+  /** Apartment/department — legacy fallback for `clientFloor`. */
   clientDepartment?:   string | null;
   repName?:            string | null;
   repPhone?:           string | null;
@@ -38,16 +38,6 @@ export interface InstallmentSlipRow {
   dueDate:  string;
   amount:   number;
 }
-
-const FREQ_LABELS: Record<string, string> = {
-  Monthly: 'شهري',
-  Weekly: 'أسبوعي',
-  Quarterly: 'ربع سنوي',
-  SemiAnnual: 'نصف سنوي',
-  SemiAnnually: 'نصف سنوي',
-  Annual: 'سنوي',
-  Annually: 'سنوي',
-};
 
 @Injectable({ providedIn: 'root' })
 export class ContractSlipsPrintService {
@@ -89,9 +79,12 @@ export class ContractSlipsPrintService {
   // ─── HTML document ───────────────────────────────────────────────────────────
 
   private buildDocument(data: ContractSlipData, schedule: InstallmentSlipRow[]): string {
-    const slips = schedule
-      .map((inst) => this.buildSlip(data, inst, schedule.length))
+    // One slip per A4 page — the slip itself keeps its fixed 20.5cm × 9.5cm
+    // footprint and margins; the rest of each sheet is left blank on purpose.
+    const pages = schedule
+      .map((inst) => `<div class="page">${this.buildSlip(data, inst, schedule.length)}</div>`)
       .join('\n');
+
     return `<!doctype html>
 <html dir="rtl" lang="ar">
 <head>
@@ -99,7 +92,7 @@ export class ContractSlipsPrintService {
   <title>إيصالات أقساط — ${esc(data.clientName)}</title>
   <style>${STYLES}</style>
 </head>
-<body>${slips}</body>
+<body>${pages}</body>
 </html>`;
   }
 
@@ -114,10 +107,10 @@ export class ContractSlipsPrintService {
 
     const contractCode = esc(data.contractCode ?? '—');
     const receiptNo = `${inst.sequence} / ${total}`;
+    const amountWords = `${amountToArabicWords(inst.amount)} فقط`;
+    const installmentPlan = `${data.installmentsCount} × ${this.fmtMoney(data.installmentAmount)} ج.م`;
 
-    const floorDept = [data.clientFloor, data.clientDepartment]
-      .filter((v) => v && v.trim())
-      .join(' / ');
+    const floorDept = data.clientFloor && data.clientFloor.trim() ? data.clientFloor : (data.clientDepartment ?? '');
 
     return `
 <div class="slip">
@@ -130,10 +123,6 @@ export class ContractSlipsPrintService {
     </div>
     <div class="hdr-brand">
       <div class="brand-name">${esc(COMPANY_NAME)}</div>
-      <div class="brand-code">
-        <span class="brand-code-l">كود العقد</span>
-        <span class="brand-code-v">${contractCode}</span>
-      </div>
     </div>
   </div><!-- /.hdr -->
 
@@ -148,9 +137,9 @@ export class ContractSlipsPrintService {
         <div class="fld"><span class="fld-l">الاسم الكامل:</span><span class="fld-v fld-bold">${esc(data.clientName)}</span></div>
         <div class="fld"><span class="fld-l">رقم الهاتف:</span><span class="fld-v fld-ltr">${esc(data.clientPhone) || '—'}</span></div>
         <div class="fld"><span class="fld-l">جهة العمل:</span><span class="fld-v">${esc(data.clientRegion ?? '—')}</span></div>
-        <div class="fld"><span class="fld-l">الوظيفة:</span><span class="fld-v">${esc(data.clientOccupation ?? '—')}</span></div>
-        <div class="fld"><span class="fld-l">العنوان (المبنى):</span><span class="fld-v">${esc(data.clientBuilding ?? '—')}</span></div>
-        <div class="fld"><span class="fld-l">الدور / الشقة:</span><span class="fld-v">${esc(floorDept || '—')}</span></div>
+        <div class="fld"><span class="fld-l">المهنة:</span><span class="fld-v">${esc(data.clientOccupation ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">المبنى:</span><span class="fld-v">${esc(data.clientBuilding ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">الدور:</span><span class="fld-v">${esc(floorDept || '—')}</span></div>
       </div>
     </div>
 
@@ -164,10 +153,10 @@ export class ContractSlipsPrintService {
         <div class="pd-due">
           <div class="pd-due-l">مبلغ القسط المستحق هذا الشهر</div>
           <div class="pd-due-v">${this.fmtMoney(inst.amount)} ج.م</div>
-          <div class="pd-due-words">فقط وقدره: ......................................</div>
+          <div class="pd-due-words">مبلغ وقدره: ${esc(amountWords)}</div>
         </div>
 
-        <div class="fld fld-collect"><span class="fld-l">يحصل في تاريخ:</span><span class="fld-v">${this.fmtDate(inst.dueDate)}</span></div>
+        <div class="fld fld-collect"><span class="fld-l">يحصل في تاريخ:</span><span class="fld-v fld-big">${this.fmtDate(inst.dueDate)}</span></div>
       </div>
     </div>
 
@@ -175,9 +164,10 @@ export class ContractSlipsPrintService {
     <div class="col col-contract">
       <div class="col-hdr">تفاصيل العقد</div>
       <div class="col-body">
+        <div class="fld"><span class="fld-l">كود العقد:</span><span class="fld-v fld-bold">${contractCode}</span></div>
         <div class="fld"><span class="fld-l">إجمالي العقد:</span><span class="fld-v fld-bold">${this.fmtMoney(data.totalAmount)}</span></div>
         <div class="fld"><span class="fld-l">المقدم:</span><span class="fld-v">${this.fmtMoney(data.downPayment)}</span></div>
-        <div class="fld"><span class="fld-l">نظام التقسيط:</span><span class="fld-v">${this.freqLabel(data.paymentFrequency)}</span></div>
+        <div class="fld"><span class="fld-l">نظام التقسيط:</span><span class="fld-v">${esc(installmentPlan)}</span></div>
         <div class="fld"><span class="fld-l">تاريخ البيع:</span><span class="fld-v">${this.fmtDate(data.dateOfSale)}</span></div>
         <div class="fld"><span class="fld-l">بداية الأقساط:</span><span class="fld-v">${this.fmtDate(data.firstInstallmentDate)}</span></div>
 
@@ -251,10 +241,6 @@ export class ContractSlipsPrintService {
 
   // ─── helpers ──────────────────────────────────────────────────────────────────
 
-  private freqLabel(freq: string): string {
-    return FREQ_LABELS[freq] ?? freq;
-  }
-
   private fmtDate(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
@@ -266,6 +252,87 @@ export class ContractSlipsPrintService {
   private fmtMoney(n: number): string {
     return Math.round(n).toLocaleString('ar-EG');
   }
+}
+
+// ─── Arabic amount-in-words ───────────────────────────────────────────────────
+//
+// Converts a pound amount to Egyptian-Arabic words, e.g. 3250 →
+// "ثلاثة آلاف ومئتان وخمسون جنيها مصريا". Piastres (fractional part) are
+// appended as "... وقرشا" / "... وقرشين" / "... قرشا" when present.
+
+const ONES = [
+  '', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة',
+];
+const ONES_FEM = [
+  '', 'إحدى', 'اثنتا', 'ثلاث', 'أربع', 'خمس', 'ست', 'سبع', 'ثمان', 'تسع',
+];
+const TEENS = [
+  'عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر',
+  'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر',
+];
+const TENS = [
+  '', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون',
+];
+
+function twoDigitsToWords(n: number, feminine: boolean): string {
+  if (n === 0) return '';
+  if (n < 10) return feminine ? ONES_FEM[n] : ONES[n];
+  if (n < 20) return TEENS[n - 10];
+  const tens = Math.floor(n / 10);
+  const ones = n % 10;
+  const onesWord = feminine ? ONES_FEM[ones] : ONES[ones];
+  return ones === 0 ? TENS[tens] : `${onesWord} و${TENS[tens]}`;
+}
+
+function threeDigitsToWords(n: number, feminine: boolean): string {
+  if (n === 0) return '';
+  const hundred = Math.floor(n / 100);
+  const rest = n % 100;
+  const hundredsWords = ['', 'مئة', 'مئتان', 'ثلاثمئة', 'أربعمئة', 'خمسمئة', 'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة'];
+  const hundredWord = hundredsWords[hundred];
+  const restWord = twoDigitsToWords(rest, feminine);
+  if (!hundredWord) return restWord;
+  return restWord ? `${hundredWord} و${restWord}` : hundredWord;
+}
+
+/** One scale step (thousands/millions) rendered with correct singular/dual/plural agreement. */
+function scaleGroupToWords(n: number, singular: string, dual: string, plural: string): string {
+  if (n === 1) return singular;
+  if (n === 2) return dual;
+  if (n >= 3 && n <= 10) return `${threeDigitsToWords(n, false)} ${plural}`;
+  return `${threeDigitsToWords(n, false)} ${singular}`;
+}
+
+function integerToWords(n: number): string {
+  if (n === 0) return 'صفر';
+
+  const millions   = Math.floor(n / 1_000_000);
+  const thousands   = Math.floor((n % 1_000_000) / 1000);
+  const remainder   = n % 1000;
+
+  const parts: string[] = [];
+  if (millions > 0) parts.push(scaleGroupToWords(millions, 'مليون', 'مليونان', 'ملايين'));
+  if (thousands > 0) parts.push(scaleGroupToWords(thousands, 'ألف', 'ألفان', 'آلاف'));
+  if (remainder > 0) parts.push(threeDigitsToWords(remainder, false));
+
+  return parts.join(' و');
+}
+
+function amountToArabicWords(amount: number): string {
+  const pounds = Math.floor(Math.abs(amount));
+  const piastres = Math.round((Math.abs(amount) - pounds) * 100);
+
+  const poundsWord = integerToWords(pounds);
+  const poundsUnit = pounds === 1 ? 'جنيه مصري' : pounds === 2 ? 'جنيهان مصريان' : 'جنيها مصريا';
+  let result = `${poundsWord} ${poundsUnit}`;
+
+  if (piastres > 0) {
+    const piastresWord = integerToWords(piastres);
+    const piastresUnit = piastres === 1 ? 'قرشا' : piastres === 2 ? 'قرشين' : 'قرشا';
+    result += ` و${piastresWord} ${piastresUnit}`;
+  }
+
+  return result;
 }
 
 // ─── HTML escaper ─────────────────────────────────────────────────────────────
@@ -282,14 +349,16 @@ function esc(v: unknown): string {
 
 // ─── Stylesheet ───────────────────────────────────────────────────────────────
 //
-// Slip footprint is fixed at 95mm × 205mm — exactly one third of an A4
-// portrait sheet (210mm × 297mm, minus a hairline margin) — so three slips
-// stack per printed page with no gaps and no manual cutting guesswork.
+// Slip footprint is fixed at 205mm × 95mm (20.5cm × 9.5cm) with the same
+// margins as the 3-per-page layout it replaced — one slip per printed A4
+// page, the rest of the sheet left intentionally blank.
 
 const STYLES = `
 @page {
   size: A4 portrait;
-  margin: 0;
+  /* Same 2.5mm left/right the slip used when three shared a page — keeps
+     its exact width/position on the sheet unchanged. */
+  margin: 0 2.5mm;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -298,37 +367,41 @@ html, body {
   background: #fff;
   color: #0D1829;
   font-family: "Segoe UI", Tahoma, Cairo, "Noto Sans Arabic", Arial, sans-serif;
-  font-size: 8pt;
-  line-height: 1.35;
+  font-size: 12.5pt;
+  line-height: 1.25;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   color-adjust: exact;
 }
 
-/* ══ One slip = 95mm × 205mm, three per A4 portrait page ══ */
+/* ══ Each .page is one printed A4 sheet holding exactly one slip ══ */
+.page {
+  padding: 3mm 0;
+  page-break-after: always;
+  break-after: page;
+}
+.page:last-child { page-break-after: avoid; break-after: avoid; }
+
+/* One slip = 205mm × 95mm (20.5cm × 9.5cm), unchanged from the 3-per-page layout. */
 .slip {
   width: 205mm;
   height: 95mm;
-  /* Printed on a portrait sheet turned so the slip's long edge (205mm)
-     runs across the 210mm page width, and its short edge (95mm) stacks
-     three-high down the 297mm page height (3 × 95mm = 285mm ≤ 297mm). */
   display: flex;
   flex-direction: column;
-  page-break-after: always;
-  break-after: page;
   border: 1.5px solid #0C2340;
   overflow: hidden;
   background: #fff;
+  flex-shrink: 0;
 }
-.slip:last-child { page-break-after: avoid; break-after: avoid; }
 
 /* ══════════════════════════════════════════
-   HEADER
+   HEADER — light neutral background, dark text
 ══════════════════════════════════════════ */
 .hdr {
   display: flex;
   align-items: stretch;
-  background: #0C2340;
+  background: #F1F3F6;
+  border-bottom: 1.5px solid #C9A84C;
   flex-shrink: 0;
 }
 
@@ -337,26 +410,26 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   background: #fff;
   border: 1.5px solid #0C2340;
   border-radius: 5px;
-  margin: 7px 0 7px 10px;
-  padding: 5px 14px;
+  margin: 5px 0 5px 8px;
+  padding: 3px 10px;
   flex-shrink: 0;
 }
 
 .hdr-badge-l {
-  font-size: 7pt;
+  font-size: 10.5pt;
   font-weight: 700;
-  color: #0C2340;
+  color: #0D1829;
   white-space: nowrap;
 }
 
 .hdr-badge-v {
-  font-size: 13pt;
+  font-size: 18pt;
   font-weight: 900;
-  color: #B45309;
+  color: #0D1829;
 }
 
 .hdr-brand {
@@ -365,35 +438,17 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: 2px;
+  padding: 4px 8px;
 }
 
 .brand-name {
-  font-size: 15pt;
+  font-size: 20pt;
   font-weight: 900;
-  color: #fff;
+  color: #0D1829;
   letter-spacing: .2px;
   text-align: center;
   white-space: nowrap;
-}
-
-.brand-code {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.brand-code-l {
-  font-size: 7.5pt;
-  font-weight: 600;
-  color: #C9A84C;
-}
-
-.brand-code-v {
-  font-size: 10.5pt;
-  font-weight: 900;
-  color: #fff;
 }
 
 /* ══════════════════════════════════════════
@@ -417,7 +472,7 @@ html, body {
 .col-hdr {
   background: #0C2340;
   color: #fff;
-  font-size: 7.5pt;
+  font-size: 11.5pt;
   font-weight: 700;
   text-align: center;
   padding: 3px 6px;
@@ -426,10 +481,10 @@ html, body {
 
 .col-body {
   flex: 1;
-  padding: 7px 10px;
+  padding: 4px 8px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 1px;
   min-height: 0;
 }
 
@@ -439,19 +494,19 @@ html, body {
   align-items: baseline;
   gap: 5px;
   border-bottom: 0.5px dotted #D8DEE9;
-  padding-bottom: 3px;
+  padding-bottom: 1px;
 }
 
 .fld-l {
-  font-size: 7.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #6B7280;
+  color: #0D1829;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .fld-v {
-  font-size: 9pt;
+  font-size: 12.5pt;
   font-weight: 600;
   color: #0D1829;
   overflow: hidden;
@@ -460,27 +515,28 @@ html, body {
   flex: 1;
 }
 
-.fld-bold { font-weight: 900; color: #0C2340; }
+.fld-bold { font-weight: 900; }
 .fld-ltr { direction: ltr; text-align: right; unicode-bidi: embed; }
+.fld-big { font-size: 15pt; font-weight: 900; }
 
 /* ── client column ── */
-.col-client .fld-v { font-size: 8.5pt; }
+.col-client .fld-v { font-size: 12pt; }
 
 /* ── product column ── */
 .pd-label {
-  font-size: 7.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #6B7280;
+  color: #0D1829;
 }
 
 .pd-product {
-  font-size: 9.5pt;
+  font-size: 13.5pt;
   font-weight: 700;
-  color: #0C2340;
+  color: #0D1829;
   border: 0.5px solid #D8DEE9;
   border-radius: 3px;
-  padding: 6px 8px;
-  min-height: 18mm;
+  padding: 4px 7px;
+  min-height: 12mm;
   flex-shrink: 0;
 }
 
@@ -488,32 +544,35 @@ html, body {
   background: #FBF3DF;
   border: 1px solid #C9A84C;
   border-radius: 4px;
-  padding: 6px 8px;
+  padding: 4px 7px;
   text-align: center;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 .pd-due-l {
-  font-size: 7.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #7A5B10;
+  color: #0D1829;
 }
 
 .pd-due-v {
-  font-size: 15pt;
+  font-size: 20pt;
   font-weight: 900;
-  color: #B45309;
-  line-height: 1.3;
+  color: #0D1829;
+  line-height: 1.25;
   margin-top: 2px;
 }
 
 .pd-due-words {
-  font-size: 6.5pt;
-  color: #8A8578;
+  font-size: 11pt;
+  font-weight: 600;
+  color: #0D1829;
   margin-top: 3px;
+  min-height: 9mm;
+  line-height: 1.3;
 }
 
-.fld-collect { margin-top: auto; padding-top: 6px; }
+.fld-collect { margin-top: auto; padding-top: 4px; }
 
 /* ── contract column ── */
 .pd-remaining {
@@ -521,31 +580,32 @@ html, body {
   background: #EEF2F7;
   border: 1px solid #0C2340;
   border-radius: 4px;
-  padding: 6px 8px;
+  padding: 4px 7px;
   text-align: center;
 }
 
 .pd-remaining-l {
-  font-size: 7.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #374151;
+  color: #0D1829;
 }
 
 .pd-remaining-v {
-  font-size: 13.5pt;
+  font-size: 18pt;
   font-weight: 900;
-  color: #0C2340;
+  color: #0D1829;
   margin-top: 2px;
 }
 
 /* ══════════════════════════════════════════
-   FOOTER
+   FOOTER — light neutral background, dark text
 ══════════════════════════════════════════ */
 .ftr {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0A1D33;
+  background: #F1F3F6;
+  border-top: 1.5px solid #C9A84C;
   padding: 5px 12px;
   gap: 10px;
   flex-shrink: 0;
@@ -562,15 +622,15 @@ html, body {
 .ftr-service { flex-shrink: 0; }
 
 .ftr-l {
-  font-size: 7.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  color: #C9A84C;
+  color: #0D1829;
 }
 
 .ftr-v {
-  font-size: 8.5pt;
+  font-size: 12pt;
   font-weight: 700;
-  color: #fff;
+  color: #0D1829;
   overflow: hidden;
   text-overflow: ellipsis;
 }

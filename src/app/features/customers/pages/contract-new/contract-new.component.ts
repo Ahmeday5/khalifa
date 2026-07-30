@@ -161,18 +161,18 @@ export class ContractNewComponent implements OnInit {
     ],
 
     installmentsCount: [
-      3,
+      12,
       [Validators.required, Validators.min(1), Validators.max(120)],
     ],
 
     installmentAmount: [{ value: 0, disabled: true }, [Validators.required]],
 
     paymentFrequency: [
-      'Quarterly' as ContractPaymentFrequency,
+      'Annual' as ContractPaymentFrequency,
       [Validators.required],
     ],
 
-    firstInstallmentDate: [this.nextQuarterStr(), [Validators.required]],
+    firstInstallmentDate: [this.nextMonthStr(this.todayStr()), [Validators.required]],
 
     treasuryId: [null as number | null, [Validators.required]],
 
@@ -394,6 +394,24 @@ export class ContractNewComponent implements OnInit {
   private setupFormEffects(): void {
     this.form.valueChanges.subscribe(() => {
       this.calculateInstallment();
+    });
+
+    // Auto-advance "تاريخ أول قسط" to exactly one month after "تاريخ البيع"
+    // whenever the sale date changes, so the operator doesn't have to set it
+    // by hand. Stops once the user edits the first-installment date directly.
+    let firstInstallmentTouchedManually = false;
+    this.form.get('firstInstallmentDate')?.valueChanges.subscribe(() => {
+      if (this.prefilling) return;
+      const expected = this.nextMonthStr(this.form.get('dateOfSale')?.value ?? this.todayStr());
+      if (this.form.get('firstInstallmentDate')?.value !== expected) {
+        firstInstallmentTouchedManually = true;
+      }
+    });
+    this.form.get('dateOfSale')?.valueChanges.subscribe((dateOfSale) => {
+      if (this.prefilling || firstInstallmentTouchedManually) return;
+      this.form
+        .get('firstInstallmentDate')
+        ?.setValue(this.nextMonthStr(dateOfSale), { emitEvent: false });
     });
 
     // "ضبط القسط الأخير تلقائيًا": when on, the user types the installment
@@ -688,10 +706,10 @@ export class ContractNewComponent implements OnInit {
         cashPrice: 0,
         downPayment: 0,
         profitRate: 20,
-        installmentsCount: 3,
-        paymentFrequency: 'Quarterly',
+        installmentsCount: 12,
+        paymentFrequency: 'Annual',
         dateOfSale: this.todayStr(),
-        firstInstallmentDate: this.nextQuarterStr(),
+        firstInstallmentDate: this.nextMonthStr(this.todayStr()),
         treasuryId: null,
         representativeId: null,
         notes: '',
@@ -724,9 +742,11 @@ export class ContractNewComponent implements OnInit {
     return new Date().toISOString().split('T')[0];
   }
 
-  private nextQuarterStr(): string {
-    const date = new Date();
-    date.setMonth(date.getMonth() + 3);
+  /** One calendar month after the given date (yyyy-MM-dd in, yyyy-MM-dd out). */
+  private nextMonthStr(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return this.todayStr();
+    date.setMonth(date.getMonth() + 1);
     return date.toISOString().split('T')[0];
   }
 }
