@@ -101,9 +101,15 @@ export class ContractSlipsPrintService {
       0,
       Math.round(data.totalAmount - data.installmentAmount * inst.sequence),
     );
-    const productText = data.productLines
-      .map((p) => (p.quantity > 1 ? `${esc(p.name)} × ${p.quantity}` : esc(p.name)))
-      .join('، ') || '—';
+    const productLines = data.productLines
+      .map((p) => (p.quantity > 1 ? `${esc(p.name)} × ${p.quantity}` : esc(p.name)));
+    const productText = productLines.join('، ') || '—';
+    const productFontSize = this.autoFontSize(productText, {
+      base: 12.5, floor: 8, shrinkPer100Chars: 1.4,
+    });
+    const nameFontSize = this.autoFontSize(data.clientName, {
+      base: 11.5, floor: 8.5, shrinkPer100Chars: 2.2,
+    });
 
     const contractCode = esc(data.contractCode ?? '—');
     const receiptNo = `${inst.sequence} / ${total}`;
@@ -134,12 +140,13 @@ export class ContractSlipsPrintService {
       <div class="col-hdr">بيانات العميل</div>
       <div class="col-body">
         <div class="fld"><span class="fld-l">كود العميل:</span><span class="fld-v">${esc(data.clientCode ?? '—')}</span></div>
-        <div class="fld"><span class="fld-l">الاسم الكامل:</span><span class="fld-v fld-bold">${esc(data.clientName)}</span></div>
+        <div class="fld"><span class="fld-l">الاسم الكامل:</span><span class="fld-v fld-bold" style="font-size:${nameFontSize}pt">${esc(data.clientName)}</span></div>
         <div class="fld"><span class="fld-l">رقم الهاتف:</span><span class="fld-v fld-ltr">${esc(data.clientPhone) || '—'}</span></div>
         <div class="fld"><span class="fld-l">جهة العمل:</span><span class="fld-v">${esc(data.clientRegion ?? '—')}</span></div>
         <div class="fld"><span class="fld-l">المهنة:</span><span class="fld-v">${esc(data.clientOccupation ?? '—')}</span></div>
         <div class="fld"><span class="fld-l">المبنى:</span><span class="fld-v">${esc(data.clientBuilding ?? '—')}</span></div>
         <div class="fld"><span class="fld-l">الدور:</span><span class="fld-v">${esc(floorDept || '—')}</span></div>
+        <div class="fld fld-blank"><span class="fld-l">القسم:</span><span class="fld-v"></span></div>
       </div>
     </div>
 
@@ -147,8 +154,7 @@ export class ContractSlipsPrintService {
     <div class="col col-product">
       <div class="col-hdr">تفاصيل المنتج والقسط</div>
       <div class="col-body">
-        <div class="pd-label">تفاصيل / بيان المنتج:</div>
-        <div class="pd-product">${productText}</div>
+        <div class="pd-product" style="font-size:${productFontSize}pt">${productText}</div>
 
         <div class="pd-due">
           <div class="pd-due-l">مبلغ القسط المستحق هذا الشهر</div>
@@ -172,7 +178,7 @@ export class ContractSlipsPrintService {
         <div class="fld"><span class="fld-l">بداية الأقساط:</span><span class="fld-v">${this.fmtDate(data.firstInstallmentDate)}</span></div>
 
         <div class="pd-remaining">
-          <div class="pd-remaining-l">المبلغ المتبقي بعد الإيصال</div>
+          <div class="pd-remaining-l">المبلغ المتبقي بعد هذا الإيصال</div>
           <div class="pd-remaining-v">${this.fmtMoney(remainingAfter)} ج.م</div>
         </div>
       </div>
@@ -251,6 +257,19 @@ export class ContractSlipsPrintService {
 
   private fmtMoney(n: number): string {
     return Math.round(n).toLocaleString('ar-EG');
+  }
+
+  /**
+   * Scales a field's font size down as its text grows, so a long client
+   * name or a multi-item product list shrinks to fit its fixed-height box
+   * instead of overflowing — and short values keep the full base size.
+   */
+  private autoFontSize(
+    text: string,
+    opts: { base: number; floor: number; shrinkPer100Chars: number },
+  ): number {
+    const shrink = (text.length / 100) * opts.shrinkPer100Chars;
+    return Math.max(opts.floor, Math.round((opts.base - shrink) * 10) / 10);
   }
 }
 
@@ -349,16 +368,18 @@ function esc(v: unknown): string {
 
 // ─── Stylesheet ───────────────────────────────────────────────────────────────
 //
-// Slip footprint is fixed at 205mm × 95mm (20.5cm × 9.5cm) with the same
-// margins as the 3-per-page layout it replaced — one slip per printed A4
-// page, the rest of the sheet left intentionally blank.
+// Slip footprint is fixed at 205mm × 95mm (20.5cm × 9.5cm) — one slip per
+// printed A4 page, centered with a real @page margin on every side so the
+// printer's own hardware margin never clips the header.
 
 const STYLES = `
 @page {
   size: A4 portrait;
-  /* Same 2.5mm left/right the slip used when three shared a page — keeps
-     its exact width/position on the sheet unchanged. */
-  margin: 0 2.5mm;
+  /* A genuine top/bottom margin (not just page padding) — this reserves
+     space before the printer's own unprintable edge, which is what was
+     clipping the company name at the top of the slip. Left/right centers
+     the 205mm slip on the 210mm sheet. */
+  margin: 15mm 2.5mm;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -367,7 +388,7 @@ html, body {
   background: #fff;
   color: #0D1829;
   font-family: "Segoe UI", Tahoma, Cairo, "Noto Sans Arabic", Arial, sans-serif;
-  font-size: 12.5pt;
+  font-size: 10.5pt;
   line-height: 1.25;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -376,13 +397,12 @@ html, body {
 
 /* ══ Each .page is one printed A4 sheet holding exactly one slip ══ */
 .page {
-  padding: 3mm 0;
   page-break-after: always;
   break-after: page;
 }
 .page:last-child { page-break-after: avoid; break-after: avoid; }
 
-/* One slip = 205mm × 95mm (20.5cm × 9.5cm), unchanged from the 3-per-page layout. */
+/* One slip = 205mm × 95mm (20.5cm × 9.5cm). */
 .slip {
   width: 205mm;
   height: 95mm;
@@ -420,14 +440,14 @@ html, body {
 }
 
 .hdr-badge-l {
-  font-size: 10.5pt;
+  font-size: 9.5pt;
   font-weight: 700;
   color: #0D1829;
   white-space: nowrap;
 }
 
 .hdr-badge-v {
-  font-size: 18pt;
+  font-size: 17pt;
   font-weight: 900;
   color: #0D1829;
 }
@@ -443,7 +463,7 @@ html, body {
 }
 
 .brand-name {
-  font-size: 20pt;
+  font-size: 19pt;
   font-weight: 900;
   color: #0D1829;
   letter-spacing: .2px;
@@ -472,7 +492,7 @@ html, body {
 .col-hdr {
   background: #0C2340;
   color: #fff;
-  font-size: 11.5pt;
+  font-size: 10.5pt;
   font-weight: 700;
   text-align: center;
   padding: 3px 6px;
@@ -498,7 +518,7 @@ html, body {
 }
 
 .fld-l {
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
   color: #0D1829;
   white-space: nowrap;
@@ -506,7 +526,7 @@ html, body {
 }
 
 .fld-v {
-  font-size: 12.5pt;
+  font-size: 11.5pt;
   font-weight: 600;
   color: #0D1829;
   overflow: hidden;
@@ -516,47 +536,47 @@ html, body {
 }
 
 .fld-bold { font-weight: 900; }
+.fld-blank .fld-v { border-bottom: 1px solid #0D1829; min-height: 1em; }
 .fld-ltr { direction: ltr; text-align: right; unicode-bidi: embed; }
-.fld-big { font-size: 15pt; font-weight: 900; }
+.fld-big { font-size: 14pt; font-weight: 900; }
 
 /* ── client column ── */
-.col-client .fld-v { font-size: 12pt; }
+.col-client .fld-v { font-size: 11pt; }
 
-/* ── product column ── */
-.pd-label {
-  font-size: 11pt;
-  font-weight: 700;
-  color: #0D1829;
-}
-
+/* ── product column ──
+   .pd-product flex-grows to absorb whatever space the due/collect blocks
+   below don't need, so a 5+ item product list gets real room instead of
+   a fixed box — its font size is also set inline per-slip (see
+   ContractSlipsPrintService.autoFontSize) so long lists shrink to fit. */
 .pd-product {
-  font-size: 13.5pt;
+  flex: 1;
   font-weight: 700;
   color: #0D1829;
   border: 0.5px solid #D8DEE9;
   border-radius: 3px;
   padding: 4px 7px;
-  min-height: 12mm;
-  flex-shrink: 0;
+  overflow: hidden;
+  line-height: 1.3;
 }
 
 .pd-due {
   background: #FBF3DF;
   border: 1px solid #C9A84C;
   border-radius: 4px;
-  padding: 4px 7px;
+  padding: 3px 7px;
   text-align: center;
   margin-top: 3px;
+  flex-shrink: 0;
 }
 
 .pd-due-l {
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
   color: #0D1829;
 }
 
 .pd-due-v {
-  font-size: 20pt;
+  font-size: 19pt;
   font-weight: 900;
   color: #0D1829;
   line-height: 1.25;
@@ -564,12 +584,12 @@ html, body {
 }
 
 .pd-due-words {
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 600;
   color: #0D1829;
   margin-top: 3px;
-  min-height: 9mm;
-  line-height: 1.3;
+  min-height: 8mm;
+  line-height: 1.25;
 }
 
 .fld-collect { margin-top: auto; padding-top: 4px; }
@@ -585,13 +605,13 @@ html, body {
 }
 
 .pd-remaining-l {
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
   color: #0D1829;
 }
 
 .pd-remaining-v {
-  font-size: 18pt;
+  font-size: 17pt;
   font-weight: 900;
   color: #0D1829;
   margin-top: 2px;
@@ -622,13 +642,13 @@ html, body {
 .ftr-service { flex-shrink: 0; }
 
 .ftr-l {
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
   color: #0D1829;
 }
 
 .ftr-v {
-  font-size: 12pt;
+  font-size: 11pt;
   font-weight: 700;
   color: #0D1829;
   overflow: hidden;
