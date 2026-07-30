@@ -11,7 +11,7 @@ export interface ContractSlipData {
   clientName:          string;
   clientPhone:         string;
   clientCode?:         string | null;
-  /** Client's home/mailing area label (list `areaName`) — kept for backward compat, unused by the new slip. */
+  /** Client's home/mailing area (list `areaName`) — printed as "المنطقة" in the header. */
   clientAddress?:      string | null;
   clientRegion?:       string | null;
   clientOccupation?:   string | null;
@@ -53,14 +53,30 @@ export class ContractSlipsPrintService {
 
   // ─── schedule builder ────────────────────────────────────────────────────────
 
+  /**
+   * Builds the per-installment schedule when the caller has no exact
+   * server-side schedule to hand over (e.g. right after creating a
+   * contract). The last row absorbs whatever remainder doesn't divide
+   * evenly across `installmentsCount`, mirroring the server's
+   * `adjustLastInstallmentForRemainder` math — so "نظام التقسيط" reflects
+   * reality even when the last installment differs from the rest.
+   */
   private buildSchedule(data: ContractSlipData): InstallmentSlipRow[] {
     const rows: InstallmentSlipRow[] = [];
     const base = new Date(data.firstInstallmentDate);
     const step = this.freqMonths(data.paymentFrequency);
+    const lastAmount = Math.round(
+      data.totalAmount - data.installmentAmount * (data.installmentsCount - 1),
+    );
     for (let i = 0; i < data.installmentsCount; i++) {
       const d = new Date(base);
       d.setMonth(d.getMonth() + i * step);
-      rows.push({ sequence: i + 1, dueDate: d.toISOString(), amount: data.installmentAmount });
+      const isLast = i === data.installmentsCount - 1;
+      rows.push({
+        sequence: i + 1,
+        dueDate: d.toISOString(),
+        amount: isLast ? lastAmount : data.installmentAmount,
+      });
     }
     return rows;
   }
@@ -81,8 +97,9 @@ export class ContractSlipsPrintService {
   private buildDocument(data: ContractSlipData, schedule: InstallmentSlipRow[]): string {
     // One slip per A4 page — the slip itself keeps its fixed 20.5cm × 9.5cm
     // footprint and margins; the rest of each sheet is left blank on purpose.
+    const installmentPlan = this.describePlan(schedule);
     const pages = schedule
-      .map((inst) => `<div class="page">${this.buildSlip(data, inst, schedule.length)}</div>`)
+      .map((inst) => `<div class="page">${this.buildSlip(data, inst, schedule, installmentPlan)}</div>`)
       .join('\n');
 
     return `<!doctype html>
@@ -96,11 +113,39 @@ export class ContractSlipsPrintService {
 </html>`;
   }
 
-  private buildSlip(data: ContractSlipData, inst: InstallmentSlipRow, total: number): string {
-    const remainingAfter = Math.max(
-      0,
-      Math.round(data.totalAmount - data.installmentAmount * inst.sequence),
-    );
+  /**
+   * "نظام التقسيط" label built from the real per-installment amounts rather
+   * than the flat contract fields — so a remainder-adjusted last installment
+   * (e.g. 5 × 200 + 1 × 180) shows correctly instead of implying every
+   * installment is the same size.
+   */
+  private describePlan(schedule: InstallmentSlipRow[]): string {
+    const groups: { amount: number; count: number }[] = [];
+    for (const row of schedule) {
+      const last = groups[groups.length - 1];
+      const amount = Math.round(row.amount);
+      if (last && last.amount === amount) {
+        last.count++;
+      } else {
+        groups.push({ amount, count: 1 });
+      }
+    }
+    return groups
+      .map((g) => `${g.count} × ${this.fmtMoney(g.amount)} ج.م`)
+      .join(' + ');
+  }
+
+  private buildSlip(
+    data: ContractSlipData,
+    inst: InstallmentSlipRow,
+    schedule: InstallmentSlipRow[],
+    installmentPlan: string,
+  ): string {
+    const total = schedule.length;
+    const paidSoFar = schedule
+      .slice(0, inst.sequence)
+      .reduce((sum, row) => sum + row.amount, 0);
+    const remainingAfter = Math.max(0, Math.round(data.totalAmount - paidSoFar));
     const productLines = data.productLines
       .map((p) => (p.quantity > 1 ? `${esc(p.name)} × ${p.quantity}` : esc(p.name)));
     const productText = productLines.join('، ') || '—';
@@ -114,7 +159,6 @@ export class ContractSlipsPrintService {
     const contractCode = esc(data.contractCode ?? '—');
     const receiptNo = `${inst.sequence} / ${total}`;
     const amountWords = `${amountToArabicWords(inst.amount)} فقط`;
-    const installmentPlan = `${data.installmentsCount} × ${this.fmtMoney(data.installmentAmount)} ج.م`;
 
     const floorDept = data.clientFloor && data.clientFloor.trim() ? data.clientFloor : (data.clientDepartment ?? '');
 
@@ -126,6 +170,10 @@ export class ContractSlipsPrintService {
     <div class="hdr-badge">
       <span class="hdr-badge-l">رقم الإيصال / القسط</span>
       <span class="hdr-badge-v">${esc(receiptNo)}</span>
+    </div>
+    <div class="hdr-badge hdr-badge-area">
+      <span class="hdr-badge-l">المنطقة</span>
+      <span class="hdr-badge-v hdr-badge-v-area">${esc(data.clientAddress ?? '—')}</span>
     </div>
     <div class="hdr-brand">
       <div class="brand-name">${esc(COMPANY_NAME)}</div>
@@ -146,7 +194,7 @@ export class ContractSlipsPrintService {
         <div class="fld"><span class="fld-l">المهنة:</span><span class="fld-v">${esc(data.clientOccupation ?? '—')}</span></div>
         <div class="fld"><span class="fld-l">المبنى:</span><span class="fld-v">${esc(data.clientBuilding ?? '—')}</span></div>
         <div class="fld"><span class="fld-l">الدور:</span><span class="fld-v">${esc(floorDept || '—')}</span></div>
-        <div class="fld fld-blank"><span class="fld-l">القسم:</span><span class="fld-v"></span></div>
+        <div class="fld"><span class="fld-l">القسم:</span><span class="fld-v"></span></div>
       </div>
     </div>
 
@@ -434,7 +482,7 @@ html, body {
   background: #fff;
   border: 1.5px solid #0C2340;
   border-radius: 5px;
-  margin: 5px 0 5px 8px;
+  margin: 5px 8px;
   padding: 3px 10px;
   flex-shrink: 0;
 }
@@ -452,23 +500,42 @@ html, body {
   color: #0D1829;
 }
 
+.hdr-badge-area {
+  padding: 5px 16px;
+}
+
+.hdr-badge-v-area {
+  font-size: 12.5pt;
+  max-width: 36mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
 .hdr-brand {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 8px;
+  background: #fff;
+  border: 1.5px solid #0C2340;
+  border-radius: 5px;
+  margin: 5px 0;
+  padding: 4px 10px;
+  min-width: 0;
 }
 
 .brand-name {
-  font-size: 19pt;
+  font-size: 13pt;
   font-weight: 900;
   color: #0D1829;
   letter-spacing: .2px;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ══════════════════════════════════════════
@@ -504,7 +571,7 @@ html, body {
   padding: 4px 8px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
   min-height: 0;
 }
 
@@ -514,7 +581,7 @@ html, body {
   align-items: baseline;
   gap: 5px;
   border-bottom: 0.5px dotted #D8DEE9;
-  padding-bottom: 1px;
+  padding-bottom: 2px;
 }
 
 .fld-l {
@@ -536,7 +603,6 @@ html, body {
 }
 
 .fld-bold { font-weight: 900; }
-.fld-blank .fld-v { border-bottom: 1px solid #0D1829; min-height: 1em; }
 .fld-ltr { direction: ltr; text-align: right; unicode-bidi: embed; }
 .fld-big { font-size: 14pt; font-weight: 900; }
 
