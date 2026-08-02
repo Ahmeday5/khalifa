@@ -86,11 +86,20 @@ export interface ContractDetailsContract {
 export interface ContractDetailsClient {
   id: number;
   fullName: string;
+  nationalId?: string | null;
   phoneNumber: string;
-  address: string;
+  whatsappNumber?: string;
+  createdAt?: string;
   clientCode?: string | null;
   region?: string | null;
+  areaId?: number | null;
+  areaName?: string | null;
   occupation?: string | null;
+  building?: string | null;
+  floor?: string | null;
+  department?: string | null;
+  representativeId?: number | null;
+  representativeName?: string | null;
 }
 
 export interface ContractDetailsRepresentative {

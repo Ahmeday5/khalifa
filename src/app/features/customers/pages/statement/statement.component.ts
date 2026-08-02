@@ -10,9 +10,6 @@ import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-
 import { CustomersService } from '../../services/customers.service';
 import { InstallmentsService } from '../../services/installments.service';
 import { ContractsService } from '../../../contracts/services/contracts.service';
@@ -442,11 +439,8 @@ export class StatementComponent {
     if (this.printLoadingId() === row.id) return;
     this.printLoadingId.set(row.id);
 
-    forkJoin({
-      details:    this.contractsService.refreshDetails(row.id),
-      fullClient: this.customersService.getClient(this.selectedClientId()!).pipe(catchError(() => of(null))),
-    }).subscribe({
-      next: ({ details: d, fullClient }) => {
+    this.contractsService.refreshDetails(row.id).subscribe({
+      next: (d) => {
         this.printLoadingId.set(null);
 
         const schedule: InstallmentSlipRow[] = d.installments.map((inst) => ({
@@ -462,15 +456,15 @@ export class StatementComponent {
           contractId:           d.contract.id,
           contractCode:         d.contract.code ?? null,
           dateOfSale:           d.contract.dateOfSale,
-          clientName:           fullClient?.fullName    ?? d.client.fullName,
-          clientPhone:          fullClient?.phoneNumber ?? d.client.phoneNumber,
-          clientCode:           fullClient?.clientCode  ?? null,
-          clientAddress:        fullClient?.areaName    ?? null,
-          clientRegion:         fullClient?.region      ?? null,
-          clientOccupation:     fullClient?.occupation  ?? null,
-          clientBuilding:       fullClient?.building    ?? null,
-          clientFloor:          fullClient?.floor       ?? null,
-          clientDepartment:     fullClient?.department  ?? null,
+          clientName:           d.client.fullName,
+          clientPhone:          d.client.phoneNumber,
+          clientCode:           d.client.clientCode  ?? null,
+          clientAddress:        d.client.areaName    ?? null,
+          clientRegion:         d.client.region      ?? null,
+          clientOccupation:     d.client.occupation  ?? null,
+          clientBuilding:       d.client.building    ?? null,
+          clientFloor:          d.client.floor       ?? null,
+          clientDepartment:     d.client.department  ?? null,
           repName:              d.representative?.fullName    ?? null,
           repPhone:             d.representative?.phoneNumber ?? null,
           productLines:         d.contract.items.map((i) => ({ name: i.productName, quantity: i.quantity })),

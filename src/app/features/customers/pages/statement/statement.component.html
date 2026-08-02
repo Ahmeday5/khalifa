@@ -200,6 +200,9 @@
       <div class="st-d-block-l">العميل</div>
       <div class="st-d-block-v">{{ d.client.fullName }}</div>
       <div class="st-d-block-s">📱 {{ d.client.phoneNumber }}</div>
+      @if (d.client.areaName) {
+        <div class="st-d-block-s">📍 {{ d.client.areaName }}</div>
+      }
     </div>
     <div class="st-d-block">
       <div class="st-d-block-l">الأصناف</div>

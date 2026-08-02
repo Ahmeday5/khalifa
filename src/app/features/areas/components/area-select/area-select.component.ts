@@ -48,6 +48,12 @@ export class AreaSelectComponent implements ControlValueAccessor {
   readonly placeholder = input<string>('اختر المنطقة…');
   readonly searchPlaceholder = input<string>('ابحث عن منطقة…');
   readonly isDisabled = input<boolean>(false);
+  /**
+   * Label to show for the current value before the areas list has loaded
+   * (e.g. the area name already known from a client/contract details
+   * response). Ignored once the matching option is found in `areas()`.
+   */
+  readonly initialLabel = input<string | null>(null, { alias: 'label' });
 
   private readonly service = inject(AreasService);
   private readonly dialog = inject(DialogService);
@@ -107,6 +113,7 @@ export class AreaSelectComponent implements ControlValueAccessor {
 
   writeValue(value: number | null): void {
     this.value.set(value ?? null);
+    this.selectedLabel.set(value !== null ? this.initialLabel() : null);
   }
   registerOnChange(fn: (val: number | null) => void): void {
     this.onChange = fn;

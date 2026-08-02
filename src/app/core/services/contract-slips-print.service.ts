@@ -501,12 +501,13 @@ html, body {
 }
 
 .hdr-badge-area {
-  padding: 5px 16px;
+  padding: 5px 10px;
+  min-width: 40mm;
 }
 
 .hdr-badge-v-area {
-  font-size: 12.5pt;
-  max-width: 36mm;
+  font-size: 10pt;
+  max-width: 55mm;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -522,16 +523,17 @@ html, body {
   background: #fff;
   border: 1.5px solid #0C2340;
   border-radius: 5px;
-  margin: 5px 0;
-  padding: 4px 10px;
+  margin: 5px 8px 5px 0;
+  padding: 3px 6px;
   min-width: 0;
+  max-width: 82mm;
 }
 
 .brand-name {
-  font-size: 13pt;
+  font-size: 9.5pt;
   font-weight: 900;
   color: #0D1829;
-  letter-spacing: .2px;
+  letter-spacing: 0;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;

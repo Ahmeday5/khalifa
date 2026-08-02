@@ -101,6 +101,7 @@
           formControlName="areaId"
           placeholder="اختر المنطقة"
           searchPlaceholder="ابحث عن منطقة…"
+          [label]="areaLabel()"
         />
         <app-form-error [control]="form.controls.areaId" label="المنطقة" />
       </div>

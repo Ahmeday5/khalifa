@@ -60,6 +60,8 @@ export class ClientFormModalComponent {
   protected readonly loadingDetail = signal(false);
   protected readonly serverError = signal<string | null>(null);
   protected readonly sameAsPhone = signal(true);
+  /** Area label shown immediately in edit mode, before the areas list loads. */
+  protected readonly areaLabel = signal<string | null>(null);
 
   // ── form ──
   protected readonly form = this.fb.nonNullable.group({
@@ -180,6 +182,7 @@ export class ClientFormModalComponent {
   private enterCreateMode(): void {
     this.loadingDetail.set(false);
     this.sameAsPhone.set(true);
+    this.areaLabel.set(null);
     this.form.reset({
       fullName: '',
       nationalId: '',
@@ -202,6 +205,7 @@ export class ClientFormModalComponent {
    */
   private enterEditMode(row: DashboardClient): void {
     this.sameAsPhone.set(false);
+    this.areaLabel.set(row.areaName);
     this.form.controls.whatsappNumber.enable({ emitEvent: false });
     this.form.reset({
       fullName: row.fullName,
@@ -221,6 +225,7 @@ export class ClientFormModalComponent {
     this.service.getClient(row.id).subscribe({
       next: (full) => {
         this.loadingDetail.set(false);
+        this.areaLabel.set(full.areaName);
         this.form.patchValue({
           fullName:       full.fullName,
           nationalId:     full.nationalId ?? '',

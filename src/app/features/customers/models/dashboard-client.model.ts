@@ -132,4 +132,6 @@ export interface CreatedClient {
   building: string | null;
   floor: string | null;
   department: string | null;
+  representativeId: number | null;
+  representativeName: string | null;
 }
