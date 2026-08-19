@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { CustomersService } from '../../services/customers.service';
 import {
@@ -33,6 +34,12 @@ import { PERMISSIONS } from '../../../../core/constants/permissions.const';
 import { PrintService } from '../../../../core/services/print.service';
 import { map } from 'rxjs/operators';
 import { fetchAllPages } from '../../../../core/utils/api-list.util';
+import {
+  SearchableSelectComponent,
+  SearchableSelectOption,
+} from '../../../../shared/components/searchable-select/searchable-select.component';
+import { AreasService } from '../../../areas/services/areas.service';
+import { Area } from '../../../areas/models/area.model';
 
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -42,6 +49,7 @@ const SEARCH_DEBOUNCE_MS = 300;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FormsModule,
     BadgeComponent,
     PaginationComponent,
     CurrencyArPipe,
@@ -50,12 +58,14 @@ const SEARCH_DEBOUNCE_MS = 300;
     ClientFormModalComponent,
     DirectContractModalComponent,
     ModalComponent,
+    SearchableSelectComponent,
   ],
   templateUrl: './customers-list.component.html',
   styleUrl: './customers-list.component.scss',
 })
 export class CustomersListComponent {
   private readonly service = inject(CustomersService);
+  private readonly areasService = inject(AreasService);
   private readonly toast = inject(ToastService);
   private readonly cache = inject(HttpCacheService);
   private readonly printer = inject(PrintService);
@@ -73,8 +83,15 @@ export class CustomersListComponent {
   // ── filters ──
   protected readonly searchTerm = signal('');
   protected readonly onlyOverdue = signal(false);
+  protected readonly areaId = signal<number | null>(null);
   protected readonly pageIndex = signal(1);
   protected readonly pageSize = signal(DEFAULT_PAGE_SIZE);
+
+  // ── area filter dropdown ──
+  protected readonly areas = signal<Area[]>([]);
+  protected readonly areaOptions = computed<SearchableSelectOption[]>(() =>
+    this.areas().map((a) => ({ value: a.id, label: a.name })),
+  );
 
   // ── server pagination meta ──
   protected readonly count = signal(0);
@@ -95,13 +112,14 @@ export class CustomersListComponent {
 
   // ── derived ──
   protected readonly hasFilters = computed(
-    () => this.searchTerm().length > 0 || this.onlyOverdue(),
+    () => this.searchTerm().length > 0 || this.onlyOverdue() || this.areaId() !== null,
   );
 
   // Single observed tuple; any change triggers a debounced refetch.
   private readonly fetchTrigger = computed(() => ({
     search: this.searchTerm().trim(),
     onlyOverdue: this.onlyOverdue(),
+    areaId: this.areaId(),
     pageIndex: this.pageIndex(),
     pageSize: this.pageSize(),
   }));
@@ -121,6 +139,15 @@ export class CustomersListComponent {
     // Refetch whenever any client-related cache key is invalidated
     // (e.g. another tab recorded a payment).
     onInvalidate(this.cache, 'client', () => this.refresh());
+
+    this.loadAreas();
+  }
+
+  private loadAreas(): void {
+    this.areasService.listAll().subscribe({
+      next: (rows) => this.areas.set(rows),
+      error: () => this.areas.set([]),
+    });
   }
 
   // ─────────── data loaders ───────────
@@ -129,6 +156,7 @@ export class CustomersListComponent {
     trigger: {
       search: string;
       onlyOverdue: boolean;
+      areaId: number | null;
       pageIndex: number;
       pageSize: number;
     },
@@ -139,6 +167,7 @@ export class CustomersListComponent {
       search: trigger.search,
       clientCode: trigger.search,
       onlyOverdue: trigger.onlyOverdue,
+      areaId: trigger.areaId ?? undefined,
       pageIndex: trigger.pageIndex,
       pageSize: trigger.pageSize,
     };
@@ -180,10 +209,11 @@ export class CustomersListComponent {
     this.isPrinting.set(true);
     const search = this.searchTerm().trim();
     const onlyOverdue = this.onlyOverdue();
+    const areaId = this.areaId() ?? undefined;
 
     fetchAllPages<DashboardClient>((pageIndex, pageSize) =>
       this.service
-        .refreshDashboard({ search, clientCode: search, onlyOverdue, pageIndex, pageSize })
+        .refreshDashboard({ search, clientCode: search, onlyOverdue, areaId, pageIndex, pageSize })
         .pipe(map((r) => r.clients)),
     ).subscribe({
       next: (rows) => {
@@ -191,6 +221,10 @@ export class CustomersListComponent {
         const meta: Array<{ label: string; value: string }> = [];
         if (search) meta.push({ label: 'بحث', value: search });
         if (onlyOverdue) meta.push({ label: 'الفلتر', value: 'المتأخرون فقط' });
+        if (areaId) {
+          const areaName = this.areas().find((a) => a.id === areaId)?.name;
+          if (areaName) meta.push({ label: 'المنطقة', value: areaName });
+        }
 
         this.printer.print<DashboardClient>({
           title: 'قائمة العملاء',
@@ -248,9 +282,15 @@ export class CustomersListComponent {
     if (this.pageIndex() !== 1) this.pageIndex.set(1);
   }
 
+  protected onAreaChange(value: number | string | null): void {
+    this.areaId.set(value === null || value === '' ? null : Number(value));
+    if (this.pageIndex() !== 1) this.pageIndex.set(1);
+  }
+
   protected clearAllFilters(): void {
     this.searchTerm.set('');
     this.onlyOverdue.set(false);
+    this.areaId.set(null);
     this.pageIndex.set(1);
   }
 

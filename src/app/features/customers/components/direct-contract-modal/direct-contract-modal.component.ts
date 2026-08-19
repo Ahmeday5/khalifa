@@ -141,6 +141,7 @@ export class DirectContractModalComponent {
     notes:                [''],
     code:                 [''],
     adjustLastInstallmentForRemainder: [false],
+    totalContractAmount: [{ value: 0, disabled: true }],
   });
 
   get itemsArray(): FormArray { return this.form.get('items') as FormArray; }
@@ -166,9 +167,24 @@ export class DirectContractModalComponent {
     // In manual mode `v.installmentAmount` holds the user-entered amount
     // (the control is enabled, so it's included in valueChanges); otherwise
     // fall back to the auto-computed even-division amount.
+    // IMPORTANT: the remainder is derived from `totalContractAmount` (the
+    // real total the client pays), never from `cashPrice` — they are
+    // independent figures and cashPrice has no bearing on this calculation.
+    const totalContractAmount = Number(v.totalContractAmount ?? 0);
     const manualInstallmentAmt = Number(v.installmentAmount ?? installmentAmt) || installmentAmt;
-    const lastInstallmentPreview = totalAmount - (count - 1) * manualInstallmentAmt;
-    return { cashPrice, downPayment, afterDown, profitAmount, totalAmount, installmentAmt, lastInstallmentPreview, count };
+    const lastInstallmentPreview =
+      totalContractAmount - downPayment - (count - 1) * manualInstallmentAmt;
+    return {
+      cashPrice,
+      downPayment,
+      afterDown,
+      profitAmount,
+      totalAmount,
+      installmentAmt,
+      totalContractAmount,
+      lastInstallmentPreview,
+      count,
+    };
   });
 
   constructor() {
@@ -197,16 +213,26 @@ export class DirectContractModalComponent {
 
     // "ضبط القسط الأخير تلقائيًا": when on, the user types the installment
     // amount by hand (it no longer has to divide the total evenly — the
-    // server absorbs the remainder into the last installment). When off,
-    // restore the normal auto-computed/disabled behavior.
+    // server absorbs the remainder into the last installment), and must
+    // also enter "إجمالي العقد" (totalContractAmount) — the real total the
+    // client pays, independent from cashPrice — since that's what the
+    // server uses to compute the remainder. When off, restore the normal
+    // auto-computed/disabled behavior and clear the total-amount requirement.
     this.form.get('adjustLastInstallmentForRemainder')?.valueChanges.subscribe((on) => {
-      const ctrl = this.form.get('installmentAmount');
+      const installmentCtrl = this.form.get('installmentAmount');
+      const totalCtrl = this.form.get('totalContractAmount');
       if (on) {
-        ctrl?.enable({ emitEvent: false });
+        installmentCtrl?.enable({ emitEvent: false });
+        totalCtrl?.enable({ emitEvent: false });
+        totalCtrl?.setValidators([Validators.required, Validators.min(0.01)]);
       } else {
-        ctrl?.disable({ emitEvent: false });
+        installmentCtrl?.disable({ emitEvent: false });
+        totalCtrl?.disable({ emitEvent: false });
+        totalCtrl?.clearValidators();
+        totalCtrl?.setValue(0, { emitEvent: false });
         this.recalculateInstallment();
       }
+      totalCtrl?.updateValueAndValidity({ emitEvent: false });
     });
 
     // When paymentFrequency changes, default installmentsCount to match (still editable).
@@ -299,12 +325,23 @@ export class DirectContractModalComponent {
       return;
     }
 
+    const adjustLastInstallment = !!raw.adjustLastInstallmentForRemainder;
+    const downPayment = Number(raw.downPayment);
+    const totalContractAmount = Number(raw.totalContractAmount);
+
+    if (adjustLastInstallment && (!totalContractAmount || totalContractAmount <= downPayment)) {
+      this.toast.error(
+        'إجمالي العقد مطلوب ويجب أن يكون أكبر من المقدم لحساب المبلغ المتبقي للتقسيط.',
+      );
+      return;
+    }
+
     const payload: CreateDirectContractPayload = {
       clientId:             Number(raw.clientId),
       items:                validItems,
       dateOfSale:           new Date(raw.dateOfSale).toISOString(),
       cashPrice:            Number(raw.cashPrice),
-      downPayment:          Number(raw.downPayment),
+      downPayment,
       profitRate:           Number(raw.profitRate),
       installmentsCount:    Number(raw.installmentsCount),
       installmentAmount:    Number(raw.installmentAmount),
@@ -314,7 +351,8 @@ export class DirectContractModalComponent {
       representativeId:     raw.representativeId ? Number(raw.representativeId) : undefined,
       notes:                raw.notes?.trim() || undefined,
       code:                 raw.code?.trim() || undefined,
-      adjustLastInstallmentForRemainder: raw.adjustLastInstallmentForRemainder || undefined,
+      adjustLastInstallmentForRemainder: adjustLastInstallment || undefined,
+      totalContractAmount:  adjustLastInstallment ? totalContractAmount : undefined,
     };
 
     this.serverError.set(null);
@@ -416,6 +454,12 @@ export class DirectContractModalComponent {
           code:                 c.code ?? '',
         }, { emitEvent: false });
 
+        // Prefill the authoritative contract total from the server so
+        // re-saving without touching the checkbox keeps the correct figure.
+        this.form
+          .get('totalContractAmount')
+          ?.setValue(d.summary.totalContractAmount, { emitEvent: false });
+
         this.prefilling = false;
         this.serverError.set(null);
       },
@@ -487,8 +531,13 @@ export class DirectContractModalComponent {
       notes:                '',
       code:                 '',
       adjustLastInstallmentForRemainder: false,
+      totalContractAmount: 0,
     });
     this.form.get('installmentAmount')?.disable({ emitEvent: false });
+    const totalCtrl = this.form.get('totalContractAmount');
+    totalCtrl?.clearValidators();
+    totalCtrl?.disable({ emitEvent: false });
+    totalCtrl?.updateValueAndValidity({ emitEvent: false });
     this.serverError.set(null);
   }
 
@@ -515,12 +564,12 @@ export class DirectContractModalComponent {
     const listClient  = this.clients().find((c) => c.id === Number(raw.clientId));
     const selectedRep = this.representatives().find((r) => r.id === Number(raw.representativeId));
 
-    const cashPrice      = Number(raw.cashPrice);
     const downPayment    = Number(raw.downPayment);
-    const profitRate     = Number(raw.profitRate);
     const count          = Number(raw.installmentsCount);
-    const afterDown      = Math.max(0, cashPrice - downPayment);
-    const totalAmount    = afterDown * (1 + profitRate / 100);
+    // Authoritative contract total from the server response — never derive
+    // it client-side (installmentAmount × installmentsCount is wrong once
+    // the last installment has been adjusted for a remainder).
+    const totalAmount    = res.totalContractAmount;
     const installmentAmt = Number(raw.installmentAmount);
 
     return {
@@ -559,6 +608,7 @@ export class DirectContractModalComponent {
       paymentFrequency:     'طريقة التقسيط',
       firstInstallmentDate: 'تاريخ أول قسط',
       treasuryId:           'الخزينة',
+      totalContractAmount:  'إجمالي العقد',
     };
     for (const [key, label] of Object.entries(labels)) {
       if (this.form.get(key)?.invalid) return `يرجى مراجعة الحقل: ${label}`;

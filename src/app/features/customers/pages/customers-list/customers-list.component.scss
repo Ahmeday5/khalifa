@@ -57,6 +57,11 @@
   flex-wrap: wrap;
 }
 
+.cl-area-filter {
+  min-width: 180px;
+  max-width: 220px;
+}
+
 .cl-search {
   position: relative;
   display: inline-flex;

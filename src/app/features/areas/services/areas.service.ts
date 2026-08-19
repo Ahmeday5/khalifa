@@ -57,6 +57,17 @@ export class AreasService {
     );
   }
 
+  /**
+   * Flat list of every area — used to populate filter dropdowns (e.g. the
+   * clients-list area filter) where the full roster needs to be in memory
+   * for client-side search, rather than paged.
+   */
+  listAll(): Observable<Area[]> {
+    return fetchAllPages<Area>((pageIndex, pageSize) =>
+      this.list({ pageIndex, pageSize }).pipe(map((res) => asPaged<Area>(res))),
+    );
+  }
+
   getById(id: number): Observable<Area> {
     return this.api.get<Area>(API_ENDPOINTS.areas.byId(id), {
       context: withCache({ ttlMs: AREAS_TTL_MS }),

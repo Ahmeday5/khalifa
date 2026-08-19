@@ -46,6 +46,7 @@ import {
   ContractFormState,
   ContractItemFormState,
   ContractPaymentFrequency,
+  CreatedContract,
   UpdateContractFormState,
 } from '../../../contracts/models/contract.model';
 import { ContractDetails } from '../../models/client-statement.model';
@@ -183,6 +184,8 @@ export class ContractNewComponent implements OnInit {
     code: [''],
 
     adjustLastInstallmentForRemainder: [false],
+
+    totalContractAmount: [{ value: 0, disabled: true }],
   });
 
   get itemsArray(): FormArray {
@@ -223,8 +226,13 @@ export class ContractNewComponent implements OnInit {
     // In manual mode `v.installmentAmount` holds the user-entered amount
     // (the control is enabled, so it's included in valueChanges); otherwise
     // fall back to the auto-computed even-division amount.
+    // IMPORTANT: the remainder is derived from `totalContractAmount` (the
+    // real total the client pays), never from `cashPrice` — they are
+    // independent figures and cashPrice has no bearing on this calculation.
+    const totalContractAmount = Number(v.totalContractAmount ?? 0);
     const manualInstallmentAmt = Number(v.installmentAmount ?? installmentAmt) || installmentAmt;
-    const lastInstallmentPreview = totalAmount - (count - 1) * manualInstallmentAmt;
+    const lastInstallmentPreview =
+      totalContractAmount - downPayment - (count - 1) * manualInstallmentAmt;
 
     return {
       unitPrice,
@@ -235,6 +243,7 @@ export class ContractNewComponent implements OnInit {
       profitAmount,
       totalAmount,
       installmentAmt,
+      totalContractAmount,
       lastInstallmentPreview,
       count,
       totalQty,
@@ -343,6 +352,12 @@ export class ContractNewComponent implements OnInit {
     this.form
       .get('installmentAmount')
       ?.setValue(d.contract.installmentAmount, { emitEvent: false });
+    // Prefill the authoritative contract total from the server so re-saving
+    // without touching the checkbox keeps the correct figure. If the operator
+    // needs to change it, they must re-enable "ضبط القسط الأخير تلقائيًا".
+    this.form
+      .get('totalContractAmount')
+      ?.setValue(d.summary.totalContractAmount, { emitEvent: false });
   }
 
   // ───────────────── items management ─────────────────
@@ -416,16 +431,26 @@ export class ContractNewComponent implements OnInit {
 
     // "ضبط القسط الأخير تلقائيًا": when on, the user types the installment
     // amount by hand (it no longer has to divide the total evenly — the
-    // server absorbs the remainder into the last installment). When off,
-    // restore the normal auto-computed/disabled behavior.
+    // server absorbs the remainder into the last installment), and must also
+    // enter "إجمالي العقد" (totalContractAmount) — the real total the client
+    // pays, independent from cashPrice — since that's what the server uses
+    // to compute the remainder. When off, restore the normal
+    // auto-computed/disabled behavior and clear the total-amount requirement.
     this.form.get('adjustLastInstallmentForRemainder')?.valueChanges.subscribe((on) => {
-      const ctrl = this.form.get('installmentAmount');
+      const installmentCtrl = this.form.get('installmentAmount');
+      const totalCtrl = this.form.get('totalContractAmount');
       if (on) {
-        ctrl?.enable({ emitEvent: false });
+        installmentCtrl?.enable({ emitEvent: false });
+        totalCtrl?.enable({ emitEvent: false });
+        totalCtrl?.setValidators([Validators.required, Validators.min(0.01)]);
       } else {
-        ctrl?.disable({ emitEvent: false });
+        installmentCtrl?.disable({ emitEvent: false });
+        totalCtrl?.disable({ emitEvent: false });
+        totalCtrl?.clearValidators();
+        totalCtrl?.setValue(0, { emitEvent: false });
         this.calculateInstallment();
       }
+      totalCtrl?.updateValueAndValidity({ emitEvent: false });
     });
 
     // When the product in the FIRST item changes, auto-fill cashPrice once
@@ -527,6 +552,17 @@ export class ContractNewComponent implements OnInit {
       return;
     }
 
+    const adjustLastInstallment = !!raw.adjustLastInstallmentForRemainder;
+    const downPayment = Number(raw.downPayment);
+    const totalContractAmount = Number(raw.totalContractAmount);
+
+    if (adjustLastInstallment && (!totalContractAmount || totalContractAmount <= downPayment)) {
+      this.toast.error(
+        'إجمالي العقد مطلوب ويجب أن يكون أكبر من المقدم لحساب المبلغ المتبقي للتقسيط.',
+      );
+      return;
+    }
+
     this.isSaving.set(true);
 
     const id = this.editId();
@@ -540,7 +576,7 @@ export class ContractNewComponent implements OnInit {
       })),
       dateOfSale: new Date(raw.dateOfSale).toISOString(),
       cashPrice: Number(raw.cashPrice),
-      downPayment: Number(raw.downPayment),
+      downPayment,
       profitRate: Number(raw.profitRate),
       installmentsCount: Number(raw.installmentsCount),
       installmentAmount: Number(raw.installmentAmount),
@@ -552,7 +588,8 @@ export class ContractNewComponent implements OnInit {
         : null,
       notes: raw.notes?.trim() || '',
       code: raw.code?.trim() || '',
-      adjustLastInstallmentForRemainder: !!raw.adjustLastInstallmentForRemainder,
+      adjustLastInstallmentForRemainder: adjustLastInstallment,
+      ...(adjustLastInstallment ? { totalContractAmount } : {}),
     };
 
     if (id) {
@@ -582,7 +619,7 @@ export class ContractNewComponent implements OnInit {
               catchError(() => of(null)),
               switchMap((fullClient) => {
                 this.toast.success('تم إنشاء العقد بنجاح');
-                const printData = this.buildPrintData(raw, created.id, sharedFields.items, fullClient);
+                const printData = this.buildPrintData(raw, created, sharedFields.items, fullClient);
                 this.pendingPrintData.set(printData);
                 return of(null);
               }),
@@ -612,6 +649,7 @@ export class ContractNewComponent implements OnInit {
       paymentFrequency: 'دورية الدفع',
       firstInstallmentDate: 'تاريخ أول قسط',
       treasuryId: 'الخزينة',
+      totalContractAmount: 'إجمالي العقد',
     };
     for (const [key, label] of Object.entries(topLabels)) {
       const control = this.form.get(key);
@@ -645,7 +683,7 @@ export class ContractNewComponent implements OnInit {
 
   private buildPrintData(
     raw: ReturnType<typeof this.form.getRawValue>,
-    contractId: number,
+    created: CreatedContract,
     items: ContractItemFormState[],
     fullClient: CreatedClient | null,
   ): ContractSlipData {
@@ -660,16 +698,16 @@ export class ContractNewComponent implements OnInit {
         quantity: Number(i.quantity),
       }));
 
-    const cashPrice         = Number(raw.cashPrice);
     const downPayment       = Number(raw.downPayment);
-    const profitRate        = Number(raw.profitRate);
     const count             = Number(raw.installmentsCount);
-    const afterDown         = Math.max(0, cashPrice - downPayment);
-    const totalAmount       = afterDown * (1 + profitRate / 100);
+    // Authoritative contract total from the server response — never derive
+    // it client-side (installmentAmount × installmentsCount is wrong once
+    // the last installment has been adjusted for a remainder).
+    const totalAmount       = created.totalContractAmount;
     const installmentAmount = Number(raw.installmentAmount);
 
     return {
-      contractId,
+      contractId: created.id,
       contractCode:         raw.code?.trim() || null,
       dateOfSale:           raw.dateOfSale,
       clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
@@ -720,6 +758,11 @@ export class ContractNewComponent implements OnInit {
     );
     this.form.get('installmentAmount')?.disable({ emitEvent: false });
     this.form.get('installmentAmount')?.setValue(0, { emitEvent: false });
+    const totalCtrl = this.form.get('totalContractAmount');
+    totalCtrl?.clearValidators();
+    totalCtrl?.disable({ emitEvent: false });
+    totalCtrl?.setValue(0, { emitEvent: false });
+    totalCtrl?.updateValueAndValidity({ emitEvent: false });
     this.form.markAsUntouched();
     this.form.markAsPristine();
   }

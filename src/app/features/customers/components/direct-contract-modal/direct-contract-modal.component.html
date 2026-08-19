@@ -136,7 +136,7 @@
 
       <!-- ── Cash price ── -->
       <div class="col-6 col-md-3">
-        <label class="form-label">سعر البيع الكاش <span class="text-danger">*</span></label>
+        <label class="form-label">سعر البيع الكاش <span class="dcm-optional">(مرجعي فقط)</span> <span class="text-danger">*</span></label>
         <input type="number" class="form-control" formControlName="cashPrice" min="1" step="0.01" dir="ltr"
           placeholder="0.00" [class.is-invalid]="isInvalid('cashPrice')" />
         <app-form-error [control]="form.controls.cashPrice" label="سعر البيع الكاش" />
@@ -224,6 +224,19 @@
           <strong>{{ summary().lastInstallmentPreview | currencyAr }}</strong>
           (تقديرية — السيرفر هو من يحسب القيمة النهائية).
           }
+        </div>
+
+        <div class="mt-2">
+          <label class="form-label">
+            إجمالي العقد
+            <span class="text-danger">*</span>
+          </label>
+          <input type="number" class="form-control" formControlName="totalContractAmount" min="0.01" step="0.01"
+            dir="ltr" placeholder="0.00" [class.is-invalid]="isInvalid('totalContractAmount')" />
+          <div class="form-text" style="font-size:11px">
+            الإجمالي الحقيقي اللي العميل هيدفعه (المقدم + كل الأقساط) — مختلف عن سعر البيع كاش، ولازم يتحدد يدويًا.
+          </div>
+          <app-form-error [control]="form.controls.totalContractAmount" label="إجمالي العقد" />
         </div>
         }
       </div>

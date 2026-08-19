@@ -172,6 +172,7 @@ export class CustomersService {
     if (query.search?.trim()) params['search'] = query.search.trim();
     if (query.onlyOverdue)    params['onlyOverdue'] = true;
     if (query.clientCode?.trim()) params['clientCode'] = query.clientCode.trim();
+    if (query.areaId)         params['areaId'] = query.areaId;
     return params;
   }
 

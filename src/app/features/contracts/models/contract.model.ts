@@ -75,6 +75,7 @@ export interface CreateContractPayload {
   items: ContractItemPayload[];
   /** ISO datetime (date of sale). */
   dateOfSale: string;
+  /** Reference cash-sale price — used for sales reporting only, unrelated to `totalContractAmount`. */
   cashPrice: number;
   downPayment: number;
   /** 0..100 */
@@ -97,6 +98,14 @@ export interface CreateContractPayload {
    * Defaults to `false` — omit entirely to keep prior behavior unchanged.
    */
   adjustLastInstallmentForRemainder?: boolean;
+  /**
+   * The real total the client pays across the whole contract (down payment +
+   * all installments, including installment margin) — NOT the same as
+   * `cashPrice`, which is a reference figure only. Required whenever
+   * `adjustLastInstallmentForRemainder` is `true`; the server derives the
+   * last installment's remainder from this value, not from `cashPrice`.
+   */
+  totalContractAmount?: number;
 }
 
 /** Response shape from `POST /dashboard/contracts`. */
@@ -118,6 +127,13 @@ export interface CreatedContract {
   notes: string | null;
   /** Contract code — `null` for contracts created before this field existed. */
   code: string | null;
+  /**
+   * Authoritative contract total (down payment + all installments). Always
+   * use this for "contract total" displays — never derive it client-side as
+   * `installmentAmount * installmentsCount`, which is wrong whenever the
+   * last installment was adjusted for a remainder.
+   */
+  totalContractAmount: number;
 }
 
 /**
@@ -142,6 +158,8 @@ export interface ContractFormState {
   code?: string;
   /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
   adjustLastInstallmentForRemainder?: boolean;
+  /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
+  totalContractAmount?: number;
 }
 
 /** Build `POST /dashboard/contracts` body from form state. */
@@ -180,6 +198,7 @@ export function buildCreateContractPayload(
 
   if (form.adjustLastInstallmentForRemainder) {
     payload.adjustLastInstallmentForRemainder = true;
+    payload.totalContractAmount = Number(form.totalContractAmount);
   }
 
   return payload;
@@ -205,6 +224,8 @@ export interface UpdateContractPayload {
   code?: string;
   /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
   adjustLastInstallmentForRemainder?: boolean;
+  /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
+  totalContractAmount?: number;
 }
 
 /** Form-state shape for the edit page — identical to ContractFormState. */
@@ -257,6 +278,8 @@ export interface CreateDirectContractPayload {
   code?: string;
   /** See `CreateContractPayload.adjustLastInstallmentForRemainder`. */
   adjustLastInstallmentForRemainder?: boolean;
+  /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
+  totalContractAmount?: number;
 }
 
 /** Response shape from `POST /dashboard/contracts/direct`. */
@@ -278,4 +301,6 @@ export interface CreatedDirectContract {
   notes: string | null;
   /** Contract code — `null` for contracts created before this field existed. */
   code: string | null;
+  /** See `CreatedContract.totalContractAmount` — always use this, never `installmentAmount * installmentsCount`. */
+  totalContractAmount: number;
 }

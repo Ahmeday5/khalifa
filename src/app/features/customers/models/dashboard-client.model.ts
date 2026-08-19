@@ -67,6 +67,8 @@ export interface DashboardClientsQuery {
   onlyOverdue?: boolean;
   /** Barcode / client-code exact search. */
   clientCode?: string;
+  /** Restrict the result set to clients belonging to this area. */
+  areaId?: number;
 }
 
 /**

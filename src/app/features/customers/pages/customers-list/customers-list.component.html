@@ -53,6 +53,11 @@
     <span class="cl-toggle-label">المتأخرون فقط</span>
   </label>
 
+  <div class="cl-area-filter">
+    <app-searchable-select [options]="areaOptions()" [ngModel]="areaId()" (ngModelChange)="onAreaChange($event)"
+      placeholder="كل المناطق" searchPlaceholder="ابحث عن منطقة…" />
+  </div>
+
   <button type="button" class="btn btn-sm d-inline-flex align-items-center gap-1" [disabled]="loading()"
     (click)="refresh()">
     @if (loading()) {
