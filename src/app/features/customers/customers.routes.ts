@@ -38,6 +38,13 @@ export const customersRoutes: Routes = [
             (m) => m.StatementComponent,
           ),
       },
+      {
+        path: 'pending-down-payments',
+        loadComponent: () =>
+          import(
+            './pages/pending-down-payments/pending-down-payments.component'
+          ).then((m) => m.PendingDownPaymentsComponent),
+      },
     ],
   },
 ];

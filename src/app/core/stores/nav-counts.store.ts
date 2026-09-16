@@ -38,11 +38,13 @@ export class NavCountsStore {
   private readonly _overdueClients = signal<number>(0);
   private readonly _pendingClientOrders = signal<number>(0);
   private readonly _lowStockProducts = signal<number>(0);
+  private readonly _pendingDownPayments = signal<number>(0);
 
   // ── public readonly views ──
   readonly overdueClients = this._overdueClients.asReadonly();
   readonly pendingClientOrders = this._pendingClientOrders.asReadonly();
   readonly lowStockProducts = this._lowStockProducts.asReadonly();
+  readonly pendingDownPayments = this._pendingDownPayments.asReadonly();
 
   /** True when there is at least one item worth showing in the alert pill. */
   readonly hasAlerts = computed(
@@ -56,10 +58,12 @@ export class NavCountsStore {
   private readonly _overduePulse = signal(0);
   private readonly _pendingPulse = signal(0);
   private readonly _lowStockPulse = signal(0);
+  private readonly _pendingDownPaymentsPulse = signal(0);
 
   readonly overduePulse = this._overduePulse.asReadonly();
   readonly pendingPulse = this._pendingPulse.asReadonly();
   readonly lowStockPulse = this._lowStockPulse.asReadonly();
+  readonly pendingDownPaymentsPulse = this._pendingDownPaymentsPulse.asReadonly();
 
   /** Loading flag for the very first load. UI uses it to render a skeleton. */
   readonly loading = signal<boolean>(true);
@@ -86,6 +90,7 @@ export class NavCountsStore {
     refetch('payment', () => {
       this.refreshOverdue();
       this.refreshLowStock();
+      this.refreshPendingDownPayments();
     });
     refetch('installment', () => {
       this.refreshOverdue();
@@ -94,6 +99,7 @@ export class NavCountsStore {
       this.refreshOverdue();
       this.refreshLowStock();
       this.refreshClientOrders();
+      this.refreshPendingDownPayments();
     });
     refetch('client', () => this.refreshOverdue());
     refetch('client-orders', () => this.refreshClientOrders());
@@ -108,6 +114,7 @@ export class NavCountsStore {
     this.refreshOverdue(force);
     this.refreshLowStock(force);
     this.refreshClientOrders(force);
+    this.refreshPendingDownPayments(force);
   }
 
   /**
@@ -162,6 +169,19 @@ export class NavCountsStore {
           this._pendingClientOrders,
           this._pendingPulse,
           pending,
+        );
+      },
+      error: () => {},
+    });
+  }
+
+  private refreshPendingDownPayments(force = true): void {
+    this.customers.pendingDownPaymentsCount(force).subscribe({
+      next: (count) => {
+        this.bumpIfHigher(
+          this._pendingDownPayments,
+          this._pendingDownPaymentsPulse,
+          count,
         );
       },
       error: () => {},

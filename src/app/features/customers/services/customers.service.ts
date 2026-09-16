@@ -14,6 +14,10 @@ import {
   ClientContractsPage,
   ClientContractsQuery,
 } from '../models/client-statement.model';
+import {
+  PendingDownPaymentsPage,
+  PendingDownPaymentsQuery,
+} from '../models/pending-down-payments.model';
 import { ApiService } from '../../../core/services/api.service';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.const';
 import {
@@ -24,6 +28,7 @@ import {
 } from '../../../core/http/http-context.tokens';
 
 const CLIENTS_TTL_MS = 2 * 60 * 1000; // 2 min — list churns whenever a payment is recorded
+const PENDING_DP_TTL_MS = 60 * 1000;
 /**
  * Invalidating `'clients'` (not `'client'`) clears the clients-list cache
  * without also nuking unrelated `client-orders` entries, while still
@@ -217,5 +222,51 @@ export class CustomersService {
     date: string;
   }): Observable<void> {
     return of(undefined).pipe(delay(400));
+  }
+
+  // ── Pending down payments (real API) ────────────────────────────────────
+
+  pendingDownPayments(
+    query: PendingDownPaymentsQuery = {},
+  ): Observable<PendingDownPaymentsPage> {
+    return this.api.get<PendingDownPaymentsPage>(
+      API_ENDPOINTS.clients.pendingDownPayments,
+      {
+        params: this.toPendingDownPaymentsParams(query),
+        context: withCache({ ttlMs: PENDING_DP_TTL_MS }),
+      },
+    );
+  }
+
+  refreshPendingDownPayments(
+    query: PendingDownPaymentsQuery = {},
+  ): Observable<PendingDownPaymentsPage> {
+    return this.api.get<PendingDownPaymentsPage>(
+      API_ENDPOINTS.clients.pendingDownPayments,
+      {
+        params: this.toPendingDownPaymentsParams(query),
+        context: withCacheBypass(withCache({ ttlMs: PENDING_DP_TTL_MS })),
+      },
+    );
+  }
+
+  /** Lightweight count for the sidebar badge — reads the paged `count` field. */
+  pendingDownPaymentsCount(force = false): Observable<number> {
+    const q: PendingDownPaymentsQuery = { pageIndex: 1, pageSize: 1 };
+    const stream$ = force
+      ? this.refreshPendingDownPayments(q)
+      : this.pendingDownPayments(q);
+    return stream$.pipe(map((page) => page?.count ?? 0));
+  }
+
+  private toPendingDownPaymentsParams(
+    query: PendingDownPaymentsQuery,
+  ): Record<string, unknown> {
+    const params: Record<string, unknown> = {
+      PageIndex: query.pageIndex ?? 1,
+      PageSize: query.pageSize ?? 10,
+    };
+    if (query.search?.trim()) params['search'] = query.search.trim();
+    return params;
   }
 }

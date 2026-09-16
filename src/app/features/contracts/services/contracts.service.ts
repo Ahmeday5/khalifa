@@ -9,7 +9,11 @@ import {
   withCacheInvalidate,
   withInlineHandling,
 } from '../../../core/http/http-context.tokens';
-import { ContractDetails } from '../../customers/models/client-statement.model';
+import {
+  ContractDetails,
+  PayDownPaymentPayload,
+  PayDownPaymentResponse,
+} from '../../customers/models/client-statement.model';
 import {
   Contract,
   ContractFormState,
@@ -192,6 +196,33 @@ export class ContractsService {
             CONTRACTS_CACHE_KEY,
             'client',
             'warehous',
+            'treasur',
+            'financial-separation',
+          ]),
+        ),
+      },
+    );
+  }
+
+  /**
+   * POST /dashboard/contracts/{id}/down-payment/pay
+   *
+   * Collects the full pending down payment in one shot (no partial
+   * collection, unlike installments).
+   */
+  payDownPayment(
+    id: number,
+    payload: PayDownPaymentPayload,
+  ): Observable<PayDownPaymentResponse> {
+    return this.api.post<PayDownPaymentResponse>(
+      API_ENDPOINTS.contracts.downPaymentPay(id),
+      payload,
+      {
+        context: withInlineHandling(
+          withCacheInvalidate([
+            CONTRACTS_CACHE_KEY,
+            'client',
+            'payment',
             'treasur',
             'financial-separation',
           ]),

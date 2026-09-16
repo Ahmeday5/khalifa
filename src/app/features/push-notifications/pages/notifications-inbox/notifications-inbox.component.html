@@ -1,0 +1,78 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">الإشعارات</div>
+    <div class="pgs">كل الإشعارات المرسلة من النظام</div>
+  </div>
+  <div class="d-flex gap-2">
+    @if (store.unreadCount() > 0) {
+      <button class="btn btn-sm btn-bl" (click)="markAllRead()">تعليم الكل كمقروء</button>
+    }
+    <button class="btn btn-sm" (click)="refresh()" [disabled]="loading()">تحديث</button>
+  </div>
+</div>
+
+<div class="card ni-table-card">
+  <div class="tw">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>النوع</th>
+          <th>العنوان</th>
+          <th>الرسالة</th>
+          <th>المندوب</th>
+          <th>المبلغ</th>
+          <th>التاريخ</th>
+          <th>الحالة</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+        <tr>
+          <td colspan="8" class="ni-loading">جارٍ التحميل...</td>
+        </tr>
+        } @else if (rows().length === 0) {
+        <tr>
+          <td colspan="8" class="ni-empty">لا توجد إشعارات</td>
+        </tr>
+        } @else {
+        @for (item of rows(); track item.id) {
+        <tr [class.ni-row-unread]="!item.isRead">
+          <td>{{ typeLabel(item.type) }}</td>
+          <td class="fw-600">{{ item.title }}</td>
+          <td>{{ item.message }}</td>
+          <td>{{ item.representativeName || '—' }}</td>
+          <td>{{ item.amount ?? '—' }}</td>
+          <td>{{ formatDate(item.createdAt) }}</td>
+          <td>
+            @if (item.isRead) {
+              <span class="ni-badge ni-badge-read">مقروء</span>
+            } @else {
+              <span class="ni-badge ni-badge-unread">غير مقروء</span>
+            }
+          </td>
+          <td>
+            @if (!item.isRead) {
+              <button class="btn btn-sm" (click)="markRead(item)">تعليم كمقروء</button>
+            }
+          </td>
+        </tr>
+        }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+  <app-pagination
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [count]="count()"
+    [totalPages]="totalPages()"
+    [disabled]="loading()"
+    [pageSizeOptions]="[20, 50, 100]"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+  }
+</div>

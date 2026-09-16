@@ -6,6 +6,7 @@ import { getMappedClass } from '../../../core/utils/class-map.util';
 import { NAV_SECTIONS } from '../../../core/constants/nav.constants';
 import { NavIconComponent, NavIconName } from '../../../shared/components/nav-icon/nav-icon.component';
 import { NavCountsStore } from '../../../core/stores/nav-counts.store';
+import { NotificationsStore } from '../../../core/stores/notifications.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { Permission } from '../../../core/constants/permissions.const';
 import { UserRole } from '../../../core/models/auth.model';
@@ -18,7 +19,9 @@ import { UserRole } from '../../../core/models/auth.model';
 export type NavBadgeKey =
   | 'overdueClients'
   | 'pendingClientOrders'
-  | 'lowStockProducts';
+  | 'lowStockProducts'
+  | 'pendingDownPayments'
+  | 'unreadNotifications';
 
 export interface NavItem {
   id: string;
@@ -67,6 +70,7 @@ export interface NavSection {
 export class SidebarComponent {
   protected readonly layout = inject(LayoutService);
   protected readonly counts = inject(NavCountsStore);
+  protected readonly notifications = inject(NotificationsStore);
   private readonly auth = inject(AuthService);
 
   /**
@@ -114,6 +118,8 @@ export class SidebarComponent {
       case 'overdueClients':      return this.counts.overdueClients();
       case 'pendingClientOrders': return this.counts.pendingClientOrders();
       case 'lowStockProducts':    return this.counts.lowStockProducts();
+      case 'pendingDownPayments': return this.counts.pendingDownPayments();
+      case 'unreadNotifications': return this.notifications.unreadCount();
     }
   }
 
@@ -124,6 +130,8 @@ export class SidebarComponent {
       case 'overdueClients':      return this.counts.overduePulse();
       case 'pendingClientOrders': return this.counts.pendingPulse();
       case 'lowStockProducts':    return this.counts.lowStockPulse();
+      case 'pendingDownPayments': return this.counts.pendingDownPaymentsPulse();
+      case 'unreadNotifications': return this.notifications.unreadPulse();
     }
   }
 }

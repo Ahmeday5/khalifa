@@ -186,6 +186,8 @@ export class ContractNewComponent implements OnInit {
     adjustLastInstallmentForRemainder: [false],
 
     totalContractAmount: [{ value: 0, disabled: true }],
+
+    isDownPaymentPaid: [true],
   });
 
   get itemsArray(): FormArray {
@@ -346,9 +348,11 @@ export class ContractNewComponent implements OnInit {
       representativeId: d.representative?.id ?? null,
       notes: d.contract.notes ?? '',
       code: d.contract.code ?? '',
+      isDownPaymentPaid: d.contract.isDownPaymentPaid ?? true,
     });
 
     this.prefilling = false;
+    this.syncTreasuryRequirement();
     this.form
       .get('installmentAmount')
       ?.setValue(d.contract.installmentAmount, { emitEvent: false });
@@ -453,6 +457,16 @@ export class ContractNewComponent implements OnInit {
       totalCtrl?.updateValueAndValidity({ emitEvent: false });
     });
 
+    // "تحصيل المقدم الآن": when off and there's a down payment to collect,
+    // the treasury isn't picked yet — it stays required only once the down
+    // payment is either collected now or there's nothing to collect.
+    this.form.get('isDownPaymentPaid')?.valueChanges.subscribe(() => {
+      this.syncTreasuryRequirement();
+    });
+    this.form.get('downPayment')?.valueChanges.subscribe(() => {
+      this.syncTreasuryRequirement();
+    });
+
     // When the product in the FIRST item changes, auto-fill cashPrice once
     // using the price that matches the selected paymentFrequency.
     const firstProductCtrl = this.itemsArray.at(0)?.get('productId');
@@ -501,6 +515,24 @@ export class ContractNewComponent implements OnInit {
       case 'Annual':     return 12;
       default:           return 3; // Quarterly
     }
+  }
+
+  /**
+   * The treasury is required unless the operator explicitly deferred
+   * collecting the down payment AND there's actually a down payment to
+   * defer (a zero down payment has nothing to collect later, so the
+   * treasury stays required to receive whatever installment flow applies).
+   */
+  private syncTreasuryRequirement(): void {
+    const paid = this.form.get('isDownPaymentPaid')?.value;
+    const downPayment = Number(this.form.get('downPayment')?.value) || 0;
+    const treasuryCtrl = this.form.get('treasuryId');
+    if (!paid && downPayment > 0) {
+      treasuryCtrl?.clearValidators();
+    } else {
+      treasuryCtrl?.setValidators([Validators.required]);
+    }
+    treasuryCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   private calculateInstallment(): void {
@@ -590,6 +622,7 @@ export class ContractNewComponent implements OnInit {
       code: raw.code?.trim() || '',
       adjustLastInstallmentForRemainder: adjustLastInstallment,
       ...(adjustLastInstallment ? { totalContractAmount } : {}),
+      isDownPaymentPaid: !!raw.isDownPaymentPaid,
     };
 
     if (id) {
@@ -753,9 +786,11 @@ export class ContractNewComponent implements OnInit {
         notes: '',
         code: '',
         adjustLastInstallmentForRemainder: false,
+        isDownPaymentPaid: true,
       },
       { emitEvent: false },
     );
+    this.syncTreasuryRequirement();
     this.form.get('installmentAmount')?.disable({ emitEvent: false });
     this.form.get('installmentAmount')?.setValue(0, { emitEvent: false });
     const totalCtrl = this.form.get('totalContractAmount');

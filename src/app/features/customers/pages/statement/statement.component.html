@@ -105,7 +105,12 @@
           <td>{{ formatDate(row.dateOfSale) }}</td>
           <td>{{ row.purchasePrice | currencyAr }}</td>
           <td>{{ row.cashPrice | currencyAr }}</td>
-          <td>{{ row.downPayment | currencyAr }}</td>
+          <td>
+            {{ row.downPayment | currencyAr }}
+            @if (!row.isDownPaymentPaid) {
+              <app-badge text="غير محصّل" type="warn" />
+            }
+          </td>
           <td>{{ row.installmentsCount }}</td>
           <td>{{ row.installmentAmount | currencyAr }}</td>
           <td>{{ freqLabel(row.paymentFrequency) }}</td>
@@ -124,6 +129,11 @@
           <td>
             <div class="d-flex gap-1">
               <button class="btn btn-sm btn-bl" (click)="openDetails(row)">التفاصيل</button>
+              @if (!row.isDownPaymentPaid) {
+                <button class="btn btn-sm btn-gr" (click)="openDownPaymentCollect(row)">
+                  تحصيل المقدم
+                </button>
+              }
               @if (row.isDirect) {
                 <button class="btn btn-sm" (click)="openEditDirect(row)">تعديل</button>
               } @else {
@@ -300,6 +310,21 @@
         }
       </tbody>
     </table>
+  </div>
+  }
+
+  <!-- Pending down payment -->
+  @if (!d.contract.isDownPaymentPaid) {
+  <div class="st-d-next">
+    <div>
+      <div class="st-d-next-l">المقدم غير محصّل</div>
+      <div class="st-d-next-v">
+        <strong>{{ d.contract.downPayment | currencyAr }}</strong>
+      </div>
+    </div>
+    <button class="btn btn-gr" (click)="openDownPaymentCollectFromDetails()">
+      تحصيل المقدم
+    </button>
   </div>
   }
 
@@ -508,3 +533,13 @@
     </button>
   </ng-container>
 </app-modal>
+
+<!-- ─────────────────── Down-payment collection modal ─────────────────── -->
+<app-down-payment-collect-modal
+  [open]="payDownOpen()"
+  [contractId]="payDownContractId()"
+  [contractCode]="payDownContractCode()"
+  [downPaymentAmount]="payDownAmount()"
+  (closed)="closeDownPaymentCollect()"
+  (collected)="onDownPaymentCollected()"
+/>

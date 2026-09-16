@@ -137,6 +137,8 @@ export const API_ENDPOINTS = {
     byId: (id: number) => `dashboard/clients/${id}`,
     topThisMonth: 'dashboard/clients/top-this-month',
     contracts: (id: number) => `dashboard/clients/${id}/contracts`,
+    /** GET (paged): clients with at least one contract whose down payment is uncollected. */
+    pendingDownPayments: 'dashboard/clients/pending-down-payments',
   },
   areas: {
     base: 'dashboard/areas',
@@ -179,5 +181,14 @@ export const API_ENDPOINTS = {
     directById: (id: number) => `dashboard/contracts/direct/${id}`,
     /** POST: return / cancel a contract (only when no installments have been paid). */
     return: (id: number) => `dashboard/contracts/${id}/return`,
+    /** POST: collect the full pending down payment for a contract in one shot. */
+    downPaymentPay: (id: number) => `dashboard/contracts/${id}/down-payment/pay`,
+  },
+  notifications: {
+    base: 'dashboard/notifications',
+    unreadCount: 'dashboard/notifications/unread-count',
+    markRead: (id: number) => `dashboard/notifications/${id}/read`,
+    markAllRead: 'dashboard/notifications/read-all',
+    registerDevice: 'dashboard/notifications/register-device',
   },
 } as const;

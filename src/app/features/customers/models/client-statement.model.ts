@@ -36,6 +36,8 @@ export interface ClientContractRow {
   totalContractAmount: number;
   totalPaid: number;
   remainingAmount: number;
+  /** `false` when the down payment is still pending collection. */
+  isDownPaymentPaid: boolean;
 }
 
 export type ClientContractsPage = PagedResponse<ClientContractRow>;
@@ -81,6 +83,8 @@ export interface ContractDetailsContract {
   representativeCommission: number;
   /** الخزينة المربوطة بالعقد — مطلوبة لسند دفع المقدم وعرض السيلكت. */
   treasuryId: number | null;
+  /** `false` when the down payment is still pending collection. */
+  isDownPaymentPaid: boolean;
 }
 
 export interface ContractDetailsClient {
@@ -181,5 +185,22 @@ export interface PayInstallmentPayload {
 }
 
 export interface PayInstallmentResponse {
+  message: string;
+}
+
+/**
+ * POST /dashboard/contracts/{id}/down-payment/pay — collects the full
+ * pending down payment in one shot (no partial collection, unlike
+ * installments).
+ */
+export interface PayDownPaymentPayload {
+  treasuryId: number;
+  /** ISO datetime. */
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}
+
+export interface PayDownPaymentResponse {
   message: string;
 }

@@ -16,6 +16,7 @@ import { StorageService } from './storage.service';
 import { DeviceService } from './device.service';
 import { ToastService } from './toast.service';
 import { HttpCacheService } from './http-cache.service';
+import { FirebaseMessagingService } from './firebase-messaging.service';
 import {
   AuthResponseData,
   AuthTokens,
@@ -97,6 +98,7 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly zone = inject(NgZone);
   private readonly httpCache = inject(HttpCacheService);
+  private readonly firebaseMessaging = inject(FirebaseMessagingService);
 
   private readonly currentUserSignal = signal<User | null>(this.loadStoredUser());
   readonly currentUser = this.currentUserSignal.asReadonly();
@@ -137,7 +139,17 @@ export class AuthService {
     this.initVisibilityRecovery();
     if (this.isLoggedIn()) {
       this.scheduleProactiveRefresh();
+      this.setupPushNotifications();
     }
+  }
+
+  /**
+   * Best-effort FCM registration — never blocks login/bootstrap, and
+   * swallows its own errors (see `FirebaseMessagingService`).
+   */
+  private setupPushNotifications(): void {
+    this.firebaseMessaging.onForegroundMessage();
+    void this.firebaseMessaging.requestPermissionAndRegister();
   }
 
   // ──────────────────────── public API ────────────────────────
@@ -158,7 +170,8 @@ export class AuthService {
       })
       .pipe(
         tap((data) => this.persistSession(data, true)),
-        switchMap((data) => this.hydratePermissions(this.toUser(data)))
+        switchMap((data) => this.hydratePermissions(this.toUser(data))),
+        tap(() => this.setupPushNotifications())
       );
   }
 

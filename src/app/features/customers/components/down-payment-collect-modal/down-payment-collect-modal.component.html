@@ -1,0 +1,71 @@
+<app-modal
+  [open]="open()"
+  size="md"
+  [title]="title()"
+  [closeOnBackdrop]="!submitting()"
+  [closeOnEsc]="!submitting()"
+  (closed)="close()"
+>
+  <div class="dp-intro">
+    <span>المقدم المستحق:</span>
+    <strong style="color:var(--re)">{{ downPaymentAmount() | currencyAr : true }}</strong>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-12 col-sm-6">
+      <label class="form-label">تاريخ التحصيل</label>
+      <input
+        type="date"
+        class="form-control"
+        [ngModel]="form().paymentDate"
+        (ngModelChange)="updateForm('paymentDate', $event)"
+      />
+    </div>
+
+    <div class="col-12 col-sm-6">
+      <label class="form-label">الخزينة</label>
+      <select
+        class="form-select"
+        [ngModel]="form().treasuryId ?? ''"
+        (ngModelChange)="updateForm('treasuryId', $event ? +$event : null)"
+      >
+        <option value="">-- اختر الخزينة --</option>
+        @for (t of treasuries(); track t.id) {
+          <option [value]="t.id">{{ t.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-12 col-sm-6">
+      <label class="form-label">طريقة السداد</label>
+      <select
+        class="form-select"
+        [ngModel]="form().paymentMethod"
+        (ngModelChange)="updateForm('paymentMethod', $event)"
+      >
+        <option value="Cash">نقدي</option>
+        <option value="Transfer">تحويل بنكي</option>
+        <option value="Card">بطاقة</option>
+        <option value="STCPay">STC Pay</option>
+        <option value="ApplePay">Apple Pay</option>
+      </select>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">ملاحظات</label>
+      <textarea
+        class="form-control"
+        rows="2"
+        [ngModel]="form().notes"
+        (ngModelChange)="updateForm('notes', $event)"
+      ></textarea>
+    </div>
+  </div>
+
+  <ng-container modal-footer>
+    <button class="btn" (click)="close()" [disabled]="submitting()">إلغاء</button>
+    <button class="btn btn-gr" (click)="submit()" [disabled]="submitting()">
+      {{ submitting() ? 'جارٍ التحصيل...' : 'تأكيد التحصيل' }}
+    </button>
+  </ng-container>
+</app-modal>

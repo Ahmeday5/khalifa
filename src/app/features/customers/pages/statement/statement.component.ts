@@ -45,6 +45,7 @@ import { PrintService } from '../../../../core/services/print.service';
 import { fetchAllPages } from '../../../../core/utils/api-list.util';
 import { ReturnContractModalComponent } from '../../../contracts/components/return-contract-modal/return-contract-modal.component';
 import { DirectContractModalComponent } from '../../components/direct-contract-modal/direct-contract-modal.component';
+import { DownPaymentCollectModalComponent } from '../../components/down-payment-collect-modal/down-payment-collect-modal.component';
 import {
   ContractSlipsPrintService,
   ContractSlipData,
@@ -78,6 +79,7 @@ interface PaymentForm {
     SearchableSelectComponent,
     ReturnContractModalComponent,
     DirectContractModalComponent,
+    DownPaymentCollectModalComponent,
   ],
   templateUrl: './statement.component.html',
   styleUrl: './statement.component.scss',
@@ -141,6 +143,12 @@ export class StatementComponent {
   protected readonly payOpen = signal(false);
   protected readonly paySubmitting = signal(false);
   protected readonly treasuries = signal<LookupItem[]>([]);
+
+  // ── down-payment collection modal ─────────────────────────────────
+  protected readonly payDownOpen = signal(false);
+  protected readonly payDownContractId = signal<number | null>(null);
+  protected readonly payDownContractCode = signal<string | null>(null);
+  protected readonly payDownAmount = signal(0);
 
   protected readonly payForm = signal<PaymentForm>(this.emptyPaymentForm());
 
@@ -546,6 +554,36 @@ export class StatementComponent {
         this.toast.error(apiErrorToMessage(err, 'تعذّر تحميل تفاصيل العقد'));
       },
     });
+  }
+
+  // ─────────── down-payment collection modal ───────────
+
+  /** Opens the collect-down-payment modal directly from a table row. */
+  protected openDownPaymentCollect(row: ClientContractRow): void {
+    this.payDownContractId.set(row.id);
+    this.payDownContractCode.set(row.code);
+    this.payDownAmount.set(row.downPayment);
+    this.payDownOpen.set(true);
+  }
+
+  /** Opens the collect-down-payment modal from within the details modal. */
+  protected openDownPaymentCollectFromDetails(): void {
+    const d = this.details();
+    if (!d) return;
+    this.payDownContractId.set(d.contract.id);
+    this.payDownContractCode.set(d.contract.code);
+    this.payDownAmount.set(d.contract.downPayment);
+    this.payDownOpen.set(true);
+  }
+
+  protected closeDownPaymentCollect(): void {
+    this.payDownOpen.set(false);
+  }
+
+  protected onDownPaymentCollected(): void {
+    this.payDownOpen.set(false);
+    // The mutation already invalidates cache keys; the effect-driven
+    // refresh + the onInvalidate hooks take care of the rest.
   }
 
   // ─────────── payment modal ───────────

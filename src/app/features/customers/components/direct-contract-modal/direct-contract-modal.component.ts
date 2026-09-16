@@ -142,6 +142,7 @@ export class DirectContractModalComponent {
     code:                 [''],
     adjustLastInstallmentForRemainder: [false],
     totalContractAmount: [{ value: 0, disabled: true }],
+    isDownPaymentPaid: [true],
   });
 
   get itemsArray(): FormArray { return this.form.get('items') as FormArray; }
@@ -235,6 +236,16 @@ export class DirectContractModalComponent {
       totalCtrl?.updateValueAndValidity({ emitEvent: false });
     });
 
+    // "تحصيل المقدم الآن": when off and there's a down payment to collect,
+    // the treasury isn't picked yet — it stays required only once the down
+    // payment is either collected now or there's nothing to collect.
+    this.form.get('isDownPaymentPaid')?.valueChanges.subscribe(() => {
+      this.syncTreasuryRequirement();
+    });
+    this.form.get('downPayment')?.valueChanges.subscribe(() => {
+      this.syncTreasuryRequirement();
+    });
+
     // When paymentFrequency changes, default installmentsCount to match (still editable).
     this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
       this.form.patchValue(
@@ -260,6 +271,23 @@ export class DirectContractModalComponent {
         .get('firstInstallmentDate')
         ?.setValue(this.nextMonthStr(dateOfSale), { emitEvent: false });
     });
+  }
+
+  /**
+   * The treasury is required unless the operator explicitly deferred
+   * collecting the down payment AND there's actually a down payment to
+   * defer.
+   */
+  private syncTreasuryRequirement(): void {
+    const paid = this.form.get('isDownPaymentPaid')?.value;
+    const downPayment = Number(this.form.get('downPayment')?.value) || 0;
+    const treasuryCtrl = this.form.get('treasuryId');
+    if (!paid && downPayment > 0) {
+      treasuryCtrl?.clearValidators();
+    } else {
+      treasuryCtrl?.setValidators([Validators.required]);
+    }
+    treasuryCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   /** Default installments count matching each payment frequency (still editable). */
@@ -353,6 +381,7 @@ export class DirectContractModalComponent {
       code:                 raw.code?.trim() || undefined,
       adjustLastInstallmentForRemainder: adjustLastInstallment || undefined,
       totalContractAmount:  adjustLastInstallment ? totalContractAmount : undefined,
+      isDownPaymentPaid:    !!raw.isDownPaymentPaid,
     };
 
     this.serverError.set(null);
@@ -452,6 +481,7 @@ export class DirectContractModalComponent {
           representativeId:     d.representative?.id ?? null,
           notes:                c.notes ?? '',
           code:                 c.code ?? '',
+          isDownPaymentPaid:    c.isDownPaymentPaid ?? true,
         }, { emitEvent: false });
 
         // Prefill the authoritative contract total from the server so
@@ -461,6 +491,7 @@ export class DirectContractModalComponent {
           ?.setValue(d.summary.totalContractAmount, { emitEvent: false });
 
         this.prefilling = false;
+        this.syncTreasuryRequirement();
         this.serverError.set(null);
       },
       error: (err: ApiError) => {
@@ -532,7 +563,9 @@ export class DirectContractModalComponent {
       code:                 '',
       adjustLastInstallmentForRemainder: false,
       totalContractAmount: 0,
+      isDownPaymentPaid: true,
     });
+    this.syncTreasuryRequirement();
     this.form.get('installmentAmount')?.disable({ emitEvent: false });
     const totalCtrl = this.form.get('totalContractAmount');
     totalCtrl?.clearValidators();

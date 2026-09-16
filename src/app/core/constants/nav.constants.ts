@@ -21,6 +21,14 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'home',
         requiredAnyPermission: [PERMISSIONS.dashboardView],
       },
+      {
+        id: 'push-notifications',
+        label: 'الإشعارات',
+        route: '/push-notifications',
+        badgeKey: 'unreadNotifications',
+        badgeType: 'red',
+        icon: 'bell',
+      },
     ],
   },
   {
@@ -33,6 +41,15 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeKey: 'overdueClients',
         badgeType: 'red',
         icon: 'users',
+        requiredAnyPermission: [PERMISSIONS.clientsView],
+      },
+      {
+        id: 'pending-down-payments',
+        label: 'مقدمات معلقة',
+        route: '/customers/pending-down-payments',
+        badgeKey: 'pendingDownPayments',
+        badgeType: 'amber',
+        icon: 'wallet',
         requiredAnyPermission: [PERMISSIONS.clientsView],
       },
       /*{

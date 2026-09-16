@@ -309,7 +309,9 @@
           <div class="col-12 col-sm-6">
             <label class="form-label">
               الخزنة
-              <span class="text-danger">*</span>
+              @if (form.controls.isDownPaymentPaid.value || form.controls.downPayment.value <= 0) {
+                <span class="text-danger">*</span>
+              }
             </label>
             <app-searchable-select
               formControlName="treasuryId"
@@ -318,6 +320,26 @@
               [options]="treasuryOptions()"
             />
             <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
+          </div>
+
+          <!-- تحصيل المقدم الآن -->
+          <div class="col-12">
+            <div class="form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="cnDownPaymentPaid"
+                formControlName="isDownPaymentPaid"
+              />
+              <label class="form-check-label" for="cnDownPaymentPaid">
+                تحصيل المقدم الآن
+              </label>
+            </div>
+            @if (!form.controls.isDownPaymentPaid.value && form.controls.downPayment.value > 0) {
+              <div class="cn-remainder-note">
+                سيتم تسجيل العقد بمقدم غير محصّل، ويمكن تحصيله لاحقًا من كشف الحساب. الخزنة غير مطلوبة الآن.
+              </div>
+            }
           </div>
 
           <!-- ضبط القسط الأخير تلقائيًا -->

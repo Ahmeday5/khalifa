@@ -201,10 +201,31 @@
 
       <!-- ── Treasury ── -->
       <div class="col-12 col-md-3">
-        <label class="form-label">الخزينة <span class="text-danger">*</span></label>
+        <label class="form-label">
+          الخزينة
+          @if (form.controls.isDownPaymentPaid.value || form.controls.downPayment.value <= 0) {
+            <span class="text-danger">*</span>
+          }
+        </label>
         <app-searchable-select formControlName="treasuryId" [options]="treasuryOptions()" placeholder="اختر الخزينة"
           searchPlaceholder="ابحث باسم الخزينة…" />
         <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
+      </div>
+
+      <!-- ── تحصيل المقدم الآن ── -->
+      <div class="col-12">
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="dcmDownPaymentPaid"
+            formControlName="isDownPaymentPaid" />
+          <label class="form-check-label" for="dcmDownPaymentPaid">
+            تحصيل المقدم الآن
+          </label>
+        </div>
+        @if (!form.controls.isDownPaymentPaid.value && form.controls.downPayment.value > 0) {
+        <div class="dcm-remainder-note">
+          سيتم تسجيل العقد بمقدم غير محصّل، ويمكن تحصيله لاحقًا من كشف الحساب. الخزينة غير مطلوبة الآن.
+        </div>
+        }
       </div>
 
       <!-- ── Adjust last installment for remainder ── -->

@@ -106,6 +106,14 @@ export interface CreateContractPayload {
    * last installment's remainder from this value, not from `cashPrice`.
    */
   totalContractAmount?: number;
+  /**
+   * Whether the down payment was collected immediately. Omit or send `true`
+   * for the old behavior (down payment collected now — `treasuryId` is
+   * required). When `false` and `downPayment > 0`, the down payment stays
+   * pending and `treasuryId` is not required at creation time; it's
+   * collected later via `POST /dashboard/contracts/{id}/down-payment/pay`.
+   */
+  isDownPaymentPaid?: boolean;
 }
 
 /** Response shape from `POST /dashboard/contracts`. */
@@ -134,6 +142,8 @@ export interface CreatedContract {
    * last installment was adjusted for a remainder.
    */
   totalContractAmount: number;
+  /** `false` when the down payment is still pending collection. */
+  isDownPaymentPaid: boolean;
 }
 
 /**
@@ -160,6 +170,8 @@ export interface ContractFormState {
   adjustLastInstallmentForRemainder?: boolean;
   /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
   totalContractAmount?: number;
+  /** See `CreateContractPayload.isDownPaymentPaid`. */
+  isDownPaymentPaid?: boolean;
 }
 
 /** Build `POST /dashboard/contracts` body from form state. */
@@ -184,6 +196,7 @@ export function buildCreateContractPayload(
     paymentFrequency: form.paymentFrequency,
     firstInstallmentDate: form.firstInstallmentDate,
     treasuryId: Number(form.treasuryId),
+    isDownPaymentPaid: form.isDownPaymentPaid !== false,
   };
 
   if (form.representativeId && form.representativeId > 0) {
@@ -226,6 +239,8 @@ export interface UpdateContractPayload {
   adjustLastInstallmentForRemainder?: boolean;
   /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
   totalContractAmount?: number;
+  /** See `CreateContractPayload.isDownPaymentPaid`. */
+  isDownPaymentPaid?: boolean;
 }
 
 /** Form-state shape for the edit page — identical to ContractFormState. */
@@ -280,6 +295,8 @@ export interface CreateDirectContractPayload {
   adjustLastInstallmentForRemainder?: boolean;
   /** See `CreateContractPayload.totalContractAmount`. Required when `adjustLastInstallmentForRemainder` is true. */
   totalContractAmount?: number;
+  /** See `CreateContractPayload.isDownPaymentPaid`. */
+  isDownPaymentPaid?: boolean;
 }
 
 /** Response shape from `POST /dashboard/contracts/direct`. */
@@ -303,4 +320,6 @@ export interface CreatedDirectContract {
   code: string | null;
   /** See `CreatedContract.totalContractAmount` — always use this, never `installmentAmount * installmentsCount`. */
   totalContractAmount: number;
+  /** `false` when the down payment is still pending collection. */
+  isDownPaymentPaid: boolean;
 }

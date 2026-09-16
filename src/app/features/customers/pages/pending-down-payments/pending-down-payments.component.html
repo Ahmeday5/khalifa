@@ -1,0 +1,103 @@
+<div class="pgh">
+  <div>
+    <div class="pgt">مقدمات معلقة</div>
+    <div class="pgs">عملاء لديهم عقود بمقدم لم يُحصَّل بعد</div>
+  </div>
+</div>
+
+<!-- ── Toolbar: search + refresh ── -->
+<div class="st-toolbar">
+  <div class="st-pick">
+    <input
+      type="text"
+      class="form-control"
+      placeholder="ابحث بالاسم أو رقم الجوال…"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="onSearch($event)"
+    />
+  </div>
+
+  @if (hasFilters()) {
+    <button class="btn btn-sm" (click)="clearSearch()">مسح البحث</button>
+  }
+  <button class="btn btn-sm" (click)="refresh()" [disabled]="loading()">تحديث</button>
+</div>
+
+<div class="card st-table-card">
+  <div class="chdr">
+    <div class="ct">العملاء ({{ count() }})</div>
+  </div>
+
+  <div class="tw">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>العميل</th>
+          <th>الهاتف</th>
+          <th>كود العقد</th>
+          <th>المنتجات</th>
+          <th>تاريخ البيع</th>
+          <th>المقدم</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+        <tr>
+          <td colspan="7" class="st-loading">جارٍ التحميل...</td>
+        </tr>
+        } @else if (rows().length === 0) {
+        <tr>
+          <td colspan="7" class="st-empty">لا توجد مقدمات معلقة حاليًا</td>
+        </tr>
+        } @else {
+        @for (client of rows(); track client.clientId) {
+          @for (contract of client.contracts; track contract.contractId; let first = $first) {
+          <tr>
+            @if (first) {
+              <td [attr.rowspan]="client.contracts.length" class="fw-600">{{ client.clientName }}</td>
+              <td [attr.rowspan]="client.contracts.length">{{ client.phoneNumber || '—' }}</td>
+            }
+            <td>{{ contract.contractCode || '—' }}</td>
+            <td>{{ contract.productNames || '—' }}</td>
+            <td>{{ formatDate(contract.dateOfSale) }}</td>
+            <td style="color:var(--re);font-weight:600">
+              {{ contract.downPaymentAmount | currencyAr }}
+            </td>
+            <td>
+              <button
+                class="btn btn-sm btn-gr"
+                (click)="openCollect(contract.contractId, contract.contractCode, contract.downPaymentAmount)"
+              >
+                تحصيل المقدم
+              </button>
+            </td>
+          </tr>
+          }
+        }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (count() > 0) {
+  <app-pagination
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize()"
+    [count]="count()"
+    [totalPages]="totalPages()"
+    [disabled]="loading()"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  />
+  }
+</div>
+
+<app-down-payment-collect-modal
+  [open]="collectOpen()"
+  [contractId]="collectContractId()"
+  [contractCode]="collectContractCode()"
+  [downPaymentAmount]="collectAmount()"
+  (closed)="closeCollect()"
+  (collected)="onCollected()"
+/>

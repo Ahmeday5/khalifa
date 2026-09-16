@@ -11,12 +11,13 @@ import { LayoutService } from '../../../core/services/layout.service';
 import { DialogService } from '../../../core/services/dialog.service';
 import { roleLabel } from '../../../core/constants/user-roles.const';
 import { NavCountsStore } from '../../../core/stores/nav-counts.store';
+import { NotificationsBellComponent } from '../../../features/push-notifications/components/notifications-bell/notifications-bell.component';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, NotificationsBellComponent],
   templateUrl: './topbar.component.html',
   styleUrl: './topbar.component.scss',
 })

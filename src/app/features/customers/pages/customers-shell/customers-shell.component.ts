@@ -20,5 +20,6 @@ export class CustomersShellComponent {
     { path: 'contract', label: 'عقد جديد' },
     { path: 'payment', label: 'تسديد دفعة' },
     { path: 'statement', label: 'كشف الحساب' },
+    { path: 'pending-down-payments', label: 'مقدمات معلقة' },
   ];
 }

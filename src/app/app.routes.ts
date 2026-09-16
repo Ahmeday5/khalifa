@@ -163,6 +163,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'push-notifications',
+        loadChildren: () =>
+          import('./features/push-notifications/push-notifications.routes').then(
+            (m) => m.pushNotificationsRoutes,
+          ),
+      },
+      {
         path: 'reps',
         canActivate: [permissionGuard(PERMISSIONS.userManagement)],
         loadChildren: () =>
