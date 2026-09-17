@@ -11,12 +11,15 @@ export interface PendingDownPaymentContract {
 
 /**
  * Wire shape of a single row returned by
- * `GET /dashboard/clients/pending-down-payments?pageIndex=&pageSize=&search=`.
+ * `GET /dashboard/clients/pending-down-payments?PageIndex=&PageSize=&search=`.
  */
 export interface PendingDownPaymentClientRow {
-  clientId: number;
-  clientName: string;
+  id: number;
+  fullName: string;
   phoneNumber?: string;
+  clientCode?: string | null;
+  totalPendingContracts: number;
+  totalPendingDownPaymentAmount: number;
   contracts: PendingDownPaymentContract[];
 }
 

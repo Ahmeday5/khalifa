@@ -25,54 +25,124 @@
 
 <div class="card st-table-card">
   <div class="chdr">
-    <div class="ct">العملاء ({{ count() }})</div>
+    <div>
+      <div class="ct">العملاء ({{ count() }})</div>
+      @if (rows().length > 0) {
+        <div class="st-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          اضغط على أي عميل لعرض تفاصيل عقوده المعلّقة
+        </div>
+      }
+    </div>
+    @if (rows().length > 1) {
+      <button type="button" class="btn btn-sm st-expand-all-btn" (click)="toggleExpandAll()">
+        {{ allExpanded() ? 'طي الكل' : 'توسيع الكل' }}
+      </button>
+    }
   </div>
 
   <div class="tw">
-    <table class="table">
+    <table class="table st-table">
       <thead>
         <tr>
-          <th>العميل</th>
+          <th class="st-col-toggle"></th>
+          <th class="st-col-name">العميل</th>
+          <th>كود العميل</th>
           <th>الهاتف</th>
-          <th>كود العقد</th>
-          <th>المنتجات</th>
-          <th>تاريخ البيع</th>
-          <th>المقدم</th>
-          <th>إجراء</th>
+          <th>عدد العقود</th>
+          <th>إجمالي المقدمات المعلقة</th>
         </tr>
       </thead>
       <tbody>
         @if (loading()) {
         <tr>
-          <td colspan="7" class="st-loading">جارٍ التحميل...</td>
+          <td colspan="6" class="st-loading">جارٍ التحميل...</td>
         </tr>
         } @else if (rows().length === 0) {
         <tr>
-          <td colspan="7" class="st-empty">لا توجد مقدمات معلقة حاليًا</td>
+          <td colspan="6" class="st-empty">لا توجد مقدمات معلقة حاليًا</td>
         </tr>
         } @else {
-        @for (client of rows(); track client.clientId) {
-          @for (contract of client.contracts; track contract.contractId; let first = $first) {
-          <tr>
-            @if (first) {
-              <td [attr.rowspan]="client.contracts.length" class="fw-600">{{ client.clientName }}</td>
-              <td [attr.rowspan]="client.contracts.length">{{ client.phoneNumber || '—' }}</td>
-            }
-            <td>{{ contract.contractCode || '—' }}</td>
-            <td>{{ contract.productNames || '—' }}</td>
-            <td>{{ formatDate(contract.dateOfSale) }}</td>
-            <td style="color:var(--re);font-weight:600">
-              {{ contract.downPaymentAmount | currencyAr }}
-            </td>
-            <td>
+        @for (client of rows(); track client.id) {
+          <tr
+            class="st-client-row"
+            [class.st-client-row-open]="isExpanded(client.id)"
+            tabindex="0"
+            role="button"
+            [attr.aria-expanded]="isExpanded(client.id)"
+            [title]="isExpanded(client.id) ? 'اضغط لإخفاء العقود' : 'اضغط لعرض العقود'"
+            (click)="toggleExpand(client.id)"
+            (keydown.enter)="toggleExpand(client.id)"
+            (keydown.space)="toggleExpand(client.id); $event.preventDefault()"
+          >
+            <td class="st-col-toggle">
               <button
-                class="btn btn-sm btn-gr"
-                (click)="openCollect(contract.contractId, contract.contractCode, contract.downPaymentAmount)"
+                type="button"
+                class="st-toggle-btn"
+                [attr.aria-expanded]="isExpanded(client.id)"
+                [attr.aria-label]="isExpanded(client.id) ? 'إخفاء العقود' : 'عرض العقود'"
+                (click)="toggleExpand(client.id); $event.stopPropagation()"
               >
-                تحصيل المقدم
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                  [style.transform]="isExpanded(client.id) ? 'rotate(180deg)' : 'rotate(0)'"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
             </td>
+            <td class="st-col-name fw-600">{{ client.fullName }}</td>
+            <td>{{ client.clientCode || '—' }}</td>
+            <td>{{ client.phoneNumber || '—' }}</td>
+            <td>
+              <span class="st-count-badge">{{ client.totalPendingContracts }}</span>
+            </td>
+            <td class="st-amount-cell">
+              {{ client.totalPendingDownPaymentAmount | currencyAr }}
+            </td>
           </tr>
+
+          @if (isExpanded(client.id)) {
+            <tr class="st-detail-row">
+              <td colspan="6">
+                <table class="st-subtable">
+                  <thead>
+                    <tr>
+                      <th>كود العقد</th>
+                      <th>المنتجات</th>
+                      <th>تاريخ البيع</th>
+                      <th>المقدم</th>
+                      <th>إجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (contract of client.contracts; track contract.contractId) {
+                      <tr>
+                        <td class="fw-600">{{ contract.contractCode || '—' }}</td>
+                        <td>{{ contract.productNames || '—' }}</td>
+                        <td>{{ formatDate(contract.dateOfSale) }}</td>
+                        <td class="st-amount-cell">
+                          {{ contract.downPaymentAmount | currencyAr }}
+                        </td>
+                        <td>
+                          <button
+                            class="btn btn-sm btn-gr"
+                            (click)="openCollect(contract.contractId, contract.contractCode, contract.downPaymentAmount); $event.stopPropagation()"
+                          >
+                            تحصيل المقدم
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </td>
+            </tr>
           }
         }
         }

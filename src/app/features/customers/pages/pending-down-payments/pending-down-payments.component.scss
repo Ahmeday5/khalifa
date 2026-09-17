@@ -26,3 +26,157 @@
   color: var(--txt3);
   font-size: 11.5px;
 }
+
+/* ── header hint + bulk toggle ── */
+.st-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--txt3);
+  margin-top: 2px;
+
+  svg {
+    flex: none;
+    opacity: 0.8;
+  }
+}
+
+.st-expand-all-btn {
+  flex: none;
+}
+
+/* ── master rows ── */
+.st-col-toggle {
+  width: 34px;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+
+.st-col-name {
+  text-align: right !important;
+}
+
+.st-client-row {
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover td {
+    background: var(--bl-l);
+  }
+
+  &:hover .st-toggle-btn {
+    color: var(--bl);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bl);
+    outline-offset: -2px;
+  }
+}
+
+.st-client-row-open {
+  td {
+    background: var(--bg3);
+  }
+
+  &:hover td {
+    background: var(--bl-l);
+  }
+
+  .st-toggle-btn {
+    color: var(--bl);
+  }
+}
+
+.st-client-name {
+  font-weight: 600;
+}
+
+.st-amount-cell {
+  font-weight: 700;
+  color: var(--re);
+}
+
+.st-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 20px;
+  background: var(--bg3);
+  color: var(--txt2);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.st-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--txt3);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  svg {
+    transition: transform 0.15s ease;
+  }
+}
+
+/* ── expanded detail row ── */
+.st-detail-row {
+  cursor: default;
+}
+
+.st-detail-row td {
+  padding: 0 !important;
+  background: var(--bg);
+  animation: st-detail-in 0.15s ease;
+}
+
+@keyframes st-detail-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.st-subtable {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+
+  thead th {
+    padding: 6px 10px;
+    text-align: center;
+    font-weight: 500;
+    color: var(--txt3);
+    font-size: 9.5px;
+    border-bottom: 1px solid var(--brd);
+  }
+
+  tbody td {
+    padding: 7px 10px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--brd);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover td {
+    background: var(--bg3);
+  }
+}

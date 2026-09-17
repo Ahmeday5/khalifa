@@ -61,6 +61,12 @@ export class PendingDownPaymentsComponent {
   protected readonly collectContractCode = signal<string | null>(null);
   protected readonly collectAmount = signal(0);
 
+  // ── row expansion ──
+  protected readonly expanded = signal<ReadonlySet<number>>(new Set());
+  protected readonly allExpanded = computed(
+    () => this.rows().length > 0 && this.rows().every((r) => this.expanded().has(r.id)),
+  );
+
   constructor() {
     this.fetch(this.fetchTrigger());
 
@@ -85,6 +91,7 @@ export class PendingDownPaymentsComponent {
         this.rows.set(page?.data ?? []);
         this.count.set(page?.count ?? 0);
         this.totalPages.set(page?.totalPages ?? 0);
+        this.expanded.set(new Set());
         this.loading.set(false);
       },
       error: (err: ApiError) => {
@@ -133,6 +140,28 @@ export class PendingDownPaymentsComponent {
       () => this.fetch(this.fetchTrigger()),
       SEARCH_DEBOUNCE_MS,
     );
+  }
+
+  // ── row expansion ──
+
+  protected toggleExpand(clientId: number): void {
+    this.expanded.update((set) => {
+      const next = new Set(set);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  }
+
+  protected isExpanded(clientId: number): boolean {
+    return this.expanded().has(clientId);
+  }
+
+  protected toggleExpandAll(): void {
+    this.expanded.set(this.allExpanded() ? new Set() : new Set(this.rows().map((r) => r.id)));
   }
 
   // ── collect modal handlers ──

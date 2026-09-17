@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"http://78.89.159.126:9494/KhalifaCompanyAPI/api/dashboard/clients/pending-down-payments?PageIndex=1&PageSize=10&search=test\" -H \"Accept: application/json\" --max-time 15)",
+      "Bash(curl -s \"http://78.89.159.126:9494/KhalifaCompanyAPI/api/dashboard/clients/pending-down-payments?PageIndex=1&PageSize=10&Search=test\" -H \"Accept: application/json\" --max-time 15)"
+    ]
+  }
+}
