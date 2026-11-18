@@ -159,13 +159,21 @@
 
       <!-- ── Installments count ── -->
       <div class="col-6 col-md-3">
-        <label class="form-label">عدد الأقساط <span class="text-danger">*</span></label>
+        <label class="form-label d-flex justify-content-between">
+          <span>عدد الأقساط <span class="text-danger">*</span></span>
+          @if (form.controls.useInstallmentTiers.value) {
+          <span class="dcm-calc-badge">مجموع الشرائح</span>
+          }
+        </label>
         <input type="number" class="form-control" formControlName="installmentsCount" min="1" max="120" step="1"
-          dir="ltr" placeholder="12" [class.is-invalid]="isInvalid('installmentsCount')" />
+          dir="ltr" placeholder="12" [class.is-invalid]="isInvalid('installmentsCount')"
+          [readonly]="form.controls.useInstallmentTiers.value"
+          [class.dcm-readonly-field]="form.controls.useInstallmentTiers.value" />
         <app-form-error [control]="form.controls.installmentsCount" label="عدد الأقساط" />
       </div>
 
-      <!-- ── Installment amount (calculated, or manual when adjusting the last installment) ── -->
+      <!-- ── Installment amount (calculated, or manual when adjusting the last installment; hidden for tiers) ── -->
+      @if (!form.controls.useInstallmentTiers.value) {
       <div class="col-6 col-md-3">
         <label class="form-label d-flex justify-content-between">
           <span>قيمة القسط</span>
@@ -178,6 +186,7 @@
           [readonly]="!form.controls.adjustLastInstallmentForRemainder.value"
           [tabindex]="form.controls.adjustLastInstallmentForRemainder.value ? 0 : -1" min="0" step="0.01" />
       </div>
+      }
 
       <!-- ── Payment frequency ── -->
       <div class="col-6 col-md-3">
@@ -212,6 +221,21 @@
         <app-form-error [control]="form.controls.treasuryId" label="الخزينة" />
       </div>
 
+      <!-- ── تقسيط على أكثر من مبلغ ── -->
+      <div class="col-12">
+        <div class="form-check form-switch">
+          <input type="checkbox" role="switch" class="form-check-input" id="dcmUseInstallmentTiers"
+            formControlName="useInstallmentTiers" />
+          <label class="form-check-label" for="dcmUseInstallmentTiers">
+            تقسيط على أكثر من مبلغ
+          </label>
+        </div>
+        @if (form.controls.useInstallmentTiers.value) {
+        <app-installment-tiers-editor [tiers]="form.controls.installmentTiers" [downPayment]="summary().downPayment"
+          [firstInstallmentDate]="firstInstallmentDate()" [expectedTotalControl]="form.controls.expectedTotal" />
+        }
+      </div>
+
       <!-- ── تحصيل المقدم الآن ── -->
       <div class="col-12">
         <div class="form-check">
@@ -228,7 +252,8 @@
         }
       </div>
 
-      <!-- ── Adjust last installment for remainder ── -->
+      <!-- ── Adjust last installment for remainder (not allowed with tiers) ── -->
+      @if (!form.controls.useInstallmentTiers.value) {
       <div class="col-12">
         <div class="form-check">
           <input type="checkbox" class="form-check-input" id="dcmAdjustLastInstallment"
@@ -261,6 +286,7 @@
         </div>
         }
       </div>
+      }
 
       <!-- ── Notes ── -->
       <div class="col-12">
@@ -294,10 +320,21 @@
           <span>إجمالي العقد</span>
           <span class="fw-700">{{ summary().totalAmount | currencyAr: true }}</span>
         </div>
+        @if (tierPlan(); as plan) {
+        <div class="dcm-summary-row dcm-summary-inst">
+          <span>نظام التقسيط ({{ plan.summary.installmentsCount }} قسط)</span>
+          <span class="fw-700">{{ plan.tiers | installmentPlanLabel }}</span>
+        </div>
+        <div class="dcm-summary-row dcm-summary-inst">
+          <span>إجمالي العقد حسب الشرائح</span>
+          <span class="fw-700">{{ plan.summary.contractTotal | currencyAr: true }}</span>
+        </div>
+        } @else {
         <div class="dcm-summary-row dcm-summary-inst">
           <span>قيمة القسط ({{ summary().count }} قسط)</span>
           <span class="fw-700">{{ summary().installmentAmt | currencyAr: true }}</span>
         </div>
+        }
         @if (form.controls.adjustLastInstallmentForRemainder.value && summary().count > 1) {
         <div class="dcm-summary-row">
           <span>آخر قسط (تقديري)</span>
@@ -322,7 +359,8 @@
     <button type="button" class="btn" [disabled]="submitting()" (click)="close()">إلغاء</button>
 
     <button type="button" class="btn btn-bl d-inline-flex align-items-center gap-2"
-      [disabled]="submitting() || loadingLookups() || loadingEdit()" (click)="onSubmit()">
+      [disabled]="submitting() || loadingLookups() || loadingEdit() || form.controls.installmentTiers.invalid"
+      (click)="onSubmit()">
       @if (submitting()) {
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       }

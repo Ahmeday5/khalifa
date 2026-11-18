@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   OnInit,
   signal,
@@ -50,6 +51,18 @@ import {
   UpdateContractFormState,
 } from '../../../contracts/models/contract.model';
 import { ContractDetails } from '../../models/client-statement.model';
+import { InstallmentTier } from '../../../contracts/models/installment-tier.model';
+import {
+  createInstallmentTiersArray,
+  InstallmentTiersFormController,
+} from '../../../contracts/forms/installment-tiers.form';
+import {
+  normalizeTiers,
+  summarizeTiers,
+  tiersFromSchedule,
+} from '../../../contracts/utils/installment-tiers.util';
+import { InstallmentTiersEditorComponent } from '../../../contracts/components/installment-tiers-editor/installment-tiers-editor.component';
+import { InstallmentPlanLabelPipe } from '../../../contracts/pipes/installment-plan-label.pipe';
 import { Product } from '../../../products/models/product.model';
 
 import { CreatedClient, DashboardClient } from '../../models/dashboard-client.model';
@@ -66,6 +79,8 @@ import { LookupItem } from '../../../../core/models/lookup.model';
     FormErrorComponent,
     LoaderComponent,
     SearchableSelectComponent,
+    InstallmentTiersEditorComponent,
+    InstallmentPlanLabelPipe,
   ],
   templateUrl: './contract-new.component.html',
   styleUrl: './contract-new.component.scss',
@@ -188,7 +203,28 @@ export class ContractNewComponent implements OnInit {
     totalContractAmount: [{ value: 0, disabled: true }],
 
     isDownPaymentPaid: [true],
+
+    /** "تقسيط على أكثر من مبلغ" toggle — off keeps the old equal-installments flow. */
+    useInstallmentTiers: [false],
+
+    /** Tier rows — disabled (and ignored by validity) while the toggle is off. */
+    installmentTiers: createInstallmentTiersArray(),
+
+    /** UI-only: total the operator expects, to reconcile tiers against. Never sent. */
+    expectedTotal: [0, [Validators.min(0)]],
   });
+
+  /** Drives the tiered-installments toggle (shared with the direct-contract modal). */
+  protected readonly tiers = new InstallmentTiersFormController(
+    {
+      enabled: this.form.controls.useInstallmentTiers,
+      tiers: this.form.controls.installmentTiers,
+      installmentsCount: this.form.controls.installmentsCount,
+      installmentAmount: this.form.controls.installmentAmount,
+      adjustLastInstallment: this.form.controls.adjustLastInstallmentForRemainder,
+    },
+    inject(DestroyRef),
+  );
 
   get itemsArray(): FormArray {
     return this.form.get('items') as FormArray;
@@ -249,6 +285,22 @@ export class ContractNewComponent implements OnInit {
       lastInstallmentPreview,
       count,
       totalQty,
+    };
+  });
+
+  /** First due date for the tiers schedule preview. */
+  protected readonly firstInstallmentDate = computed(
+    () => this.values().firstInstallmentDate ?? '',
+  );
+
+  /** Tiered plan + its totals while the toggle is on; `null` otherwise. */
+  protected readonly tierPlan = computed(() => {
+    const v = this.values();
+    if (!v.useInstallmentTiers) return null;
+    const tiers = normalizeTiers(v.installmentTiers ?? []);
+    return {
+      tiers,
+      summary: summarizeTiers(tiers, Number(v.downPayment) || 0, null),
     };
   });
 
@@ -362,6 +414,13 @@ export class ContractNewComponent implements OnInit {
     this.form
       .get('totalContractAmount')
       ?.setValue(d.summary.totalContractAmount, { emitEvent: false });
+
+    // Rebuild the plan from the real schedule: unequal amounts → tiered mode
+    // with consecutive equal amounts grouped (legacy "adjusted last
+    // installment" contracts come back as e.g. {9×1000},{1×700} — re-saving
+    // them reproduces the exact same installments).
+    this.form.controls.expectedTotal.setValue(d.summary.totalContractAmount, { emitEvent: false });
+    this.tiers.load(tiersFromSchedule(d.installments, (i) => i.dueAmount));
   }
 
   // ───────────────── items management ─────────────────
@@ -489,11 +548,14 @@ export class ContractNewComponent implements OnInit {
     this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
       if (this.prefilling) return;
 
-      this.form.patchValue(
-        { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
-        { emitEvent: false },
-      );
-      this.calculateInstallment();
+      // In tiered mode the count is Σ tier counts — never overwrite it.
+      if (!this.tiers.isActive) {
+        this.form.patchValue(
+          { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
+          { emitEvent: false },
+        );
+        this.calculateInstallment();
+      }
 
       const productId = Number(this.itemsArray.at(0)?.get('productId')?.value);
       if (!productId) return;
@@ -536,6 +598,8 @@ export class ContractNewComponent implements OnInit {
   }
 
   private calculateInstallment(): void {
+    // Tiered mode: amounts come from the tiers (synced by the controller).
+    if (this.tiers.isActive) return;
     // Manual mode: the user is entering their own installment amount —
     // don't overwrite it with the even-division calculation.
     if (this.form.get('adjustLastInstallmentForRemainder')?.value) return;
@@ -595,6 +659,12 @@ export class ContractNewComponent implements OnInit {
       return;
     }
 
+    const installmentTiers = this.tiers.toPayload();
+    if (this.tiers.isActive && !installmentTiers) {
+      this.toast.error('أضف شريحة تقسيط واحدة صحيحة على الأقل.');
+      return;
+    }
+
     this.isSaving.set(true);
 
     const id = this.editId();
@@ -623,6 +693,7 @@ export class ContractNewComponent implements OnInit {
       adjustLastInstallmentForRemainder: adjustLastInstallment,
       ...(adjustLastInstallment ? { totalContractAmount } : {}),
       isDownPaymentPaid: !!raw.isDownPaymentPaid,
+      installmentTiers,
     };
 
     if (id) {
@@ -652,7 +723,13 @@ export class ContractNewComponent implements OnInit {
               catchError(() => of(null)),
               switchMap((fullClient) => {
                 this.toast.success('تم إنشاء العقد بنجاح');
-                const printData = this.buildPrintData(raw, created, sharedFields.items, fullClient);
+                const printData = this.buildPrintData(
+                  raw,
+                  created,
+                  sharedFields.items,
+                  fullClient,
+                  installmentTiers,
+                );
                 this.pendingPrintData.set(printData);
                 return of(null);
               }),
@@ -688,6 +765,13 @@ export class ContractNewComponent implements OnInit {
       const control = this.form.get(key);
       if (control?.invalid) return `يرجى مراجعة الحقل: ${label}`;
     }
+    const tiersCtrl = this.form.controls.installmentTiers;
+    if (tiersCtrl.invalid) {
+      const badRow = tiersCtrl.controls.findIndex((row) => row.invalid);
+      return badRow >= 0
+        ? `يرجى مراجعة الشريحة رقم ${badRow + 1} (عدد الشهور ومبلغ القسط)`
+        : 'أضف شريحة تقسيط واحدة على الأقل';
+    }
     for (let i = 0; i < this.itemsArray.length; i++) {
       const grp = this.itemsArray.at(i);
       if (grp.get('productId')?.invalid)
@@ -719,6 +803,7 @@ export class ContractNewComponent implements OnInit {
     created: CreatedContract,
     items: ContractItemFormState[],
     fullClient: CreatedClient | null,
+    installmentTiers: InstallmentTier[] | null,
   ): ContractSlipData {
     // Prefer full client record (from GET /clients/{id}); fall back to list entry
     const listClient     = this.clients().find((c) => c.id === Number(raw.clientId));
@@ -740,6 +825,7 @@ export class ContractNewComponent implements OnInit {
     const installmentAmount = Number(raw.installmentAmount);
 
     return {
+      installmentTiers,
       contractId: created.id,
       contractCode:         raw.code?.trim() || null,
       dateOfSale:           raw.dateOfSale,
@@ -767,6 +853,9 @@ export class ContractNewComponent implements OnInit {
 
   // ───────────────── helpers ─────────────────
   protected reset(): void {
+    this.tiers.reset();
+    this.form.controls.expectedTotal.setValue(0, { emitEvent: false });
+
     const itemsArr = this.itemsArray;
     itemsArr.clear({ emitEvent: false });
     itemsArr.push(this.createItemGroup(), { emitEvent: false });
@@ -800,6 +889,9 @@ export class ContractNewComponent implements OnInit {
     totalCtrl?.updateValueAndValidity({ emitEvent: false });
     this.form.markAsUntouched();
     this.form.markAsPristine();
+    // The patches above are silent — emit once so the summary signals
+    // (incl. the tiers plan) reflect the cleared form.
+    this.form.updateValueAndValidity();
   }
 
   protected isInvalid(field: string): boolean {

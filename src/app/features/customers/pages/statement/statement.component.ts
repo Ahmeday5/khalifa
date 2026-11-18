@@ -51,6 +51,11 @@ import {
   ContractSlipData,
   InstallmentSlipRow,
 } from '../../../../core/services/contract-slips-print.service';
+import {
+  isUniformByTotals,
+  tiersFromSchedule,
+} from '../../../contracts/utils/installment-tiers.util';
+import { InstallmentPlanLabelPipe } from '../../../contracts/pipes/installment-plan-label.pipe';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -69,6 +74,7 @@ interface PaymentForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    InstallmentPlanLabelPipe,
     DecimalPipe,
     FormsModule,
     RouterModule,
@@ -129,6 +135,16 @@ export class StatementComponent {
   protected readonly detailsOpen = signal(false);
   protected readonly detailsLoading = signal(false);
   protected readonly details = signal<ContractDetails | null>(null);
+
+  /**
+   * The open contract's real plan, grouped from its schedule — e.g.
+   * `[{5,1000},{5,500}]`. Never derived from `installmentAmount`, which is
+   * only the first tier's amount on tiered contracts.
+   */
+  protected readonly detailsPlan = computed(() => {
+    const d = this.details();
+    return d ? tiersFromSchedule(d.installments, (i) => i.dueAmount) : [];
+  });
   private readonly activeContractId = signal<number | null>(null);
 
   // ── edit direct contract modal ────────────────────────────────────
@@ -358,7 +374,11 @@ export class StatementComponent {
               key: 'installmentAmount',
               header: 'قيمة القسط',
               align: 'end',
-              format: 'currency',
+              // Tiered contracts: the field is the first tier only — flag it.
+              format: (v, row) => {
+                const amount = `${Math.round(Number(v) || 0).toLocaleString('ar-EG')} ج.م`;
+                return this.hasVariableInstallments(row) ? `${amount} (مبالغ متغيرة)` : amount;
+              },
             },
             {
               key: 'totalContractAmount',
@@ -457,8 +477,10 @@ export class StatementComponent {
           amount:   inst.dueAmount,
         }));
 
-        const afterDown   = Math.max(0, d.contract.cashPrice - d.contract.downPayment);
-        const totalAmount = afterDown * (1 + d.contract.profitRate / 100);
+        // Authoritative total from the server — never re-derive it from
+        // cashPrice/profitRate or installmentAmount × count (both wrong for
+        // tiered plans and remainder-adjusted contracts).
+        const totalAmount = d.summary.totalContractAmount;
 
         const slipData: ContractSlipData = {
           contractId:           d.contract.id,
@@ -674,6 +696,15 @@ export class StatementComponent {
       Annually: 'سنوي',
     };
     return map[freq] ?? freq;
+  }
+
+  /**
+   * True when a contract's installments are not all equal (tiered plan or a
+   * remainder-adjusted last installment). List rows carry no schedule, so
+   * this is judged from the server's authoritative `totalContractAmount`.
+   */
+  protected hasVariableInstallments(row: ClientContractRow): boolean {
+    return !isUniformByTotals(row);
   }
 
   protected itemsLabel(

@@ -1,0 +1,120 @@
+<div class="it-editor">
+
+  <!-- ── Tiers table ── -->
+  <div class="it-head">
+    <span class="it-title">شرائح التقسيط</span>
+    <button type="button" class="btn btn-sm btn-bl" (click)="addTier()">+ إضافة شريحة</button>
+  </div>
+
+  <div class="it-grid it-grid-head" aria-hidden="true">
+    <span>#</span>
+    <span>عدد الشهور</span>
+    <span>مبلغ القسط</span>
+    <span>الأقساط</span>
+    <span></span>
+  </div>
+
+  @for (row of rows; track row; let i = $index) {
+    <div class="it-grid it-row" [formGroup]="row">
+      <span class="it-badge">{{ i + 1 }}</span>
+
+      <div>
+        <input type="number" class="form-control form-control-sm" formControlName="count"
+          min="1" step="1" dir="ltr" placeholder="0" aria-label="عدد الشهور"
+          [class.is-invalid]="showError(row, 'count')" />
+        @if (showError(row, 'count')) {
+          <div class="it-error">{{ countError(row) }}</div>
+        }
+      </div>
+
+      <div>
+        <input type="number" class="form-control form-control-sm" formControlName="amount"
+          min="0.01" step="0.01" dir="ltr" placeholder="0.00" aria-label="مبلغ القسط"
+          [class.is-invalid]="showError(row, 'amount')" />
+        @if (showError(row, 'amount')) {
+          <div class="it-error">{{ amountError(row) }}</div>
+        }
+      </div>
+
+      <span class="it-range">
+        @if (ranges()[i]; as r) {
+          {{ r.from === r.to ? r.from : r.from + ' – ' + r.to }}
+        } @else {
+          —
+        }
+      </span>
+
+      <button type="button" class="it-remove" [disabled]="!canRemove" (click)="removeTier(i)"
+        title="حذف الشريحة" aria-label="حذف الشريحة">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- ── Live summary ── -->
+  <div class="it-summary">
+    <div class="it-sum-row">
+      <span>عدد الأقساط</span>
+      <strong>{{ summary().installmentsCount }}</strong>
+    </div>
+    <div class="it-sum-row">
+      <span>إجمالي الأقساط</span>
+      <strong>{{ money(summary().installmentsTotal) }}</strong>
+    </div>
+    <div class="it-sum-row it-sum-total">
+      <span>إجمالي العقد (المقدم + الأقساط)</span>
+      <strong>{{ money(summary().contractTotal) }}</strong>
+    </div>
+
+    @if (expectedTotalControl(); as expectedCtrl) {
+      <div class="it-expected">
+        <label class="form-label it-expected-label" for="itExpectedTotal">
+          إجمالي العقد المتفق عليه <span class="it-optional">(اختياري — للمراجعة فقط)</span>
+        </label>
+        <input id="itExpectedTotal" type="number" class="form-control form-control-sm" dir="ltr"
+          min="0" step="0.01" placeholder="0.00" [formControl]="expectedCtrl" />
+      </div>
+
+      @if (reconciliation(); as rec) {
+        @if (rec.matches) {
+          <div class="it-ok" role="status">الإجمالي المحسوب مطابق للإجمالي المتفق عليه.</div>
+        } @else {
+          <div class="it-warning" role="status">
+            الإجمالي المحسوب {{ rec.over ? 'أكبر' : 'أقل' }} من الإجمالي المتفق عليه بـ
+            <strong>{{ money(rec.difference) }}</strong>. راجع الشرائح قبل الحفظ.
+          </div>
+        }
+      }
+    }
+  </div>
+
+  <!-- ── Schedule preview ── -->
+  @if (schedule().length > 0) {
+    <div class="it-preview">
+      <div class="it-preview-title">معاينة الأقساط ({{ schedule().length }})</div>
+      <div class="it-preview-scroll">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th>رقم القسط</th>
+              <th>تاريخ الاستحقاق</th>
+              <th class="text-end">المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (inst of schedule(); track inst.sequence) {
+              <tr>
+                <td>{{ inst.sequence }}</td>
+                <td>{{ displayDate(inst.dueDate) }}</td>
+                <td class="text-end">{{ money(inst.amount) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

@@ -112,7 +112,13 @@
             }
           </td>
           <td>{{ row.installmentsCount }}</td>
-          <td>{{ row.installmentAmount | currencyAr }}</td>
+          <td>
+            {{ row.installmentAmount | currencyAr }}
+            @if (hasVariableInstallments(row)) {
+              <app-badge text="متغير" type="info"
+                title="مبالغ الأقساط غير متساوية — المعروض قيمة أول قسط. راجع تفاصيل العقد." />
+            }
+          </td>
           <td>{{ freqLabel(row.paymentFrequency) }}</td>
           <td>{{ formatDate(row.firstInstallmentDate) }}</td>
           <td>{{ row.totalContractAmount | currencyAr }}</td>
@@ -278,6 +284,12 @@
         <div class="st-d-progress-bar" [style.width.%]="d.summary.progressPercent"></div>
       </div>
     </div>
+    @if (detailsPlan().length > 0) {
+    <div class="st-d-sc st-d-sc-plan">
+      <div class="st-d-sc-l">نظام التقسيط</div>
+      <div class="st-d-sc-v st-d-plan-v">{{ detailsPlan() | installmentPlanLabel }}</div>
+    </div>
+    }
     @if (d.contract.profitShareRate) {
     <div class="st-d-sc">
       <div class="st-d-sc-l">نسبة الربح الفعلية</div>

@@ -1,3 +1,6 @@
+import { InstallmentTier } from './installment-tier.model';
+import { normalizeTiers, sumTierCounts } from '../utils/installment-tiers.util';
+
 export interface Contract {
   id: string;
   customerName: string;
@@ -114,6 +117,15 @@ export interface CreateContractPayload {
    * collected later via `POST /dashboard/contracts/{id}/down-payment/pay`.
    */
   isDownPaymentPaid?: boolean;
+  /**
+   * Tiered plan ("تقسيط على أكثر من مبلغ") — applied in order, first tier =
+   * first installments. Omit / `null` / `[]` → equal installments (old
+   * behavior). When sent: `installmentsCount` must equal Σ count,
+   * `adjustLastInstallmentForRemainder` must be `false`, and the server
+   * ignores `installmentAmount` / `totalContractAmount` for the schedule.
+   * Build it with `applyInstallmentTiers()`.
+   */
+  installmentTiers?: InstallmentTier[] | null;
 }
 
 /** Response shape from `POST /dashboard/contracts`. */
@@ -172,6 +184,15 @@ export interface ContractFormState {
   totalContractAmount?: number;
   /** See `CreateContractPayload.isDownPaymentPaid`. */
   isDownPaymentPaid?: boolean;
+  /**
+   * Tiered plan ("تقسيط على أكثر من مبلغ") — applied in order, first tier =
+   * first installments. Omit / `null` / `[]` → equal installments (old
+   * behavior). When sent: `installmentsCount` must equal Σ count,
+   * `adjustLastInstallmentForRemainder` must be `false`, and the server
+   * ignores `installmentAmount` / `totalContractAmount` for the schedule.
+   * Build it with `applyInstallmentTiers()`.
+   */
+  installmentTiers?: InstallmentTier[] | null;
 }
 
 /** Build `POST /dashboard/contracts` body from form state. */
@@ -214,7 +235,50 @@ export function buildCreateContractPayload(
     payload.totalContractAmount = Number(form.totalContractAmount);
   }
 
-  return payload;
+  return applyInstallmentTiers(payload, form.installmentTiers);
+}
+
+// ─── tiered installments ───
+
+/** Payload fields touched by a tiered plan — shared by stored and direct contracts. */
+interface TieredInstallmentFields {
+  installmentsCount: number;
+  installmentAmount: number;
+  adjustLastInstallmentForRemainder?: boolean;
+  totalContractAmount?: number;
+  installmentTiers?: InstallmentTier[] | null;
+}
+
+/**
+ * Applies a tiered plan to a create/update payload, enforcing the backend
+ * rules up-front so a valid form never round-trips into a 422:
+ *
+ * - `installmentsCount` = Σ count
+ * - `installmentAmount` = first tier's amount
+ * - `adjustLastInstallmentForRemainder` = `false`
+ * - `totalContractAmount` dropped (ignored by the server for tiered plans)
+ *
+ * No valid tiers → payload returned unchanged, without `installmentTiers`,
+ * so the server keeps the old equal-installments behavior.
+ */
+export function applyInstallmentTiers<T extends TieredInstallmentFields>(
+  payload: T,
+  tiers: readonly InstallmentTier[] | null | undefined,
+): T {
+  const clean = normalizeTiers(tiers);
+  if (clean.length === 0) {
+    const { installmentTiers: _omit, ...rest } = payload;
+    return rest as T;
+  }
+
+  const { totalContractAmount: _ignored, ...rest } = payload;
+  return {
+    ...rest,
+    installmentsCount: sumTierCounts(clean),
+    installmentAmount: clean[0].amount,
+    adjustLastInstallmentForRemainder: false,
+    installmentTiers: clean,
+  } as T;
 }
 
 // ─── update ───
@@ -241,6 +305,15 @@ export interface UpdateContractPayload {
   totalContractAmount?: number;
   /** See `CreateContractPayload.isDownPaymentPaid`. */
   isDownPaymentPaid?: boolean;
+  /**
+   * Tiered plan ("تقسيط على أكثر من مبلغ") — applied in order, first tier =
+   * first installments. Omit / `null` / `[]` → equal installments (old
+   * behavior). When sent: `installmentsCount` must equal Σ count,
+   * `adjustLastInstallmentForRemainder` must be `false`, and the server
+   * ignores `installmentAmount` / `totalContractAmount` for the schedule.
+   * Build it with `applyInstallmentTiers()`.
+   */
+  installmentTiers?: InstallmentTier[] | null;
 }
 
 /** Form-state shape for the edit page — identical to ContractFormState. */
@@ -297,6 +370,15 @@ export interface CreateDirectContractPayload {
   totalContractAmount?: number;
   /** See `CreateContractPayload.isDownPaymentPaid`. */
   isDownPaymentPaid?: boolean;
+  /**
+   * Tiered plan ("تقسيط على أكثر من مبلغ") — applied in order, first tier =
+   * first installments. Omit / `null` / `[]` → equal installments (old
+   * behavior). When sent: `installmentsCount` must equal Σ count,
+   * `adjustLastInstallmentForRemainder` must be `false`, and the server
+   * ignores `installmentAmount` / `totalContractAmount` for the schedule.
+   * Build it with `applyInstallmentTiers()`.
+   */
+  installmentTiers?: InstallmentTier[] | null;
 }
 
 /** Response shape from `POST /dashboard/contracts/direct`. */

@@ -26,8 +26,15 @@ export interface ContractSlipData {
   productLines:        { name: string; quantity: number }[];
   totalAmount:         number;
   downPayment:         number;
+  /** First tier's amount for tiered plans — never multiply it by the count. */
   installmentAmount:   number;
   installmentsCount:   number;
+  /**
+   * Tiered plan ("تقسيط على أكثر من مبلغ") in order — when present, the
+   * schedule is expanded from these tiers instead of `installmentAmount`.
+   * Structural on purpose so `core` stays independent of feature models.
+   */
+  installmentTiers?:   readonly { count: number; amount: number }[] | null;
   firstInstallmentDate: string;
   paymentFrequency:    string;
   notes?:              string | null;
@@ -65,6 +72,20 @@ export class ContractSlipsPrintService {
     const rows: InstallmentSlipRow[] = [];
     const base = new Date(data.firstInstallmentDate);
     const step = this.freqMonths(data.paymentFrequency);
+
+    // Tiered plan: amounts come straight from the tiers, in order — no
+    // remainder math (the server applies the tiers exactly as sent).
+    if (data.installmentTiers?.length) {
+      for (const tier of data.installmentTiers) {
+        for (let k = 0; k < tier.count; k++) {
+          const d = new Date(base);
+          d.setMonth(d.getMonth() + rows.length * step);
+          rows.push({ sequence: rows.length + 1, dueDate: d.toISOString(), amount: tier.amount });
+        }
+      }
+      return rows;
+    }
+
     const lastAmount = Math.round(
       data.totalAmount - data.installmentAmount * (data.installmentsCount - 1),
     );

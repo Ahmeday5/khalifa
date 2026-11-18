@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -41,11 +42,24 @@ import {
 } from '../../../../core/services/contract-slips-print.service';
 
 import {
+  applyInstallmentTiers,
   ContractPaymentFrequency,
   CreatedDirectContract,
   CreateDirectContractPayload,
   DirectContractItemPayload,
 } from '../../../contracts/models/contract.model';
+import { InstallmentTier } from '../../../contracts/models/installment-tier.model';
+import {
+  createInstallmentTiersArray,
+  InstallmentTiersFormController,
+} from '../../../contracts/forms/installment-tiers.form';
+import {
+  normalizeTiers,
+  summarizeTiers,
+  tiersFromSchedule,
+} from '../../../contracts/utils/installment-tiers.util';
+import { InstallmentTiersEditorComponent } from '../../../contracts/components/installment-tiers-editor/installment-tiers-editor.component';
+import { InstallmentPlanLabelPipe } from '../../../contracts/pipes/installment-plan-label.pipe';
 import { CreatedClient, DashboardClient } from '../../models/dashboard-client.model';
 
 @Component({
@@ -58,6 +72,8 @@ import { CreatedClient, DashboardClient } from '../../models/dashboard-client.mo
     FormErrorComponent,
     SearchableSelectComponent,
     CurrencyArPipe,
+    InstallmentTiersEditorComponent,
+    InstallmentPlanLabelPipe,
   ],
   templateUrl: './direct-contract-modal.component.html',
   styleUrl: './direct-contract-modal.component.scss',
@@ -143,7 +159,25 @@ export class DirectContractModalComponent {
     adjustLastInstallmentForRemainder: [false],
     totalContractAmount: [{ value: 0, disabled: true }],
     isDownPaymentPaid: [true],
+    /** "تقسيط على أكثر من مبلغ" toggle — off keeps the old equal-installments flow. */
+    useInstallmentTiers: [false],
+    /** Tier rows — disabled (and ignored by validity) while the toggle is off. */
+    installmentTiers: createInstallmentTiersArray(),
+    /** UI-only: total the operator expects, to reconcile tiers against. Never sent. */
+    expectedTotal: [0, [Validators.min(0)]],
   });
+
+  /** Drives the tiered-installments toggle (shared with the stored-contract page). */
+  protected readonly tiers = new InstallmentTiersFormController(
+    {
+      enabled: this.form.controls.useInstallmentTiers,
+      tiers: this.form.controls.installmentTiers,
+      installmentsCount: this.form.controls.installmentsCount,
+      installmentAmount: this.form.controls.installmentAmount,
+      adjustLastInstallment: this.form.controls.adjustLastInstallmentForRemainder,
+    },
+    inject(DestroyRef),
+  );
 
   get itemsArray(): FormArray { return this.form.get('items') as FormArray; }
   get itemGroups(): FormGroup[] { return this.itemsArray.controls as FormGroup[]; }
@@ -185,6 +219,22 @@ export class DirectContractModalComponent {
       totalContractAmount,
       lastInstallmentPreview,
       count,
+    };
+  });
+
+  /** First due date for the tiers schedule preview. */
+  protected readonly firstInstallmentDate = computed(
+    () => this.values().firstInstallmentDate ?? '',
+  );
+
+  /** Tiered plan + its totals while the toggle is on; `null` otherwise. */
+  protected readonly tierPlan = computed(() => {
+    const v = this.values();
+    if (!v.useInstallmentTiers) return null;
+    const tiers = normalizeTiers(v.installmentTiers ?? []);
+    return {
+      tiers,
+      summary: summarizeTiers(tiers, Number(v.downPayment) || 0, null),
     };
   });
 
@@ -248,6 +298,8 @@ export class DirectContractModalComponent {
 
     // When paymentFrequency changes, default installmentsCount to match (still editable).
     this.form.get('paymentFrequency')?.valueChanges.subscribe((freq) => {
+      // In tiered mode the count is Σ tier counts — never overwrite it.
+      if (this.tiers.isActive) return;
       this.form.patchValue(
         { installmentsCount: this.installmentsCountForFrequency(freq as ContractPaymentFrequency) },
         { emitEvent: true },
@@ -364,7 +416,13 @@ export class DirectContractModalComponent {
       return;
     }
 
-    const payload: CreateDirectContractPayload = {
+    const installmentTiers = this.tiers.toPayload();
+    if (this.tiers.isActive && !installmentTiers) {
+      this.toast.error('أضف شريحة تقسيط واحدة صحيحة على الأقل.');
+      return;
+    }
+
+    const basePayload: CreateDirectContractPayload = {
       clientId:             Number(raw.clientId),
       items:                validItems,
       dateOfSale:           new Date(raw.dateOfSale).toISOString(),
@@ -383,6 +441,7 @@ export class DirectContractModalComponent {
       totalContractAmount:  adjustLastInstallment ? totalContractAmount : undefined,
       isDownPaymentPaid:    !!raw.isDownPaymentPaid,
     };
+    const payload = applyInstallmentTiers(basePayload, installmentTiers);
 
     this.serverError.set(null);
     this.submitting.set(true);
@@ -417,7 +476,7 @@ export class DirectContractModalComponent {
               catchError(() => of(null)),
               switchMap((fullClient) => {
                 this.toast.success('تم إنشاء العقد المباشر بنجاح');
-                const slipData = this.buildPrintData(raw, validItems, res, fullClient);
+                const slipData = this.buildPrintData(raw, validItems, res, fullClient, installmentTiers);
                 this.pendingPrintData.set(slipData);
                 this.created.emit(res);
                 return of(null);
@@ -490,6 +549,13 @@ export class DirectContractModalComponent {
           .get('totalContractAmount')
           ?.setValue(d.summary.totalContractAmount, { emitEvent: false });
 
+        // Rebuild the plan from the real schedule: unequal amounts → tiered
+        // mode with consecutive equal amounts grouped (legacy "adjusted last
+        // installment" contracts come back as e.g. {9×1000},{1×700} —
+        // re-saving them reproduces the exact same installments).
+        this.form.controls.expectedTotal.setValue(d.summary.totalContractAmount, { emitEvent: false });
+        this.tiers.load(tiersFromSchedule(d.installments, (i) => i.dueAmount));
+
         this.prefilling = false;
         this.syncTreasuryRequirement();
         this.serverError.set(null);
@@ -523,6 +589,8 @@ export class DirectContractModalComponent {
   }
 
   private recalculateInstallment(): void {
+    // Tiered mode: amounts come from the tiers (synced by the controller).
+    if (this.tiers.isActive) return;
     // Manual mode: the user is entering their own installment amount —
     // don't overwrite it with the even-division calculation.
     if (this.form.get('adjustLastInstallmentForRemainder')?.value) return;
@@ -564,7 +632,10 @@ export class DirectContractModalComponent {
       adjustLastInstallmentForRemainder: false,
       totalContractAmount: 0,
       isDownPaymentPaid: true,
+      useInstallmentTiers: false,
+      expectedTotal: 0,
     });
+    this.tiers.reset();
     this.syncTreasuryRequirement();
     this.form.get('installmentAmount')?.disable({ emitEvent: false });
     const totalCtrl = this.form.get('totalContractAmount');
@@ -593,6 +664,7 @@ export class DirectContractModalComponent {
     items: DirectContractItemPayload[],
     res: CreatedDirectContract,
     fullClient: CreatedClient | null,
+    installmentTiers: InstallmentTier[] | null,
   ): ContractSlipData {
     const listClient  = this.clients().find((c) => c.id === Number(raw.clientId));
     const selectedRep = this.representatives().find((r) => r.id === Number(raw.representativeId));
@@ -606,6 +678,7 @@ export class DirectContractModalComponent {
     const installmentAmt = Number(raw.installmentAmount);
 
     return {
+      installmentTiers,
       contractId:           res.id,
       contractCode:         raw.code?.trim() || null,
       dateOfSale:           raw.dateOfSale,
@@ -645,6 +718,13 @@ export class DirectContractModalComponent {
     };
     for (const [key, label] of Object.entries(labels)) {
       if (this.form.get(key)?.invalid) return `يرجى مراجعة الحقل: ${label}`;
+    }
+    const tiersCtrl = this.form.controls.installmentTiers;
+    if (tiersCtrl.invalid) {
+      const badRow = tiersCtrl.controls.findIndex((row) => row.invalid);
+      return badRow >= 0
+        ? `يرجى مراجعة الشريحة رقم ${badRow + 1} (عدد الشهور ومبلغ القسط)`
+        : 'أضف شريحة تقسيط واحدة على الأقل';
     }
     for (let i = 0; i < this.itemsArray.length; i++) {
       if (this.itemCtrl(i, 'productName').invalid) return `يرجى إدخال اسم المنتج في الصنف رقم ${i + 1}`;

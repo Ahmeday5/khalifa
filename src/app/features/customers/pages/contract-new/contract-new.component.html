@@ -269,16 +269,26 @@
 
           <!-- الأقساط -->
           <div class="col-12 col-sm-6">
-            <label class="form-label">عدد الأقساط</label>
+            <label class="form-label d-flex justify-content-between">
+              <span>عدد الأقساط</span>
+              @if (form.controls.useInstallmentTiers.value) {
+                <span class="cn-calc-badge">مجموع الشرائح</span>
+              }
+            </label>
             <input
               type="number"
               formControlName="installmentsCount"
               class="form-control"
               min="1"
+              [readonly]="form.controls.useInstallmentTiers.value"
+              [class.cn-readonly-field]="form.controls.useInstallmentTiers.value"
+              [class.is-invalid]="isInvalid('installmentsCount')"
             />
+            <app-form-error [control]="form.controls.installmentsCount" label="عدد الأقساط" />
           </div>
 
-          <!-- قيمة القسط -->
+          <!-- قيمة القسط (مخفي في وضع الشرائح — المبالغ من الشرائح) -->
+          @if (!form.controls.useInstallmentTiers.value) {
           <div class="col-12 col-sm-6">
             <label class="form-label d-flex justify-content-between">
               <span>قيمة القسط</span>
@@ -294,6 +304,7 @@
               step="0.01"
             />
           </div>
+          }
 
           <!-- أول قسط -->
           <div class="col-12 col-sm-6">
@@ -322,6 +333,30 @@
             <app-form-error [control]="form.controls.treasuryId" label="الخزنة" />
           </div>
 
+          <!-- تقسيط على أكثر من مبلغ -->
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input
+                type="checkbox"
+                role="switch"
+                class="form-check-input"
+                id="cnUseInstallmentTiers"
+                formControlName="useInstallmentTiers"
+              />
+              <label class="form-check-label" for="cnUseInstallmentTiers">
+                تقسيط على أكثر من مبلغ
+              </label>
+            </div>
+            @if (form.controls.useInstallmentTiers.value) {
+              <app-installment-tiers-editor
+                [tiers]="form.controls.installmentTiers"
+                [downPayment]="summary().downPayment"
+                [firstInstallmentDate]="firstInstallmentDate()"
+                [expectedTotalControl]="form.controls.expectedTotal"
+              />
+            }
+          </div>
+
           <!-- تحصيل المقدم الآن -->
           <div class="col-12">
             <div class="form-check">
@@ -342,7 +377,8 @@
             }
           </div>
 
-          <!-- ضبط القسط الأخير تلقائيًا -->
+          <!-- ضبط القسط الأخير تلقائيًا (غير متاح مع الشرائح) -->
+          @if (!form.controls.useInstallmentTiers.value) {
           <div class="col-12">
             <div class="form-check">
               <input
@@ -388,6 +424,7 @@
               </div>
             }
           </div>
+          }
 
           <!-- ملاحظات -->
           <div class="col-12">
@@ -454,10 +491,21 @@
           <span>{{ summary().totalAmount | currencyAr }}</span>
         </div>
 
-        <div class="ci">
-          <span>القسط × {{ summary().count }}</span>
-          <span>{{ summary().installmentAmt | currencyAr }}</span>
-        </div>
+        @if (tierPlan(); as plan) {
+          <div class="cr" style="border-top:1px dashed var(--bg3);margin-top:8px;padding-top:8px">
+            <span style="color:var(--txt3)">نظام التقسيط</span>
+          </div>
+          <div class="cn-plan-label">{{ plan.tiers | installmentPlanLabel }}</div>
+          <div class="ci">
+            <span>إجمالي العقد ({{ plan.summary.installmentsCount }} قسط)</span>
+            <span>{{ plan.summary.contractTotal | currencyAr: true }}</span>
+          </div>
+        } @else {
+          <div class="ci">
+            <span>القسط × {{ summary().count }}</span>
+            <span>{{ summary().installmentAmt | currencyAr }}</span>
+          </div>
+        }
 
         @if (form.controls.adjustLastInstallmentForRemainder.value && summary().count > 1) {
           <div class="cr" style="border-top:1px dashed var(--bg3);margin-top:8px;padding-top:8px">
@@ -590,6 +638,20 @@
     padding: 1px 6px;
     border-radius: 10px;
     font-weight: 400;
+  }
+
+  .cn-readonly-field {
+    background: var(--bg2, #f8f9fa);
+    color: var(--bl, #0d6efd);
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .cn-plan-label {
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--txt2, #495057);
+    margin-bottom: 6px;
   }
 
   .cn-remainder-note {
