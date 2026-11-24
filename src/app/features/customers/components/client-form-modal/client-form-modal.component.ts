@@ -21,6 +21,7 @@ import {
   DashboardClient,
   UpdateClientPayload,
 } from '../../models/dashboard-client.model';
+import { ClientNumberPipe } from '../../pipes/client-number.pipe';
 
 /** Egyptian mobile: 010 / 011 / 012 / 015 + 8 digits. */
 const EG_PHONE = /^01[0125][0-9]{8}$/;
@@ -33,6 +34,7 @@ const EG_NATIONAL_ID = /^[0-9]{14}$/;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
+    ClientNumberPipe,
     ModalComponent,
     FormErrorComponent,
     AreaSelectComponent,

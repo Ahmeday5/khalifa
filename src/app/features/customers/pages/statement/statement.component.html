@@ -1,10 +1,15 @@
 <!-- ── Toolbar: client picker + refresh ── -->
 <div class="st-toolbar">
   <div class="st-pick">
-    <label class="st-pick-label">العميل</label>
+    <label class="st-pick-label">
+      العميل
+      @if (clientsLoading()) {
+      <span class="spinner-border spinner-border-sm ms-1" role="status" aria-label="جاري تحميل قائمة العملاء"></span>
+      }
+    </label>
     <app-searchable-select [ngModel]="selectedClientId()" (ngModelChange)="onClientChange($event)"
       [isDisabled]="clientsLoading()" placeholder="-- اختر العميل لعرض كشف الحساب --"
-      searchPlaceholder="ابحث بالاسم أو رقم الجوال…" [options]="clientOptions()" />
+      searchPlaceholder="ابحث بالاسم أو رقم العميل أو رقم الجوال…" [options]="clientOptions()" />
   </div>
 
   @if (selectedClientId() !== null) {
@@ -30,6 +35,7 @@
   <div class="st-client-main">
     <div class="st-client-name">{{ cli.fullName }}</div>
     <div class="st-client-meta">
+      <span>🔢 رقم العميل: {{ cli.id | clientNumber }}</span>
       <span>📱 {{ cli.phoneNumber }}</span>
       @if (cli.areaName) { <span>📍 {{ cli.areaName }}</span> }
     </div>
@@ -38,13 +44,13 @@
     <div class="st-stat">
       <span class="st-stat-l">إجمالي الذمم</span>
       <span class="st-stat-v">
-        {{ cli.totalContractAmount | currencyAr }}
+        @if (cli.totalContractAmount !== null) { {{ cli.totalContractAmount | currencyAr }} } @else { <span class="spinner-border spinner-border-sm" role="status" aria-label="جاري التحميل"></span> }
       </span>
     </div>
     <div class="st-stat">
       <span class="st-stat-l">المتبقي</span>
       <span class="st-stat-v">
-        {{ cli.remainingAmount | currencyAr }}
+        @if (cli.remainingAmount !== null) { {{ cli.remainingAmount | currencyAr }} } @else { <span class="spinner-border spinner-border-sm" role="status" aria-label="جاري التحميل"></span> }
       </span>
     </div>
   </div>

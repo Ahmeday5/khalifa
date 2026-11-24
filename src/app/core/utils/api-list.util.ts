@@ -1,5 +1,12 @@
-import { Observable, EMPTY } from 'rxjs';
-import { map, expand, reduce } from 'rxjs/operators';
+import { Observable, EMPTY, from, of } from 'rxjs';
+import {
+  map,
+  expand,
+  reduce,
+  mergeMap,
+  switchMap,
+  toArray,
+} from 'rxjs/operators';
 import { PagedResponse } from '../models/api-response.model';
 
 /**
@@ -103,6 +110,12 @@ export const FETCH_ALL_PAGE_SIZE = 200;
 export const FETCH_ALL_MAX_PAGES = 50;
 
 /**
+ * Max page requests in flight at once while draining. Bounded so a large
+ * roster never floods the API (or the browser's per-host connection pool).
+ */
+export const FETCH_ALL_CONCURRENCY = 4;
+
+/**
  * Drains *every* page of a server-paginated endpoint into a single flat
  * array — the safe replacement for the "one oversized `pageSize: 1000`
  * page" trick that silently truncates once the real row count grows past
@@ -110,42 +123,85 @@ export const FETCH_ALL_MAX_PAGES = 50;
  *
  * `fetchPage(pageIndex, pageSize)` must resolve to a canonical
  * `PagedResponse<T>` (normalize with `asPaged`/`toPaged` inside the
- * callback when the endpoint nests its page). Iteration walks pages
- * sequentially from 1 and stops at the first of:
+ * callback when the endpoint nests its page).
  *
- *   - a short page (fewer rows than `pageSize` → last page reached)
- *   - the reported `totalPages`
- *   - the `maxPages` safety cap
+ * Strategy:
+ *   1. Page 1 is fetched alone — it reveals the server's real page size
+ *      (it may cap the requested one) and the total (`totalPages`/`count`).
+ *   2. If the total is known, pages 2..N are fetched IN PARALLEL with
+ *      bounded concurrency, then re-assembled in page order. Latency is
+ *      ~2 round-trips instead of N sequential ones.
+ *   3. If the server reports no total, falls back to walking pages
+ *      sequentially until a short/empty page.
  *
- * so a single tolerant pass works whether the backend reports
- * `totalPages`, only `count`, or neither.
+ * `maxPages` caps the request count in every mode, so a backend that
+ * mis-reports its totals can never trigger an unbounded request storm.
  */
 export function fetchAllPages<T>(
   fetchPage: (pageIndex: number, pageSize: number) => Observable<PagedResponse<T>>,
   pageSize: number = FETCH_ALL_PAGE_SIZE,
   maxPages: number = FETCH_ALL_MAX_PAGES,
+  concurrency: number = FETCH_ALL_CONCURRENCY,
 ): Observable<T[]> {
   return fetchPage(1, pageSize).pipe(
+    switchMap((first) => {
+      const firstRows = first.data ?? [];
+      // Detect a server-side page-size cap: if we asked for 200 but the
+      // backend honoured only 50, page with 50 — otherwise we'd see
+      // 50 < 200, declare ourselves done, and drop everything after row 50.
+      const serverPageSize = first.pageSize > 0 ? first.pageSize : pageSize;
+      const effectiveSize = Math.min(pageSize, serverPageSize);
+
+      if (firstRows.length === 0) return of([] as T[]);
+
+      const totalPages = resolveTotalPages(first, effectiveSize);
+      if (totalPages === null) {
+        return drainSequentially(of(first), fetchPage, effectiveSize, maxPages);
+      }
+
+      const lastPage = Math.min(totalPages, maxPages);
+      if (lastPage <= 1) return of(firstRows);
+
+      const remaining = Array.from({ length: lastPage - 1 }, (_, i) => i + 2);
+      return from(remaining).pipe(
+        mergeMap(
+          (index) =>
+            fetchPage(index, effectiveSize).pipe(
+              map((page) => ({ index, rows: page.data ?? [] })),
+            ),
+          concurrency,
+        ),
+        toArray(),
+        map((pages) =>
+          pages
+            .sort((a, b) => a.index - b.index)
+            .reduce((acc, page) => acc.concat(page.rows), firstRows),
+        ),
+      );
+    }),
+  );
+}
+
+/** Total page count from the server's paging metadata, or `null` if unreported. */
+function resolveTotalPages<T>(page: PagedResponse<T>, size: number): number | null {
+  if (page.totalPages > 0) return page.totalPages;
+  if (page.count > 0 && size > 0) return Math.ceil(page.count / size);
+  return null;
+}
+
+/** Fallback for endpoints without totals: walk pages until a short/empty one. */
+function drainSequentially<T>(
+  first$: Observable<PagedResponse<T>>,
+  fetchPage: (pageIndex: number, pageSize: number) => Observable<PagedResponse<T>>,
+  size: number,
+  maxPages: number,
+): Observable<T[]> {
+  return first$.pipe(
     expand((page) => {
       const rows = page.data?.length ?? 0;
       const next = (page.pageIndex || 1) + 1;
-      // Detect a server-side page-size cap: if we asked for 200 but the
-      // backend honoured only 50, treat 50 as the threshold for a "short"
-      // (i.e. last) page — otherwise we'd see 50 < 200, declare ourselves
-      // done, and silently drop everything after row 50.
-      const serverPageSize = page.pageSize > 0 ? page.pageSize : pageSize;
-      const effectiveSize = Math.min(pageSize, serverPageSize);
-      // When `count` is reported, trust it: keep going until we've accumulated
-      // every row the server says exists — even if a single page came back
-      // short due to a server quirk.
-      const haveMoreByCount =
-        page.count > 0 && (page.pageIndex || 1) * effectiveSize < page.count;
-      const lastPageReached =
-        rows === 0 ||
-        next > maxPages ||
-        (page.totalPages > 0 && next > page.totalPages) ||
-        (!haveMoreByCount && rows < effectiveSize);
-      return lastPageReached ? EMPTY : fetchPage(next, effectiveSize);
+      const lastPageReached = rows === 0 || rows < size || next > maxPages;
+      return lastPageReached ? EMPTY : fetchPage(next, size);
     }),
     reduce((acc, page) => acc.concat(page.data ?? []), [] as T[]),
   );

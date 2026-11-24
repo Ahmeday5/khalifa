@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { CustomersService } from '../../services/customers.service';
 import {
@@ -40,6 +41,12 @@ import {
 } from '../../../../shared/components/searchable-select/searchable-select.component';
 import { AreasService } from '../../../areas/services/areas.service';
 import { Area } from '../../../areas/models/area.model';
+import {
+  CLIENT_STATEMENT_ROUTE,
+  clientStatementQueryParams,
+} from '../../customers.navigation';
+import { ClientNumberPipe } from '../../pipes/client-number.pipe';
+import { formatClientNumber } from '../../utils/client-number.util';
 
 const DEFAULT_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -59,6 +66,8 @@ const SEARCH_DEBOUNCE_MS = 300;
     DirectContractModalComponent,
     ModalComponent,
     SearchableSelectComponent,
+    RouterLink,
+    ClientNumberPipe,
   ],
   templateUrl: './customers-list.component.html',
   styleUrl: './customers-list.component.scss',
@@ -74,6 +83,10 @@ export class CustomersListComponent {
 
   /** Exposed so the template can gate write actions with `*appHasPermission`. */
   protected readonly PERMS = PERMISSIONS;
+
+  /** Deep-link target of the per-row "client contracts" action. */
+  protected readonly clientStatementRoute = CLIENT_STATEMENT_ROUTE;
+  protected readonly clientStatementQueryParams = clientStatementQueryParams;
 
   // ── data ──
   protected readonly clients = signal<DashboardClient[]>([]);
@@ -232,7 +245,13 @@ export class CustomersListComponent {
           meta,
           orientation: 'landscape',
           columns: [
-            { key: 'id',                  header: '#',              align: 'center', width: '46px' },
+            {
+              key: 'id',
+              header: 'رقم العميل',
+              align: 'center',
+              width: '64px',
+              format: (v) => formatClientNumber(v as number),
+            },
             { key: 'fullName',            header: 'الاسم',          align: 'start',  bold: true },
             { key: 'phoneNumber',         header: 'الهاتف',         align: 'start' },
             { key: 'goods',               header: 'المشتريات',      align: 'start' },
@@ -330,7 +349,7 @@ export class CustomersListComponent {
     if (!c) return;
 
     const fields: Array<{ label: string; value: string }> = [
-      { label: '#',                  value: String(c.id) },
+      { label: 'رقم العميل',         value: formatClientNumber(c.id) },
       { label: 'الاسم الكامل',       value: c.fullName },
       { label: 'الهاتف',             value: c.phoneNumber },
       { label: 'واتساب',             value: c.whatsappNumber },
@@ -338,7 +357,7 @@ export class CustomersListComponent {
       { label: 'الرقم القومي',       value: c.nationalId || '—' },
       { label: 'المنطقة',            value: c.areaName || '—' },
     ];
-    if (c.clientCode)  fields.push({ label: 'كود العميل',     value: c.clientCode });
+    if (c.clientCode)  fields.push({ label: 'الباركود',       value: c.clientCode });
     if (c.region)      fields.push({ label: 'العمل',           value: c.region });
     if (c.occupation)  fields.push({ label: 'المهنة',          value: c.occupation });
     if (c.building)    fields.push({ label: 'المبنى',          value: c.building });
@@ -347,7 +366,7 @@ export class CustomersListComponent {
 
     this.printer.print<{ label: string; value: string }>({
       title: `بيانات العميل — ${c.fullName}`,
-      subtitle: c.clientCode ? `كود: ${c.clientCode}` : undefined,
+      subtitle: `رقم العميل: ${formatClientNumber(c.id)}`,
       orientation: 'landscape',
       columns: [
         { key: 'label', header: 'البيان',  align: 'start', bold: true, width: '180px' },

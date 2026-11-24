@@ -10,6 +10,8 @@ export interface ContractSlipData {
   dateOfSale:          string;
   clientName:          string;
   clientPhone:         string;
+  /** Sequential client number (the client id) — printed as "رقم العميل". */
+  clientNumber?:       number | null;
   clientCode?:         string | null;
   /** Client's home/mailing area (list `areaName`) — printed as "المنطقة" in the header. */
   clientAddress?:      string | null;
@@ -208,7 +210,7 @@ export class ContractSlipsPrintService {
     <div class="col col-client">
       <div class="col-hdr">بيانات العميل</div>
       <div class="col-body">
-        <div class="fld"><span class="fld-l">كود العميل:</span><span class="fld-v">${esc(data.clientCode ?? '—')}</span></div>
+        <div class="fld"><span class="fld-l">رقم العميل:</span><span class="fld-v">${esc(data.clientNumber ? String(data.clientNumber) : '—')}</span></div>
         <div class="fld"><span class="fld-l">الاسم الكامل:</span><span class="fld-v fld-bold" style="font-size:${nameFontSize}pt">${esc(data.clientName)}</span></div>
         <div class="fld"><span class="fld-l">رقم الهاتف:</span><span class="fld-v fld-ltr">${esc(data.clientPhone) || '—'}</span></div>
         <div class="fld"><span class="fld-l">جهة العمل:</span><span class="fld-v">${esc(data.clientRegion ?? '—')}</span></div>

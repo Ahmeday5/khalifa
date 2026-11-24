@@ -167,7 +167,7 @@
 .cl-card { padding-bottom: 8px; }
 
 /* ── COLUMN WIDTHS (12 columns) ── */
-.cl-w-id       { width: 4%;  text-align: center; }
+.cl-w-id       { width: 6%;  text-align: center; white-space: nowrap; }
 .cl-w-name     { width: 16%; }
 .cl-w-phone    { width: 9%;  }
 .cl-w-goods    { width: 11%; }
@@ -179,10 +179,28 @@
 .cl-w-actions  { width: 11%; }
 
 .cl-id {
-  color: var(--txt3);
-  font-size: 10px;
-  font-weight: 600;
+  color: var(--txt2);
+  font-size: 12px;
+  font-weight: 700;
   font-family: monospace;
+  text-align: center;
+}
+
+/* ── ROW ACTION: client contracts (deep-link to the statement page) ── */
+.cl-action-contracts {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--pu);
+  border: 1px solid currentColor;
+  background: transparent;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--pu-l);
+    color: var(--pu);
+  }
 }
 
 .cl-row-name {

@@ -8,7 +8,10 @@ import {
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
+import { catchError, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 
 import { CustomersService } from '../../services/customers.service';
 import { InstallmentsService } from '../../services/installments.service';
@@ -23,6 +26,16 @@ import {
   PayInstallmentPayload,
 } from '../../models/client-statement.model';
 import { DashboardClient } from '../../models/dashboard-client.model';
+import {
+  ClientSummary,
+  clientSummaryFromRow,
+} from '../../models/client-summary.model';
+import {
+  CLIENT_ID_QUERY_PARAM,
+  parseClientIdParam,
+} from '../../customers.navigation';
+import { formatClientNumber } from '../../utils/client-number.util';
+import { ClientNumberPipe } from '../../pipes/client-number.pipe';
 import { LookupItem } from '../../../../core/models/lookup.model';
 import {
   BadgeComponent,
@@ -75,6 +88,7 @@ interface PaymentForm {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     InstallmentPlanLabelPipe,
+    ClientNumberPipe,
     DecimalPipe,
     FormsModule,
     RouterModule,
@@ -99,6 +113,8 @@ export class StatementComponent {
   private readonly cache = inject(HttpCacheService);
   private readonly printer = inject(PrintService);
   private readonly slipsPrint = inject(ContractSlipsPrintService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly isPrinting = signal(false);
 
@@ -107,21 +123,45 @@ export class StatementComponent {
 
   // ── client picker ──────────────────────────────────────────────────
   protected readonly clients = signal<DashboardClient[]>([]);
-  protected readonly clientsLoading = signal(false);
+  protected readonly clientsLoading = signal(true);
+  /** Guards the roster so it is requested exactly once per page visit. */
+  private rosterRequested = false;
   protected readonly selectedClientId = signal<number | null>(null);
 
-  protected readonly selectedClient = computed(
-    () => this.clients().find((c) => c.id === this.selectedClientId()) ?? null,
-  );
+  /**
+   * Result of the focused single-client lookup (see `bindFocusedClientLookup`).
+   * Lets the page render without waiting for the full roster to drain.
+   */
+  private readonly focusedClient = signal<ClientSummary | null>(null);
 
-  /** Client list shaped for the searchable select (name + phone search). */
-  protected readonly clientOptions = computed<SearchableSelectOption[]>(() =>
-    this.clients().map((c) => ({
-      value: c.id,
-      label: c.fullName,
-      hint: c.phoneNumber,
-    })),
-  );
+  /**
+   * The client shown in the header. Taken from the roster once it is loaded,
+   * otherwise from the focused lookup — so opening a client (deep link or
+   * picker) costs ~2 small requests instead of paging the whole client list.
+   */
+  protected readonly selectedClient = computed<ClientSummary | null>(() => {
+    const id = this.selectedClientId();
+    if (id === null) return null;
+    const row = this.clients().find((c) => c.id === id);
+    if (row) return clientSummaryFromRow(row);
+    const focused = this.focusedClient();
+    return focused?.id === id ? focused : null;
+  });
+
+  /**
+   * Client list shaped for the searchable select (name / number / phone
+   * search). Until the roster arrives, the selected client is injected so the
+   * picker already shows who is open.
+   */
+  protected readonly clientOptions = computed<SearchableSelectOption[]>(() => {
+    const roster = this.clients();
+    const selected = this.selectedClient();
+    const options = roster.map((c) => this.toClientOption(c));
+    if (selected && !roster.some((c) => c.id === selected.id)) {
+      options.unshift(this.toClientOption(selected));
+    }
+    return options;
+  });
 
   // ── contracts table ────────────────────────────────────────────────
   protected readonly contracts = signal<ClientContractRow[]>([]);
@@ -176,8 +216,13 @@ export class StatementComponent {
   });
 
   constructor() {
-    this.loadClients();
     this.loadTreasuries();
+    this.bindSelectedClientToUrl();
+    // Deep link → the client's contracts are what the user is waiting for:
+    // load them first and defer the heavy roster until they settle
+    // (see `fetchContracts`). Otherwise the picker needs the roster now.
+    if (this.selectedClientId() === null) this.ensureRosterLoaded();
+    this.bindFocusedClientLookup();
 
     // Refetch contracts whenever the selected client or page changes.
     effect(
@@ -205,9 +250,15 @@ export class StatementComponent {
 
   // ─────────── loaders ───────────
 
-  private loadClients(): void {
+  /**
+   * Loads the picker roster once, in the background: it skips the page-level
+   * loader overlay, so draining a large client list never blocks the screen.
+   */
+  private ensureRosterLoaded(): void {
+    if (this.rosterRequested) return;
+    this.rosterRequested = true;
     this.clientsLoading.set(true);
-    this.customersService.listAllClients().subscribe({
+    this.customersService.listAllClients({ background: true }).subscribe({
       next: (list) => {
         this.clients.set(list);
         this.clientsLoading.set(false);
@@ -250,6 +301,7 @@ export class StatementComponent {
         this.count.set(page?.count ?? 0);
         this.totalPages.set(page?.totalPages ?? 0);
         this.contractsLoading.set(false);
+        this.ensureRosterLoaded();
       },
       error: (err: ApiError) => {
         this.contracts.set([]);
@@ -257,6 +309,7 @@ export class StatementComponent {
         this.totalPages.set(0);
         this.contractsLoading.set(false);
         this.toast.error(apiErrorToMessage(err, 'تعذّر تحميل عقود العميل'));
+        this.ensureRosterLoaded();
       },
     });
   }
@@ -275,9 +328,95 @@ export class StatementComponent {
   // ─────────── client picker handlers ───────────
 
   protected onClientChange(value: number | string | null): void {
-    const id = value === null || value === '' ? null : Number(value);
-    this.selectedClientId.set(id !== null && Number.isFinite(id) ? id : null);
+    const raw = value === null || value === '' ? null : Number(value);
+    const id = raw !== null && Number.isFinite(raw) ? raw : null;
+    this.selectedClientId.set(id);
     this.pageIndex.set(1);
+    this.syncSelectedClientToUrl(id);
+  }
+
+  // ─────────── deep-link (?clientId=) ───────────
+
+  /**
+   * `?clientId=` pre-selects the client — e.g. when arriving from the
+   * "client contracts" action in the clients list. Subscribed (not a
+   * snapshot) so a new deep link while the page is already open switches
+   * the client without a reload.
+   */
+  private bindSelectedClientToUrl(): void {
+    this.route.queryParamMap
+      .pipe(
+        map((params) => parseClientIdParam(params.get(CLIENT_ID_QUERY_PARAM))),
+        distinctUntilChanged(),
+        takeUntilDestroyed(),
+      )
+      .subscribe((id) => {
+        if (id === this.selectedClientId()) return;
+        this.selectedClientId.set(id);
+        this.pageIndex.set(1);
+      });
+  }
+
+  /**
+   * Mirrors the picked client into the URL so the view is shareable and
+   * survives a refresh. `replaceUrl` keeps picker changes out of history.
+   */
+  private syncSelectedClientToUrl(id: number | null): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [CLIENT_ID_QUERY_PARAM]: id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /**
+   * Resolves the selected client directly by id whenever the roster doesn't
+   * have it yet. `switchMap` cancels a stale lookup when the user switches
+   * client quickly, so a slow response can never overwrite a newer one.
+   */
+  private bindFocusedClientLookup(): void {
+    toObservable(this.selectedClientId)
+      .pipe(
+        switchMap((id) => {
+          if (id === null || this.clients().some((c) => c.id === id)) {
+            return of(null);
+          }
+          return this.customersService.getClientSummary(id).pipe(
+            catchError((err: ApiError) => {
+              this.onClientLookupFailed(id, err);
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((summary) => this.focusedClient.set(summary));
+  }
+
+  /** A deep link may point at a client that no longer exists or is out of scope. */
+  private onClientLookupFailed(id: number, err: ApiError): void {
+    if (this.selectedClientId() !== id) return;
+    const notFound = err?.status === 404 || err?.status === 403;
+    this.toast.warning(
+      notFound
+        ? `العميل رقم ${formatClientNumber(id)} غير موجود أو لا تملك صلاحية عرضه`
+        : apiErrorToMessage(err, 'تعذّر تحميل بيانات العميل'),
+    );
+    if (notFound) this.onClientChange(null);
+    this.ensureRosterLoaded();
+  }
+
+  private toClientOption(c: {
+    id: number;
+    fullName: string;
+    phoneNumber: string;
+  }): SearchableSelectOption {
+    return {
+      value: c.id,
+      label: c.fullName,
+      hint: `${formatClientNumber(c.id)} · ${c.phoneNumber}`,
+    };
   }
 
   protected refreshContracts(): void {
@@ -488,6 +627,7 @@ export class StatementComponent {
           dateOfSale:           d.contract.dateOfSale,
           clientName:           d.client.fullName,
           clientPhone:          d.client.phoneNumber,
+          clientNumber:         d.client.id,
           clientCode:           d.client.clientCode  ?? null,
           clientAddress:        d.client.areaName    ?? null,
           clientRegion:         d.client.region      ?? null,

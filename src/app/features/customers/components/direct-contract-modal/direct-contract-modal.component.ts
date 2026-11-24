@@ -684,6 +684,7 @@ export class DirectContractModalComponent {
       dateOfSale:           raw.dateOfSale,
       clientName:           fullClient?.fullName    ?? listClient?.fullName    ?? '',
       clientPhone:          fullClient?.phoneNumber ?? listClient?.phoneNumber ?? '',
+      clientNumber:         fullClient?.id          ?? listClient?.id          ?? null,
       clientCode:           fullClient?.clientCode  ?? null,
       clientAddress:        fullClient?.areaName    ?? listClient?.areaName    ?? null,
       clientRegion:         fullClient?.region      ?? null,

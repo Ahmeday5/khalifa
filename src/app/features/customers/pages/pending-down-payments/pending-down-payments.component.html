@@ -51,7 +51,7 @@
         <tr>
           <th class="st-col-toggle"></th>
           <th class="st-col-name">العميل</th>
-          <th>كود العميل</th>
+          <th>رقم العميل</th>
           <th>الهاتف</th>
           <th>عدد العقود</th>
           <th>إجمالي المقدمات المعلقة</th>
@@ -97,7 +97,7 @@
               </button>
             </td>
             <td class="st-col-name fw-600">{{ client.fullName }}</td>
-            <td>{{ client.clientCode || '—' }}</td>
+            <td class="font-monospace fw-bold">{{ client.id | clientNumber }}</td>
             <td>{{ client.phoneNumber || '—' }}</td>
             <td>
               <span class="st-count-badge">{{ client.totalPendingContracts }}</span>

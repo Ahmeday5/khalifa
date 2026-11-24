@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { catchError, delay, map, switchMap } from 'rxjs/operators';
 import { asPaged, fetchAllPages } from '../../../core/utils/api-list.util';
 import {
   CreateClientPayload,
@@ -10,6 +10,7 @@ import {
   DashboardClientsResponse,
   UpdateClientPayload,
 } from '../models/dashboard-client.model';
+import { ClientSummary, toClientSummary } from '../models/client-summary.model';
 import {
   ClientContractsPage,
   ClientContractsQuery,
@@ -25,8 +26,11 @@ import {
   withCacheBypass,
   withCacheInvalidate,
   withInlineHandling,
+  withSkipLoader,
 } from '../../../core/http/http-context.tokens';
 
+/** Rows fetched when resolving one client by phone (phones are near-unique). */
+const CLIENT_SUMMARY_LOOKUP_SIZE = 20;
 const CLIENTS_TTL_MS = 2 * 60 * 1000; // 2 min — list churns whenever a payment is recorded
 const PENDING_DP_TTL_MS = 60 * 1000;
 /**
@@ -50,16 +54,27 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface ClientsRequestOptions {
+  /**
+   * Background load (e.g. a picker's roster): skips the page-level loader
+   * overlay so it never blocks the screen — the caller shows its own,
+   * local loading state instead.
+   */
+  background?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
   private readonly api = inject(ApiService);
   
   listDashboard(
     query: DashboardClientsQuery = {},
+    options: ClientsRequestOptions = {},
   ): Observable<DashboardClientsResponse> {
+    const context = withCache({ ttlMs: CLIENTS_TTL_MS });
     return this.api.get<DashboardClientsResponse>(API_ENDPOINTS.clients.base, {
       params: this.toClientsParams(query),
-      context: withCache({ ttlMs: CLIENTS_TTL_MS }),
+      context: options.background ? withSkipLoader(context) : context,
     });
   }
 
@@ -81,9 +96,11 @@ export class CustomersService {
    * oversized page, so the picker never silently drops clients once the
    * roster grows past a hard-coded size.
    */
-  listAllClients(): Observable<DashboardClient[]> {
+  listAllClients(
+    options: ClientsRequestOptions = {},
+  ): Observable<DashboardClient[]> {
     return fetchAllPages<DashboardClient>((pageIndex, pageSize) =>
-      this.listDashboard({ pageIndex, pageSize }).pipe(
+      this.listDashboard({ pageIndex, pageSize }, options).pipe(
         map((res) => asPaged<DashboardClient>(res?.clients)),
       ),
     );
@@ -132,6 +149,40 @@ export class CustomersService {
       context: withCacheBypass(withCache({ ttlMs: CLIENTS_TTL_MS })),
     });
   }
+  /**
+   * One client's list row (identity + contract aggregates) WITHOUT draining
+   * the whole roster — used to render a client's statement immediately.
+   *
+   *   1. `GET /clients/{id}`            → profile (cached, 1 small request)
+   *   2. `GET /clients?search=<phone>`  → the matching aggregate row
+   *
+   * Falls back to an identity-only row (aggregates `null`) when the search
+   * can't resolve the row. Errors are handled inline by the caller (no
+   * global toast) — a 404/403 here means "unknown client" for the page.
+   */
+  getClientSummary(id: number): Observable<ClientSummary> {
+    return this.api
+      .get<CreatedClient>(API_ENDPOINTS.clients.byId(id), {
+        context: withInlineHandling(withCache({ ttlMs: CLIENTS_TTL_MS })),
+      })
+      .pipe(
+        switchMap((profile) =>
+          this.listDashboard(
+            {
+              search: profile.phoneNumber,
+              pageIndex: 1,
+              pageSize: CLIENT_SUMMARY_LOOKUP_SIZE,
+            },
+            { background: true },
+          ).pipe(
+            map((res) => asPaged<DashboardClient>(res?.clients).data),
+            map((rows) => toClientSummary(profile, rows.find((r) => r.id === id))),
+            catchError(() => of(toClientSummary(profile, undefined))),
+          ),
+        ),
+      );
+  }
+
 
   /**
    * Updates a client (PUT /dashboard/clients/{id}). Invalidates the clients

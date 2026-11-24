@@ -8,6 +8,16 @@
 >
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate autocomplete="off">
 
+    <!-- ─── رقم العميل (تسلسلي، يُولَّد تلقائياً من السيرفر) ─── -->
+    <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded border bg-light" role="note">
+      <span class="fw-semibold">رقم العميل:</span>
+      @if (client(); as c) {
+      <span class="fw-bold font-monospace" dir="ltr">{{ c.id | clientNumber }}</span>
+      } @else {
+      <span class="text-muted small">يُولَّد تلقائياً عند الحفظ حسب التسلسل</span>
+      }
+    </div>
+
     <!-- ─── البيانات الأساسية ─── -->
     <div class="cf-section-title">البيانات الأساسية</div>
     <div class="row g-3">
@@ -114,14 +124,14 @@
 
       <div class="col-12 col-md-4">
         <label class="form-label">
-          كود العميل / الباركود
+          الباركود <span class="text-muted">(اختياري)</span>
         </label>
         <input
           type="text"
           class="form-control"
           formControlName="clientCode"
           autocomplete="off"
-          placeholder="مثال: CLI-0001"
+          placeholder="اتركه فارغاً إن لم يوجد"
           dir="ltr"
         />
       </div>

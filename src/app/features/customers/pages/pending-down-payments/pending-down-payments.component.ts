@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 import { CustomersService } from '../../services/customers.service';
 import { PendingDownPaymentClientRow } from '../../models/pending-down-payments.model';
+import { ClientNumberPipe } from '../../pipes/client-number.pipe';
 import { DownPaymentCollectModalComponent } from '../../components/down-payment-collect-modal/down-payment-collect-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { CurrencyArPipe } from '../../../../shared/pipes/currency-ar.pipe';
@@ -25,7 +26,13 @@ const SEARCH_DEBOUNCE_MS = 300;
   selector: 'app-pending-down-payments',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, PaginationComponent, CurrencyArPipe, DownPaymentCollectModalComponent],
+  imports: [
+    FormsModule,
+    PaginationComponent,
+    CurrencyArPipe,
+    ClientNumberPipe,
+    DownPaymentCollectModalComponent,
+  ],
   templateUrl: './pending-down-payments.component.html',
   styleUrl: './pending-down-payments.component.scss',
 })
