@@ -28,6 +28,9 @@ import {
 } from '../../../../shared/components/badge/badge.component';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { PERMISSIONS } from '../../../../core/constants/permissions.const';
+import { AccessService } from '../../../../core/services/access.service';
+import { isForbiddenError } from '../../../../core/utils/api-error.util';
+
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
@@ -46,9 +49,27 @@ export class DashboardHomeComponent implements OnInit {
   private readonly dashService = inject(DashboardService);
   private readonly financialService = inject(FinancialService);
   private readonly cache = inject(HttpCacheService);
+  protected readonly access = inject(AccessService);
 
   /** Exposed so the template can gate write actions with `*appHasPermission`. */
   protected readonly PERMS = PERMISSIONS;
+
+  /**
+   * Set when the backend answers 403 for a widget the client believed was
+   * allowed (policy drift). The widget then hides quietly for the rest of
+   * the visit instead of rendering an error state.
+   */
+  private readonly expensesDenied = signal(false);
+  private readonly financialDenied = signal(false);
+
+  /** Expenses widget — never requested for roles the backend forbids. */
+  protected readonly showExpenses = computed(
+    () => this.access.canViewExpenses() && !this.expensesDenied(),
+  );
+  /** Financial-separation card — requires Treasury.View. */
+  protected readonly showFinancial = computed(
+    () => this.access.canViewFinancialSeparation() && !this.financialDenied(),
+  );
 
   // ── expense ──
   protected readonly expenses = signal<ExpensesSummaryDto | null>(null);
@@ -258,6 +279,7 @@ export class DashboardHomeComponent implements OnInit {
   }
 
   private loadFinancial(force: boolean): void {
+    if (!this.showFinancial()) return;
     this.financialLoading.set(true);
     const stream$ = force
       ? this.financialService.refreshSeparation()
@@ -267,7 +289,8 @@ export class DashboardHomeComponent implements OnInit {
         this.financial.set(f);
         this.financialLoading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
+        if (isForbiddenError(err)) this.financialDenied.set(true);
         this.financialLoading.set(false);
       },
     });
@@ -337,6 +360,7 @@ export class DashboardHomeComponent implements OnInit {
 
   //////////////////////expenses/////////////////////////
   loadExpenses(force: boolean): void {
+    if (!this.showExpenses()) return;
     this.expensesLoading.set(true);
 
     const stream$ = force
@@ -348,7 +372,8 @@ export class DashboardHomeComponent implements OnInit {
         this.expenses.set(res);
         this.expensesLoading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
+        if (isForbiddenError(err)) this.expensesDenied.set(true);
         this.expensesLoading.set(false);
       },
     });

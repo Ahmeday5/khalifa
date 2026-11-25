@@ -30,7 +30,7 @@
       <div class="hs-tile-meta">{{ s.totalDues.clientsCount | number }} عميل</div>
     </a>
 
-    <a class="hs-tile hs-tile--green" routerLink="/treasury" style="text-decoration:none;display:block">
+    <a class="hs-tile hs-tile--green" [routerLink]="access.canViewTreasury() ? '/treasury' : null" style="text-decoration:none;display:block">
       <div class="hs-tile-label">المُحصَّل هذا الشهر</div>
       <div class="hs-tile-value">{{ s.collectedThisMonth.amount | currencyAr: true }}</div>
       <div class="hs-tile-meta" [class.hs-up]="s.collectedThisMonth.growthPercent > 0"
@@ -39,7 +39,7 @@
           s.collectedThisMonth.growthPercent | number: '1.0-1' }}% </div>
     </a>
 
-    <a class="hs-tile hs-tile--teal" routerLink="/treasury" style="text-decoration:none;display:block">
+    <a class="hs-tile hs-tile--teal" [routerLink]="access.canViewTreasury() ? '/treasury' : null" style="text-decoration:none;display:block">
       <div class="hs-tile-label">الخزينة الرئيسية</div>
       <div class="hs-tile-value">{{ s.mainTreasury.balance | currencyAr: true }}</div>
       <div class="hs-tile-meta">الرصيد الحالي</div>
@@ -69,7 +69,7 @@
       <div class="hs-tile-meta">{{ s.excellentRating.percent | number: '1.0-0' }}% من العملاء</div>
     </a>
 
-    <a class="hs-tile hs-tile--orange" routerLink="/warehouse" style="text-decoration:none;display:block">
+    <a class="hs-tile hs-tile--orange" [routerLink]="access.canViewInventory() ? '/warehouse' : null" style="text-decoration:none;display:block">
       <div class="hs-tile-label">مخزون منخفض</div>
       <div class="hs-tile-value">{{ s.lowStock.productsCount | number }}</div>
       <div class="hs-tile-meta">منتج بحاجة لإعادة الطلب</div>
@@ -86,6 +86,7 @@
   }
 </section>
 
+@if (showExpenses()) {
 <section class="exp-card">
 
   <div class="exp-head">
@@ -198,8 +199,10 @@
   </div>
   }
 </section>
+}
 
-<!-- ── الفصل المالي (Financial Separation) ── -->
+<!-- ── الفصل المالي (Financial Separation) — requires Treasury.View ── -->
+@if (showFinancial()) {
 <section class="fs-block">
   <header class="fs-block-head">
     <div>
@@ -271,6 +274,7 @@
   <div class="fs-empty">تعذّر تحميل الفصل المالي.</div>
   }
 </section>
+}
 
 <!-- شارتات + أفضل العملاء -->
 <div class="row row-cols-md-2 row-cols-1 g-3">

@@ -243,3 +243,15 @@ export type RepresentativesQuery = PagedQuery;
 
 /** Wire shape after envelope unwrap. */
 export type RepresentativesListResponse = PagedResponse<Representative>;
+
+/**
+ * Representative as offered by contract / collection pickers. Normalizes
+ * the two possible sources (full roster or role-scoped lookup) into one
+ * shape so forms never care which endpoint served them.
+ */
+export interface RepresentativeOption {
+  id: number;
+  name: string;
+  /** Present when the source exposes it (used on printed contract slips). */
+  phoneNumber: string | null;
+}

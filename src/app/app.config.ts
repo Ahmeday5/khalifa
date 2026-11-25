@@ -22,6 +22,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { loaderInterceptor } from './core/interceptors/loader.interceptor';
+import { provideSessionPermissionsSync } from './core/initializers/session-permissions.initializer';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -50,5 +51,7 @@ export const appConfig: ApplicationConfig = {
       ]),
     ),
     provideAnimationsAsync(),
+    // Refresh a restored session's permissions before the first navigation.
+    provideSessionPermissionsSync(),
   ],
 };

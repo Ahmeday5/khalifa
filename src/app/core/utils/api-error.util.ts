@@ -4,6 +4,23 @@ import {
   translateApiMessage,
 } from '../constants/api-messages.const';
 
+export const HTTP_STATUS_FORBIDDEN = 403;
+
+/** User-facing text for any 403 — shown inline or as a single warning. */
+export const FORBIDDEN_MESSAGE = 'غير مصرح لك بتنفيذ هذا الإجراء';
+
+/**
+ * True when the request was rejected for lack of permission. Lets a widget
+ * hide itself (or show "غير مصرح لك") instead of rendering a failure state.
+ */
+export function isForbiddenError(err: unknown): boolean {
+  return (
+    !!err &&
+    typeof err === 'object' &&
+    (err as Partial<ApiError>).status === HTTP_STATUS_FORBIDDEN
+  );
+}
+
 /**
  * Turns an `ApiError` (already normalized by `errorInterceptor`) into a
  * user-facing message. Prefers backend field errors when present so the

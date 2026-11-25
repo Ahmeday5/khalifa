@@ -1,19 +1,20 @@
 import { Routes } from '@angular/router';
-import { denyRolesGuard } from '../../core/guards/role.guard';
+import { accessGuard } from '../../core/guards/access.guard';
+import { ACCESS_RULES } from '../../core/constants/access-rules.const';
 
 export const treasuryRoutes: Routes = [
   {
     path: '',
+    canActivate: [accessGuard(ACCESS_RULES.treasury)],
     loadComponent: () =>
       import('./pages/treasury-home/treasury-home.component').then(
         (m) => m.TreasuryHomeComponent
       ),
   },
   {
-    // Off-limits to Representatives even if the backend grants them
-    // Treasury.View — shareholders is owners-only.
+    // Shareholders has its own permission, independent of Treasury.View.
     path: 'shareholders',
-    canActivate: [denyRolesGuard(['Representative'])],
+    canActivate: [accessGuard(ACCESS_RULES.shareholders)],
     loadComponent: () =>
       import('./pages/shareholders/shareholders.component').then(
         (m) => m.ShareholdersComponent

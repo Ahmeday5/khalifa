@@ -1,4 +1,8 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn,
+  HttpRequest,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
@@ -11,6 +15,14 @@ import {
   translateApiMessage,
 } from '../constants/api-messages.const';
 import { environment } from '../../../environments/environment';
+import {
+  FORBIDDEN_MESSAGE,
+  HTTP_STATUS_FORBIDDEN,
+} from '../utils/api-error.util';
+
+/** Window in which repeated "not authorized" notices collapse into one. */
+const FORBIDDEN_NOTICE_DEDUPE_MS = 3_000;
+let lastForbiddenNoticeAt = 0;
 
 /**
  * Normalizes every HTTP failure into an `ApiError` and (unless the caller
@@ -37,12 +49,41 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         req.url.includes(API_ENDPOINTS.auth.refresh) ||
         !auth.isAuthenticated();
 
-      if (!silent) toast.error(apiError.message);
+      if (!silent) {
+        if (apiError.status === HTTP_STATUS_FORBIDDEN) {
+          notifyForbidden(req, apiError, toast);
+        } else {
+          toast.error(apiError.message);
+        }
+      }
 
       return throwError(() => apiError);
     })
   );
 };
+
+/**
+ * 403 is an expected outcome, not a failure: the backend scopes data by
+ * role, and the UI hides what the user can't reach. So it never raises an
+ * error toast:
+ *
+ *   - Reads (GET/HEAD) stay silent — the widget that asked handles the
+ *     error branch by hiding itself / showing "غير مصرح لك" inline.
+ *   - Writes get one calm warning (deduplicated) so a user-initiated action
+ *     never fails without feedback.
+ */
+function notifyForbidden(
+  req: HttpRequest<unknown>,
+  apiError: ApiError,
+  toast: ToastService,
+): void {
+  if (req.method === 'GET' || req.method === 'HEAD') return;
+
+  const now = Date.now();
+  if (now - lastForbiddenNoticeAt < FORBIDDEN_NOTICE_DEDUPE_MS) return;
+  lastForbiddenNoticeAt = now;
+  toast.warning(apiError.message || FORBIDDEN_MESSAGE);
+}
 
 function normalizeError(err: HttpErrorResponse): ApiError {
   const status = err.status ?? 0;
@@ -50,6 +91,8 @@ function normalizeError(err: HttpErrorResponse): ApiError {
 
   const rawMessage: string =
     body?.message || body?.error || body?.detail || body?.title || '';
+  // English policy text on a 403 ("User lacks Treasury.View") degrades to
+  // FORBIDDEN_MESSAGE via `statusMessage`; Arabic business reasons are kept.
   const message = resolveArabicMessage(rawMessage, status, err);
 
   const fieldErrors: ApiFieldErrors | undefined =
@@ -96,7 +139,7 @@ function statusMessage(status: number, err: HttpErrorResponse): string {
   const messages: Record<number, string> = {
     400: 'بيانات غير صحيحة',
     401: 'بيانات الدخول غير صحيحة',
-    403: 'ليس لديك صلاحية للقيام بهذا الإجراء',
+    403: FORBIDDEN_MESSAGE,
     404: 'المورد المطلوب غير موجود',
     409: 'تعارض في البيانات',
     422: 'فشل التحقق من البيانات',

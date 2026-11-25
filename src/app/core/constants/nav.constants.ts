@@ -1,14 +1,12 @@
 import { NavSection } from '../../layouts/admin/sidebar/sidebar.component';
-import { PERMISSIONS } from './permissions.const';
+import { ACCESS_RULES } from './access-rules.const';
 
 /**
- * Sidebar layout. Each item carries `requiredAnyPermission` so the sidebar
- * can hide entries the current user can't act on.
+ * Sidebar layout. Each item declares the same `ACCESS_RULES` entry its route
+ * guard uses, so an entry is visible exactly when its page is reachable —
+ * never "shown in the menu, then 403 / redirected".
  *
- *   - Read-heavy items use the `*.View` permission.
- *   - Action-heavy items (forms / mutations) include both `View` AND
- *     `FullAccess` so the entry shows for view-only roles too — the
- *     specific action buttons inside each page have their own gates.
+ * Items without `access` are visible to every authenticated user.
  */
 export const NAV_SECTIONS: NavSection[] = [
   {
@@ -19,7 +17,7 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'لوحة التحكم',
         route: '/dashboard',
         icon: 'home',
-        requiredAnyPermission: [PERMISSIONS.dashboardView],
+        access: ACCESS_RULES.dashboard,
       },
       {
         id: 'push-notifications',
@@ -41,7 +39,7 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeKey: 'overdueClients',
         badgeType: 'red',
         icon: 'users',
-        requiredAnyPermission: [PERMISSIONS.clientsView],
+        access: ACCESS_RULES.clients,
       },
       {
         id: 'pending-down-payments',
@@ -50,7 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeKey: 'pendingDownPayments',
         badgeType: 'amber',
         icon: 'wallet',
-        requiredAnyPermission: [PERMISSIONS.clientsView],
+        access: ACCESS_RULES.clients,
       },
       /*{
         id: 'catalog',
@@ -59,29 +57,28 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeKey: 'pendingClientOrders',
         badgeType: 'amber',
         icon: 'box',
-        requiredAnyPermission: [PERMISSIONS.clientsView],
+        access: ACCESS_RULES.clients,
       },*/
       {
         id: 'reps',
         label: 'المندوبون',
         route: '/reps',
         icon: 'user-tie',
-        requiredAnyPermission: [PERMISSIONS.userManagement],
+        access: ACCESS_RULES.userManagement,
       },
       {
         id: 'rep-requests',
         label: 'طلبيات المندوبين',
         route: '/reps/requests',
         icon: 'clipboard',
-        requiredAnyPermission: [PERMISSIONS.userManagement],
+        access: ACCESS_RULES.userManagement,
       },
       {
         id: 'my-account',
         label: 'كشف حسابي',
         route: '/my-account',
         icon: 'user-tie',
-        // Role-exclusive: only a logged-in Representative sees this.
-        requiredAnyRole: ['Representative'],
+        access: ACCESS_RULES.representativeSelfService,
       },
     ],
   },
@@ -93,17 +90,14 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'الموردون',
         route: '/suppliers',
         icon: 'truck',
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
+        access: ACCESS_RULES.suppliers,
       },
       {
         id: 'invoices',
         label: 'فواتير المشتريات',
         route: '/invoices',
         icon: 'file-invoice',
-        // Supplier-permission holders OR the Representative role — the two
-        // gates are OR-ed by the sidebar.
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
-        requiredAnyRole: ['Representative'],
+        access: ACCESS_RULES.purchaseInvoices,
       },
     ],
   },
@@ -115,23 +109,21 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'المخازن',
         route: '/warehouse',
         icon: 'warehouse',
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
+        access: ACCESS_RULES.inventory,
       },
       {
         id: 'products',
         label: 'المنتجات',
         route: '/products',
         icon: 'products',
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
-        hideForRoles: ['Representative'],
+        access: ACCESS_RULES.inventory,
       },
       {
         id: 'categories',
         label: 'فئات المنتجات',
         route: '/categories',
         icon: 'tag',
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
-        hideForRoles: ['Representative'],
+        access: ACCESS_RULES.inventory,
       },
       {
         id: 'inv-alerts',
@@ -140,7 +132,7 @@ export const NAV_SECTIONS: NavSection[] = [
         badgeKey: 'lowStockProducts',
         badgeType: 'amber',
         icon: 'warning',
-        requiredAnyPermission: [PERMISSIONS.suppliersView],
+        access: ACCESS_RULES.inventory,
       },
     ],
   },
@@ -152,23 +144,21 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'الخزينة',
         route: '/treasury',
         icon: 'wallet',
-        requiredAnyPermission: [PERMISSIONS.treasuryView],
+        access: ACCESS_RULES.treasury,
       },
       {
         id: 'vouchers',
         label: 'سندات القبض والصرف',
         route: '/vouchers',
         icon: 'receipt',
-        requiredAnyPermission: [PERMISSIONS.treasuryView],
+        access: ACCESS_RULES.vouchers,
       },
       {
         id: 'shareholders',
         label: 'المساهمون',
         route: '/treasury/shareholders',
         icon: 'hand-coin',
-        requiredAnyPermission: [PERMISSIONS.treasuryView],
-        // Owners-only — never shown to a Representative.
-        hideForRoles: ['Representative'],
+        access: ACCESS_RULES.shareholders,
       },
     ],
   },
@@ -180,7 +170,7 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'الصلاحيات والمستخدمون',
         route: '/users',
         icon: 'user-cog',
-        requiredAnyPermission: [PERMISSIONS.userManagement],
+        access: ACCESS_RULES.userManagement,
       },
     ],
   },

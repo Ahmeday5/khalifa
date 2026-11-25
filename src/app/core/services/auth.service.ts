@@ -192,6 +192,21 @@ export class AuthService {
       );
   }
 
+  /**
+   * Re-reads the authoritative role + permissions for a session restored
+   * from storage. Permissions are otherwise only fetched at login, so
+   * without this a backend policy change (e.g. a permission revoked from a
+   * role) would not reach users until they sign out and back in — they'd
+   * keep seeing screens that now return 403.
+   *
+   * Never errors: on failure the cached user is kept unchanged.
+   */
+  syncPermissions(): Observable<void> {
+    const user = this.currentUserSignal();
+    if (!user || !this.isLoggedIn()) return of(undefined);
+    return this.hydratePermissions(user).pipe(map(() => undefined));
+  }
+
   private applyPermissions(baseUser: User, data: MePermissionsData): User {
     const role = data?.role ? this.normalizeRole(data.role) : baseUser.role;
     const name = data?.userName?.trim() || baseUser.name;

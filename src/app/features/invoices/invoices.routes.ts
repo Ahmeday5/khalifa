@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { denyRolesGuard } from '../../core/guards/role.guard';
+import { accessGuard } from '../../core/guards/access.guard';
+import { ACCESS_RULES } from '../../core/constants/access-rules.const';
 
 export const invoicesRoutes: Routes = [
   // Tabbed shell hosts the list + new-invoice tabs.
@@ -32,10 +33,9 @@ export const invoicesRoutes: Routes = [
   // no list/new tab chrome). The component switches to update mode when
   // an `:id` is present in the route.
   {
-    // Editing is owners-only — reps may create invoices but never amend them,
-    // so block the edit route even if reached by direct URL.
+    // Amending an invoice needs write access, even when reached by direct URL.
     path: ':id/edit',
-    canActivate: [denyRolesGuard(['Representative'])],
+    canActivate: [accessGuard(ACCESS_RULES.purchaseInvoicesWrite)],
     loadComponent: () =>
       import('./pages/invoice-new/invoice-new.component').then(
         (m) => m.InvoiceNewComponent,

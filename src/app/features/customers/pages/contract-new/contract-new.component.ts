@@ -41,7 +41,8 @@ import { ProductsService } from '../../../products/services/products.service';
 import { WarehouseService } from '../../../warehouse/services/warehouse.service';
 import { TreasuryService } from '../../../treasury/services/treasury.service';
 import { RepsService } from '../../../reps/services/reps.service';
-import { Representative } from '../../../reps/models/rep.model';
+import { RepresentativeOption } from '../../../reps/models/rep.model';
+import { AccessService } from '../../../../core/services/access.service';
 
 import {
   ContractFormState,
@@ -97,6 +98,7 @@ export class ContractNewComponent implements OnInit {
   private readonly warehouseService = inject(WarehouseService);
   private readonly treasuryService = inject(TreasuryService);
   private readonly repsService = inject(RepsService);
+  private readonly access = inject(AccessService);
 
   private readonly toast = inject(ToastService);
   private readonly slipsPrint = inject(ContractSlipsPrintService);
@@ -120,7 +122,7 @@ export class ContractNewComponent implements OnInit {
   protected readonly products = signal<LookupItem[]>([]);
   protected readonly warehouses = signal<LookupItem[]>([]);
   protected readonly treasuries = signal<LookupItem[]>([]);
-  protected readonly representatives = signal<Representative[]>([]);
+  protected readonly representatives = signal<RepresentativeOption[]>([]);
 
   /** Client list shaped for the searchable select (name + phone search). */
   protected readonly clientOptions = computed<SearchableSelectOption[]>(() =>
@@ -142,7 +144,7 @@ export class ContractNewComponent implements OnInit {
     this.toOptions(this.treasuries()),
   );
   protected readonly representativeOptions = computed<SearchableSelectOption[]>(() =>
-    this.representatives().map((r) => ({ value: r.id, label: r.fullName, hint: r.phoneNumber })),
+    this.representatives().map((r) => ({ value: r.id, label: r.name, hint: r.phoneNumber ?? undefined })),
   );
 
   private toOptions(items: LookupItem[]): SearchableSelectOption[] {
@@ -330,8 +332,8 @@ export class ContractNewComponent implements OnInit {
         .lookup()
         .pipe(catchError(() => of([] as LookupItem[]))),
       reps: this.repsService
-        .list()
-        .pipe(catchError(() => of({ data: [] as Representative[], pageIndex: 1, pageSize: 100, count: 0, totalPages: 0 }))),
+        .pickerOptions()
+        .pipe(catchError(() => of([] as RepresentativeOption[]))),
       details: id
         ? this.contractsService
             .getDetails(id)
@@ -345,7 +347,7 @@ export class ContractNewComponent implements OnInit {
           this.products.set(res.products);
           this.warehouses.set(res.warehouses);
           this.treasuries.set(res.treasuries);
-          this.representatives.set(res.reps?.data ?? []);
+          this.representatives.set(res.reps);
           if (res.details) this.prefillFromDetails(res.details);
         },
         error: () => {
@@ -530,7 +532,7 @@ export class ContractNewComponent implements OnInit {
     // using the price that matches the selected paymentFrequency.
     const firstProductCtrl = this.itemsArray.at(0)?.get('productId');
     firstProductCtrl?.valueChanges.subscribe((id) => {
-      if (this.prefilling) return;
+      if (this.prefilling || !this.canAutoFillPrice()) return;
       const productId = Number(id);
       if (!productId) return;
 
@@ -558,7 +560,7 @@ export class ContractNewComponent implements OnInit {
       }
 
       const productId = Number(this.itemsArray.at(0)?.get('productId')?.value);
-      if (!productId) return;
+      if (!productId || !this.canAutoFillPrice()) return;
 
       this.productsService.getById(productId).subscribe({
         next: (product) => {
@@ -568,6 +570,15 @@ export class ContractNewComponent implements OnInit {
         error: () => { /* operator enters price manually */ },
       });
     });
+  }
+
+  /**
+   * Price auto-fill reads the full product record (`GET /products/{id}`),
+   * which needs inventory access. Users picking products through
+   * `/products/lookup` only (e.g. a Representative) enter the price by hand.
+   */
+  private canAutoFillPrice(): boolean {
+    return this.access.canViewProductDetails();
   }
 
   /** Default installments count matching each payment frequency (still editable). */
@@ -839,7 +850,7 @@ export class ContractNewComponent implements OnInit {
       clientBuilding:       fullClient?.building    ?? null,
       clientFloor:          fullClient?.floor       ?? null,
       clientDepartment:     fullClient?.department  ?? null,
-      repName:              selectedRep?.fullName   ?? null,
+      repName:              selectedRep?.name        ?? null,
       repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         productLines.length ? productLines : [{ name: 'منتج', quantity: 1 }],
       totalAmount:          Math.round(totalAmount),

@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 
 import { DashboardService } from '../../features/dashboard/services/dashboard.service';
 import { CatalogService } from '../../features/catalog/services/catalog.service';
@@ -45,14 +45,6 @@ export class NavCountsStore {
   readonly pendingClientOrders = this._pendingClientOrders.asReadonly();
   readonly lowStockProducts = this._lowStockProducts.asReadonly();
   readonly pendingDownPayments = this._pendingDownPayments.asReadonly();
-
-  /** True when there is at least one item worth showing in the alert pill. */
-  readonly hasAlerts = computed(
-    () =>
-      this._overdueClients() > 0 ||
-      this._pendingClientOrders() > 0 ||
-      this._lowStockProducts() > 0,
-  );
 
   // ── pulse ticks (incremented each time a count rises) ──
   private readonly _overduePulse = signal(0);

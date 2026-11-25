@@ -7,9 +7,8 @@ import { NAV_SECTIONS } from '../../../core/constants/nav.constants';
 import { NavIconComponent, NavIconName } from '../../../shared/components/nav-icon/nav-icon.component';
 import { NavCountsStore } from '../../../core/stores/nav-counts.store';
 import { NotificationsStore } from '../../../core/stores/notifications.store';
-import { AuthService } from '../../../core/services/auth.service';
-import { Permission } from '../../../core/constants/permissions.const';
-import { UserRole } from '../../../core/models/auth.model';
+import { AccessService } from '../../../core/services/access.service';
+import { AccessRequirement } from '../../../core/constants/access-rules.const';
 
 /**
  * Keys of `NavCountsStore` signals that nav items can bind to. The
@@ -34,24 +33,11 @@ export interface NavItem {
   /** Live counter source from `NavCountsStore`. Hides the badge when count is 0. */
   badgeKey?: NavBadgeKey;
   /**
-   * Permission gate. Item is hidden unless the current user holds at least
-   * ONE of the listed permissions. Omit (or pass an empty array) to make
-   * the item visible to everyone.
+   * Visibility rule — use the same `ACCESS_RULES` entry as the route guard
+   * so the entry shows exactly when its page is reachable. Omit to make the
+   * item visible to every authenticated user.
    */
-  requiredAnyPermission?: ReadonlyArray<Permission | string>;
-  /**
-   * Role gate. When set, the item shows only if the current user's role is
-   * one of these — used for role-exclusive entries (e.g. a Representative's
-   * "my account") that no permission string cleanly isolates.
-   */
-  requiredAnyRole?: ReadonlyArray<UserRole>;
-  /**
-   * Role exclusion — takes precedence over every other gate. The item is
-   * hidden for these roles even if their permissions would otherwise grant
-   * it (e.g. hide `shareholders` from a Representative the backend gave
-   * `Treasury.View`).
-   */
-  hideForRoles?: ReadonlyArray<UserRole>;
+  access?: AccessRequirement;
 }
 
 export interface NavSection {
@@ -71,41 +57,22 @@ export class SidebarComponent {
   protected readonly layout = inject(LayoutService);
   protected readonly counts = inject(NavCountsStore);
   protected readonly notifications = inject(NotificationsStore);
-  private readonly auth = inject(AuthService);
+  private readonly access = inject(AccessService);
 
   /**
-   * Sidebar reflows whenever the user's permission set changes (login,
-   * cross-tab session refresh). Sections whose items all evaluate to
-   * hidden are dropped wholesale so we don't render orphan headers.
+   * Sidebar reflows whenever the session changes (login, permission sync,
+   * cross-tab refresh) — `AccessService.satisfies` reads session signals.
+   * Sections whose items are all hidden are dropped wholesale so we don't
+   * render orphan headers.
    */
-  protected readonly visibleSections = computed(() => {
-    const set = this.auth.permissionSet();
-    const role = this.auth.currentUser()?.role;
-    return NAV_SECTIONS
+  protected readonly visibleSections = computed(() =>
+    NAV_SECTIONS
       .map((section) => ({
         ...section,
-        items: section.items.filter((item) => {
-          // Role exclusion wins over any grant.
-          if (item.hideForRoles?.length && role && item.hideForRoles.includes(role)) {
-            return false;
-          }
-          const hasPermGate = !!item.requiredAnyPermission?.length;
-          const hasRoleGate = !!item.requiredAnyRole?.length;
-          // No gate at all → visible to everyone.
-          if (!hasPermGate && !hasRoleGate) return true;
-          // Gates are OR-ed: an item declaring both shows when the user
-          // satisfies *either* (e.g. invoices = supplier permission OR the
-          // Representative role). Items with a single gate are unaffected.
-          const permMatch =
-            hasPermGate &&
-            item.requiredAnyPermission!.some((p) => set.has(p));
-          const roleMatch =
-            hasRoleGate && !!role && item.requiredAnyRole!.includes(role);
-          return permMatch || roleMatch;
-        }),
+        items: section.items.filter((item) => this.access.satisfies(item.access)),
       }))
-      .filter((section) => section.items.length > 0);
-  });
+      .filter((section) => section.items.length > 0),
+  );
 
   getBadgeClass(type?: BadgeType): string {
     return getMappedClass(BADGE_CLASS_MAP, type ?? 'red', 'red');

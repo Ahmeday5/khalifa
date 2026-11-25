@@ -1,6 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
+import { AccessService } from '../../../core/services/access.service';
 import { API_ENDPOINTS } from '../../../core/constants/api-endpoints.const';
 import {
   withCache,
@@ -20,6 +22,7 @@ import {
   CommissionPayoutsQuery,
   CreateRepresentativePayload,
   Representative,
+  RepresentativeOption,
   RepresentativeStatement,
   RepresentativeSubTreasury,
   RepresentativesListResponse,
@@ -39,6 +42,7 @@ const STATEMENT_TTL_MS = 60 * 1000; // 1 min â€” figures move with every pa
 @Injectable({ providedIn: 'root' })
 export class RepsService {
   private readonly api = inject(ApiService);
+  private readonly access = inject(AccessService);
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ reads â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -78,6 +82,39 @@ export class RepsService {
       })
       .pipe(toList<LookupItem>());
   }
+  /**
+   * Representatives for contract / collection pickers.
+   *
+   *   - User managers get the full roster (`GET /representatives`), which
+   *     carries phone numbers for the printed contract slip.
+   *   - Everyone else — notably a Representative, for whom the roster is
+   *     403 — gets the role-scoped `GET /representatives/lookup` (a
+   *     Representative receives only themselves).
+   */
+  pickerOptions(): Observable<RepresentativeOption[]> {
+    if (this.access.canManageUsers()) {
+      return this.list().pipe(
+        map((res) =>
+          (res?.data ?? []).map((r) => ({
+            id: r.id,
+            name: r.fullName,
+            phoneNumber: r.phoneNumber ?? null,
+          })),
+        ),
+      );
+    }
+    return this.lookup().pipe(
+      map((items) =>
+        items.map((i) => ({
+          id: i.id,
+          name: i.name,
+          phoneNumber:
+            (i as LookupItem & { phoneNumber?: string | null }).phoneNumber ?? null,
+        })),
+      ),
+    );
+  }
+
 
   getById(id: number): Observable<Representative> {
     return this.api.get<Representative>(

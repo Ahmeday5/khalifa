@@ -35,7 +35,7 @@ import { ContractsService } from '../../../contracts/services/contracts.service'
 import { CustomersService } from '../../services/customers.service';
 import { TreasuryService } from '../../../treasury/services/treasury.service';
 import { RepsService } from '../../../reps/services/reps.service';
-import { Representative } from '../../../reps/models/rep.model';
+import { RepresentativeOption } from '../../../reps/models/rep.model';
 import {
   ContractSlipsPrintService,
   ContractSlipData,
@@ -114,7 +114,7 @@ export class DirectContractModalComponent {
   protected readonly clients = signal<DashboardClient[]>([]);
   protected readonly treasuries = signal<LookupItem[]>([]);
   /** Full representative objects so we can access phoneNumber for the slip. */
-  protected readonly representatives = signal<Representative[]>([]);
+  protected readonly representatives = signal<RepresentativeOption[]>([]);
 
   // ── payment frequency options ──
   protected readonly frequencies: { value: ContractPaymentFrequency; label: string }[] = [
@@ -137,7 +137,7 @@ export class DirectContractModalComponent {
   );
 
   protected readonly representativeOptions = computed<SearchableSelectOption[]>(() =>
-    this.representatives().map((r) => ({ value: r.id, label: r.fullName, hint: r.phoneNumber })),
+    this.representatives().map((r) => ({ value: r.id, label: r.name, hint: r.phoneNumber ?? undefined })),
   );
 
   // ── form ──
@@ -572,14 +572,14 @@ export class DirectContractModalComponent {
     forkJoin({
       clients:   this.customersService.listAllClients().pipe(catchError(() => of([] as DashboardClient[]))),
       treasuries:this.treasuryService.lookup().pipe(catchError(() => of([] as LookupItem[]))),
-      reps:      this.repsService.list().pipe(catchError(() => of({ data: [] as Representative[], pageIndex: 1, pageSize: 100, count: 0, totalPages: 0 }))),
+      reps:      this.repsService.pickerOptions().pipe(catchError(() => of([] as RepresentativeOption[]))),
     })
       .pipe(finalize(() => this.loadingLookups.set(false)))
       .subscribe({
         next: (res) => {
           this.clients.set(res.clients);
           this.treasuries.set(res.treasuries);
-          this.representatives.set(res.reps?.data ?? []);
+          this.representatives.set(res.reps);
           this.lookupsLoaded.set(true);
         },
         error: () => {
@@ -692,7 +692,7 @@ export class DirectContractModalComponent {
       clientBuilding:       fullClient?.building    ?? null,
       clientFloor:          fullClient?.floor       ?? null,
       clientDepartment:     fullClient?.department  ?? null,
-      repName:              selectedRep?.fullName   ?? null,
+      repName:              selectedRep?.name        ?? null,
       repPhone:             selectedRep?.phoneNumber ?? null,
       productLines:         items.map((i) => ({ name: i.productName, quantity: i.quantity })),
       totalAmount:          Math.round(totalAmount),
