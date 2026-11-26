@@ -1,44 +1,37 @@
 /* ════════════════════════════════
    SIDEBAR — desktop + mobile
+   ════════════════════════════════
+
+   Layout contract:
+     .sidebar   → fixed-height flex column, never scrolls itself
+     .sb-head   → pinned header (collapse toggle)
+     .sb-body   → the ONLY scroll container (flex: 1 + min-height: 0)
+
+   Nav items live in a normal block flow inside .sb-body, so they keep
+   their natural height and overflow into a scrollable region instead
+   of being squashed by flex-shrink when the viewport is short.
    ════════════════════════════════ */
+
+$sb-mobile-max: 991px; // keep in sync with topbar / admin-layout breakpoints
 
 /* ── Sidebar shell ── */
 .sidebar {
   --sb-width: 192px;
+  --sb-mobile-width: min(260px, 82vw);
   --sb-collapsed-width: 58px;
+  --sb-topbar-height: 50px;
   --sb-transition: 0.26s cubic-bezier(0.4, 0, 0.2, 1);
 
   width: var(--sb-width);
   height: 100%;
+  min-height: 0;
   background: var(--bg2);
   border-left: 1px solid var(--brd);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   transition: width var(--sb-transition);
-
-  /* Smooth, subtle scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  &:hover {
-    scrollbar-color: var(--brd2) transparent;
-  }
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 10px;
-    transition: background 0.2s;
-  }
-  &:hover::-webkit-scrollbar-thumb {
-    background: var(--brd2);
-  }
 
   /* ── Desktop collapsed ── */
   &.collapsed {
@@ -68,12 +61,15 @@
   }
 
   /* ── Mobile: hidden by default, slides in as drawer ── */
-  @media (max-width: 991px) {
+  @media (max-width: $sb-mobile-max) {
     position: fixed;
-    top: 50px;
+    top: var(--sb-topbar-height);
     right: 0;
     bottom: 0;
-    width: 240px !important; /* override collapsed state on mobile */
+    /* Height comes from top/bottom — an explicit 100% would resolve against
+       the viewport and push the last items below the screen edge. */
+    height: auto;
+    width: var(--sb-mobile-width) !important; /* override collapsed state on mobile */
     z-index: 1000;
     border-left: none;
     box-shadow: none;
@@ -93,9 +89,9 @@
     }
     .sbi {
       justify-content: flex-start !important;
-      padding: 9px 13px !important;
+      padding: 11px 14px !important; /* comfortable touch target */
     }
-    .sb-toggle {
+    .sb-head {
       display: none;
     } /* collapse btn hidden on mobile */
 
@@ -103,6 +99,52 @@
     &.open {
       transform: translateX(0);
       box-shadow: -6px 0 32px rgba(0, 0, 0, 0.16);
+    }
+  }
+}
+
+/* ── Pinned header ── */
+.sb-head {
+  flex: 0 0 auto;
+}
+
+/* ── Scrollable nav region ── */
+.sb-body {
+  flex: 1 1 auto;
+  min-height: 0; /* critical: allows the flex child to shrink and scroll */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain; /* don't chain scroll to the page behind the drawer */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); /* iOS home indicator */
+
+  /* Subtle scrollbar — revealed on hover for pointer devices */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover {
+    scrollbar-color: var(--brd2) transparent;
+  }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: var(--brd2);
+  }
+
+  /* Touch devices have no hover — keep the scroll affordance visible */
+  @media (hover: none) {
+    scrollbar-color: var(--brd2) transparent;
+    &::-webkit-scrollbar-thumb {
+      background: var(--brd2);
     }
   }
 }

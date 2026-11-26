@@ -13,7 +13,7 @@
 .sidebar-overlay {
   display: none;
 
-  @media (max-width: 992px) {
+  @media (max-width: 991px) {
     display: block;
     position: fixed;
     inset: 0;
@@ -29,7 +29,7 @@
 
   // On mobile the sidebar uses position:fixed and slides in as an overlay,
   // so the wrapper must take zero space in the flex row.
-  @media (max-width: 992px) {
+  @media (max-width: 991px) {
     width: 0;
     min-width: 0;
     overflow: visible; // let the fixed sidebar paint outside this box
